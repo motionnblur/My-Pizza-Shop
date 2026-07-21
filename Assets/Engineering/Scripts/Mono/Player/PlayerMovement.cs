@@ -4,7 +4,6 @@ using Engineering.Scripts.Mono.Managers;
 
 namespace Engineering.Scripts.Mono.Player
 {
-    [RequireComponent(typeof(Rigidbody))]
     public class PlayerMovement : MonoBehaviour
     {
         private const string MeshChildName = "Mesh";
