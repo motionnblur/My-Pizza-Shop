@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5995662132651403117}
   - component: {fileID: 5069393921449071744}
+  - component: {fileID: 6554547544734132325}
   m_Layer: 0
   m_Name: Scripts
   m_TagString: Untagged
@@ -51,6 +52,18 @@ MonoBehaviour:
   rotationSpeed: 10
   cameraTransform: {fileID: 0}
   meshYawAtStart: 45
+--- !u!114 &6554547544734132325
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1033184541141458600}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65a39071be5c48a19fccee184aa5db7e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Engineering.Scripts.Mono.Player.PlayerTrigger
 --- !u!1 &2034507407284336888
 GameObject:
   m_ObjectHideFlags: 0
@@ -97,6 +110,7 @@ GameObject:
   - component: {fileID: 5489660286436482299}
   - component: {fileID: 4984225248085974816}
   - component: {fileID: 1526609771004147557}
+  - component: {fileID: 2159264832011995415}
   m_Layer: 0
   m_Name: Mesh
   m_TagString: Untagged
@@ -227,6 +241,19 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 80
   m_CollisionDetection: 0
+--- !u!114 &2159264832011995415
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2500394808416289218}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 968a0ac9f65e47c9a44c53b5d3b13c2d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Engineering.Scripts.Mono.Player.PlayerTriggerRelay
+  playerTrigger: {fileID: 6554547544734132325}
 --- !u!1 &6748914949361911197
 GameObject:
   m_ObjectHideFlags: 0

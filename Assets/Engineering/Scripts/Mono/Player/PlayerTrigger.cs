@@ -1,17 +1,21 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace Engineering.Scripts.Mono.Player
 {
     public class PlayerTrigger : MonoBehaviour
     {
-        private void OnTriggerEnter(Collider other)
+        public event Action<Collider> TriggerEnterEvent;
+        public event Action<Collider> TriggerExitEvent;
+        
+        public void HandleTriggerEnter(Collider other)
         {
-             
+            TriggerEnterEvent?.Invoke(other);
         }
 
-        private void OnTriggerExit(Collider other)
+        public void HandleTriggerExit(Collider other)
         {
-            
+            TriggerExitEvent?.Invoke(other);
         }
     }
 }
