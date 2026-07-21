@@ -7,14 +7,37 @@ namespace Engineering.Scripts.Mono.Player
     [RequireComponent(typeof(Rigidbody))]
     public class PlayerMovement : MonoBehaviour
     {
+        private const string MeshChildName = "Mesh";
+
         [SerializeField] private InputManager inputManager;
+        [SerializeField] private Rigidbody _rb;
         [SerializeField] private float moveSpeed = 5f;
         [SerializeField] private float sprintMultiplier = 1.5f;
         [SerializeField] private float rotationSpeed = 10f;
+        [SerializeField] private Transform cameraTransform;
+        [SerializeField] private Transform meshTransform;
+        [SerializeField] private float meshYawAtStart = 45f;
 
-        private Rigidbody _rb;
         private Vector2 moveInput;
         private bool isSprinting;
+
+        private void Awake()
+        {
+            if (meshTransform == null)
+            {
+                meshTransform = transform.Find(MeshChildName);
+            }
+
+            if (meshTransform == null)
+            {
+                Debug.LogWarning($"{nameof(PlayerMovement)} could not find its '{MeshChildName}' child.", this);
+                return;
+            }
+
+            Vector3 meshRotation = meshTransform.localEulerAngles;
+            meshRotation.y = meshYawAtStart;
+            meshTransform.localRotation = Quaternion.Euler(meshRotation);
+        }
 
         private void OnEnable()
         {
@@ -38,7 +61,15 @@ namespace Engineering.Scripts.Mono.Player
 
         private void FixedUpdate()
         {
-            Vector3 direction = new Vector3(moveInput.x, 0f, moveInput.y);
+            Vector3 cameraForward = cameraTransform.forward;
+            cameraForward.y = 0f;
+            cameraForward.Normalize();
+
+            Vector3 cameraRight = cameraTransform.right;
+            cameraRight.y = 0f;
+            cameraRight.Normalize();
+
+            Vector3 direction = cameraForward * moveInput.y + cameraRight * moveInput.x;
 
             if (direction.magnitude > 0.1f)
             {
