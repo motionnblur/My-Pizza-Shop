@@ -4,48 +4,71 @@ using Engineering.Scripts.Mono.Managers;
 
 namespace Engineering.Scripts.Mono.Player
 {
+    [RequireComponent(typeof(Rigidbody))]
     public class PlayerMovement : MonoBehaviour
     {
         [SerializeField] private InputManager inputManager;
+        [SerializeField] private float moveSpeed = 5f;
+        [SerializeField] private float sprintMultiplier = 1.5f;
+        [SerializeField] private float rotationSpeed = 10f;
+
+        private Rigidbody _rb;
+        private Vector2 moveInput;
+        private bool isSprinting;
 
         private void OnEnable()
         {
             inputManager.MoveChanged += OnMoveChanged;
-            inputManager.LookChanged += OnLookChanged;
-            inputManager.AttackPressed += OnAttackPressed;
-            inputManager.InteractPerformed += OnInteractPerformed;
-            inputManager.PreviousPressed += OnPreviousPressed;
-            inputManager.NextPressed += OnNextPressed;
             inputManager.SprintStarted += OnSprintStarted;
             inputManager.SprintCanceled += OnSprintCanceled;
         }
 
         private void OnDisable()
         {
-            inputManager.MoveChanged -= OnMoveChanged;
-            inputManager.LookChanged -= OnLookChanged;
-            inputManager.AttackPressed -= OnAttackPressed;
-            inputManager.InteractPerformed -= OnInteractPerformed;
-            inputManager.PreviousPressed -= OnPreviousPressed;
-            inputManager.NextPressed -= OnNextPressed;
-            inputManager.SprintStarted -= OnSprintStarted;
-            inputManager.SprintCanceled -= OnSprintCanceled;
+            if (inputManager != null)
+            {
+                inputManager.MoveChanged -= OnMoveChanged;
+                inputManager.SprintStarted -= OnSprintStarted;
+                inputManager.SprintCanceled -= OnSprintCanceled;
+            }
+
+            moveInput = Vector2.zero;
+            isSprinting = false;
         }
 
-        private void OnMoveChanged(Vector2 value) { }
+        private void FixedUpdate()
+        {
+            Vector3 direction = new Vector3(moveInput.x, 0f, moveInput.y);
 
-        private void OnLookChanged(Vector2 value) { }
+            if (direction.magnitude > 0.1f)
+            {
+                float speed = moveSpeed * (isSprinting ? sprintMultiplier : 1f);
+                Vector3 targetVelocity = direction.normalized * speed;
+                targetVelocity.y = _rb.linearVelocity.y;
+                _rb.linearVelocity = targetVelocity;
 
-        private void OnAttackPressed() { }
+                Quaternion targetRotation = Quaternion.LookRotation(direction);
+                _rb.rotation = Quaternion.Slerp(_rb.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
+            }
+            else
+            {
+                _rb.linearVelocity = new Vector3(0f, _rb.linearVelocity.y, 0f);
+            }
+        }
 
-        private void OnInteractPerformed() { }
+        private void OnMoveChanged(Vector2 value)
+        {
+            moveInput = value;
+        }
 
-        private void OnPreviousPressed() { }
+        private void OnSprintStarted()
+        {
+            isSprinting = true;
+        }
 
-        private void OnNextPressed() { }
-
-        private void OnSprintStarted() { }
-
-        private void OnSprintCanceled() { }
+        private void OnSprintCanceled()
+        {
+            isSprinting = false;
+        }
     }
 }
