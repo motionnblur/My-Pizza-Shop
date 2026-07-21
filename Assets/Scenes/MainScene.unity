@@ -288,6 +288,11 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!4 &657796370 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4831733395383477562, guid: d4b4612156a02f94aa6701a115a1486d, type: 3}
+  m_PrefabInstance: {fileID: 4679387474481681207}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &885361908
 GameObject:
   m_ObjectHideFlags: 0
@@ -586,9 +591,21 @@ PrefabInstance:
       value: Player
       objectReference: {fileID: 0}
     - target: {fileID: 5069393921449071744, guid: d4b4612156a02f94aa6701a115a1486d, type: 3}
+      propertyPath: moveSpeed
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 5069393921449071744, guid: d4b4612156a02f94aa6701a115a1486d, type: 3}
       propertyPath: inputManager
       value: 
       objectReference: {fileID: 1251527521}
+    - target: {fileID: 5069393921449071744, guid: d4b4612156a02f94aa6701a115a1486d, type: 3}
+      propertyPath: meshTransform
+      value: 
+      objectReference: {fileID: 657796370}
+    - target: {fileID: 5069393921449071744, guid: d4b4612156a02f94aa6701a115a1486d, type: 3}
+      propertyPath: rotationSpeed
+      value: 4.3
+      objectReference: {fileID: 0}
     - target: {fileID: 5069393921449071744, guid: d4b4612156a02f94aa6701a115a1486d, type: 3}
       propertyPath: cameraTransform
       value: 

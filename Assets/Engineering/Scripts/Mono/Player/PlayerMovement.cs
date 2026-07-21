@@ -15,29 +15,11 @@ namespace Engineering.Scripts.Mono.Player
         [SerializeField] private float sprintMultiplier = 1.5f;
         [SerializeField] private float rotationSpeed = 10f;
         [SerializeField] private Transform cameraTransform;
-        [SerializeField] private Transform meshTransform;
         [SerializeField] private float meshYawAtStart = 45f;
 
         private Vector2 moveInput;
         private bool isSprinting;
-
-        private void Awake()
-        {
-            if (meshTransform == null)
-            {
-                meshTransform = transform.Find(MeshChildName);
-            }
-
-            if (meshTransform == null)
-            {
-                Debug.LogWarning($"{nameof(PlayerMovement)} could not find its '{MeshChildName}' child.", this);
-                return;
-            }
-
-            Vector3 meshRotation = meshTransform.localEulerAngles;
-            meshRotation.y = meshYawAtStart;
-            meshTransform.localRotation = Quaternion.Euler(meshRotation);
-        }
+        
 
         private void OnEnable()
         {
@@ -84,6 +66,7 @@ namespace Engineering.Scripts.Mono.Player
             else
             {
                 _rb.linearVelocity = new Vector3(0f, _rb.linearVelocity.y, 0f);
+                _rb.angularVelocity = Vector3.zero;
             }
         }
 
