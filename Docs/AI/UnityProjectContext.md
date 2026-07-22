@@ -6,7 +6,7 @@
 
 - **Project root:** repository root
 - **Last analyzed:** 2026-07-22
-- **Last analyzed commit:** `419fbca`
+- **Last analyzed commit:** `39f0f9b`
 - **Summary:** Early-stage casual 3D game named *My Pizza Shop*. Confirmed gameplay code implements movement, player money, timed purchases, and purchase-area triggers.
 
 ## Confirmed Environment
@@ -24,7 +24,7 @@
 | Input | Input System 1.19.0; `InputManager` uses an asset-backed `Player` action map | Confirmed | `Packages/manifest.json`, `ProjectSettings/ProjectSettings.asset`, `Assets/Engineering/Scripts/Mono/Managers/InputManager.cs` |
 | Navigation | AI Navigation 2.0.13 is installed; gameplay usage not found in inspected sources | Confirmed / unknown usage | `Packages/manifest.json` |
 | UI | UGUI 2.0.0 is installed; project UI usage not inspected | Confirmed / unknown usage | `Packages/manifest.json` |
-| Tests | Unity Test Framework 1.6.0 is installed; no first-party test assemblies/files found | Confirmed | `Packages/manifest.json`, `Assets/` file inventory |
+| Tests | Unity Test Framework 1.6.0 is installed; 7 first-party EditMode tests protect wallet, trigger, and movement behavior | Confirmed | `Packages/manifest.json`, `Assets/Engineering/Tests/Editor/CoreGameplayTests.cs` |
 | Other tooling | Timeline, Visual Scripting, Rider and Visual Studio integrations are installed; first-party usage is unverified | Confirmed / unverified usage | `Packages/manifest.json` |
 
 ## Directory Structure
@@ -72,10 +72,11 @@ No first-party `.asmdef` or `.asmref` files were found. First-party code therefo
 
 ## Testing And Validation
 
-- **EditMode tests:** None found.
+- **EditMode tests:** 7 tests in `Assets/Engineering/Tests/Editor/CoreGameplayTests.cs`; they cover wallet defaults/mutation, trigger event relays, and base/sprint/idle movement velocity.
 - **PlayMode tests:** None found.
 - **CI/build validation:** None found.
-- **Recommended minimum validation:** Let Unity compile, check Console output, then test the changed gameplay flow in Play Mode.
+- **Validated command:** `Unity.exe -batchmode -projectPath <project> -runTests -testPlatform EditMode -testFilter Engineering.Tests -testResults Temp/Engineering.EditModeTests.xml` (7/7 passed on 2026-07-22).
+- **Recommended minimum validation:** Run the EditMode suite, then test scene-dependent payment and purchase flows in Play Mode.
 
 ## Available Unity Tooling
 
@@ -114,5 +115,6 @@ No first-party `.asmdef` or `.asmref` files were found. First-party code therefo
 - `Assets/Engineering/Scripts/Mono/Areas/BuyingArea.cs`
 - `Assets/Engineering/Scripts/Class/ETriggerAreas.cs`
 - `Assets/Engineering/ScriptableObjects/SEconomy.cs`
+- `Assets/Engineering/Tests/Editor/CoreGameplayTests.cs`
 
 <!-- unity-onboarding:generated:end -->
