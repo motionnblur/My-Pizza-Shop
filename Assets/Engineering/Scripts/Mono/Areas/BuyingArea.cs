@@ -13,11 +13,6 @@ namespace Engineering.Scripts.Mono.Areas
 
         private void OnTriggerEnter(Collider other)
         {
-            //
-        }
-
-        private void OnTriggerStay(Collider other)
-        {
             if (isPurchased) return;
             
             if (other.gameObject.tag.Equals("Player"))
@@ -26,11 +21,15 @@ namespace Engineering.Scripts.Mono.Areas
             }
         }
 
+        private void OnTriggerStay(Collider other)
+        {
+        }
+
         private void OnTriggerExit(Collider other)
         {
             if (other.gameObject.tag.Equals("Player"))
             {
-                //
+                EconomyManager.Instance.CancelPayment();
             }
         }
         

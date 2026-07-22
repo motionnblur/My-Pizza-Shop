@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Areas;
 using Engineering.Scripts.Mono.Player;
 using UnityEngine;
@@ -8,7 +9,9 @@ namespace Engineering.Scripts.Mono.Managers
     public class EconomyManager : MonoBehaviour
     {
         public static EconomyManager Instance { get; private set; }
+        [SerializeField] private SEconomy sEconomy;
         private PlayerWallet _pWallet;
+        private Coroutine _activePaymentCoroutine;
 
         private void Awake()
         {
@@ -29,23 +32,45 @@ namespace Engineering.Scripts.Mono.Managers
 
         public void ProcessPayment(BuyingArea ba)
         {
-            StartCoroutine(DelayedPayment(ba, 1, 0.1f));
+            if (sEconomy.playerMoneySpendSpeed <= 0) return;
+            if (_activePaymentCoroutine != null) return;
+            _activePaymentCoroutine = StartCoroutine(DelayedPayment(ba));
         }
 
-        private IEnumerator DelayedPayment(BuyingArea ba, int pay, float delay)
+        public void CancelPayment()
         {
-            yield return new WaitForSeconds(delay);
-
-            if (ba == null) yield break;
-
-            var moneyInPlayerPocket = _pWallet.Money;
-            var afterMoneyInPlayerPocket = moneyInPlayerPocket - pay;
-
-            if (afterMoneyInPlayerPocket > 0)
+            if (_activePaymentCoroutine != null)
             {
-                _pWallet.Money = afterMoneyInPlayerPocket;
-                ba.AddPayment(pay);
+                StopCoroutine(_activePaymentCoroutine);
+                _activePaymentCoroutine = null;
             }
+        }
+
+        private IEnumerator DelayedPayment(BuyingArea ba)
+        {
+            if (ba == null || _pWallet == null) yield break;
+
+            var pay = sEconomy.playerMoneySpendRate;
+            var delay = 1f / sEconomy.playerMoneySpendSpeed;
+
+            while (ba != null && _pWallet != null)
+            {
+                var afterMoneyInPlayerPocket = _pWallet.Money - pay;
+
+                if (afterMoneyInPlayerPocket >= 0)
+                {
+                    _pWallet.Money = afterMoneyInPlayerPocket;
+                    ba.AddPayment(pay);
+                }
+                else
+                {
+                    break;
+                }
+
+                yield return new WaitForSeconds(delay);
+            }
+
+            _activePaymentCoroutine = null;
         }
 
         public void PlayerBuyBuyingArea(BuyingArea ba)

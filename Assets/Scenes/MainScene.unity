@@ -333,6 +333,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 823506aea04440d08ae6266cca987d28, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Engineering.Scripts.Mono.Managers.EconomyManager
+  sEconomy: {fileID: 11400000, guid: c11de12e6b81dfd4d91ffe391159c899, type: 2}
 --- !u!4 &657796370 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4831733395383477562, guid: d4b4612156a02f94aa6701a115a1486d, type: 3}
