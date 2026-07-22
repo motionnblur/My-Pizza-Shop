@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 8803620096794557808}
   - component: {fileID: 3406093012082315171}
   - component: {fileID: 5063896735046299781}
+  - component: {fileID: 1092533197837986523}
   m_Layer: 0
   m_Name: MoneyArea
   m_TagString: MoneyArea
@@ -112,3 +113,15 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1.0000002, z: 0.100634955}
   m_Center: {x: 0, y: -1.7312369e-16, z: -0.05031749}
+--- !u!114 &1092533197837986523
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1566509519884069402}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 984350a97c264069aeb2088e8e449431, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Engineering.Scripts.Mono.Areas.BuyingArea
