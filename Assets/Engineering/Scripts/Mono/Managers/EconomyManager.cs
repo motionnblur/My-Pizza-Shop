@@ -59,17 +59,26 @@ namespace Engineering.Scripts.Mono.Managers
 
                 if (afterMoneyInPlayerPocket >= 0)
                 {
+                    var animationTargetPosition = ba.transform.position;
                     _pWallet.Money = afterMoneyInPlayerPocket;
                     ba.AddPayment(pay);
-                    
+
+                    yield return new WaitForSeconds(delay);
+
+                    if (_pWallet == null)
+                        break;
+
+                    if (AnimationManager.Instance != null)
+                    {
+                        AnimationManager.Instance.DoMoneyAnimation(
+                            _pWallet.MoneyAnimationOriginPosition,
+                            animationTargetPosition);
+                    }
                 }
                 else
                 {
                     break;
                 }
-
-                yield return new WaitForSeconds(delay);
-                AnimationManager.Instance.DoMoneyAnimation(_pWallet.MoneyAnimationOriginPosition, ba.transform.position);
             }
 
             _activePaymentCoroutine = null;

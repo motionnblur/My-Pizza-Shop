@@ -124,22 +124,40 @@ namespace Engineering.Scripts.Mono.Managers
                 Random.Range(0f, 360f),
                 Random.Range(0f, 360f));
 
-            Sequence sequence = DOTween.Sequence();
-            sequence.SetRecyclable(true);
+            Sequence sequence = null;
+            var returnedToPool = false;
+            void ReturnToPool()
+            {
+                if (returnedToPool)
+                    return;
+
+                returnedToPool = true;
+                if (sequence != null && sequence.IsActive())
+                    sequence.Kill(false);
+
+                pool.Release(go);
+            }
+
+            sequence = DOTween.Sequence();
+            sequence.SetRecyclable(true).SetTarget(go.transform);
 
             sequence.Append(go.transform.DOJump(positionTo, _jumpPower, 1, _duration)
-                .SetEase(_moveEase));
+                .SetEase(_moveEase)
+                .OnKill(ReturnToPool));
 
             go.transform.localScale = Vector3.zero;
-            sequence.Join(go.transform.DOScale(_moneyPrefabScale, _duration * 0.3f));
+            sequence.Join(go.transform.DOScale(_moneyPrefabScale, _duration * 0.3f)
+                .OnKill(ReturnToPool));
 
             sequence.Join(go.transform.DORotate(
                 new Vector3(0f, _rotationAmount, 0f),
                 _duration,
                 RotateMode.LocalAxisAdd)
-                .SetEase(Ease.Linear));
+                .SetEase(Ease.Linear)
+                .OnKill(ReturnToPool));
 
-            sequence.OnComplete(() => pool.Release(go));
+            sequence.OnComplete(ReturnToPool);
+            sequence.OnKill(ReturnToPool);
         }
     }
 }

@@ -57,7 +57,23 @@ namespace Engineering.Tests
             yield return DestroyFixture(fixture);
         }
 
-        private static Fixture CreateFixture(int spendRate, float spendSpeed)
+        [UnityTest]
+        public IEnumerator CompletingPurchaseDuringPayment_UsesCachedAnimationDestination()
+        {
+            var fixture = CreateFixture(spendRate: 100, spendSpeed: 20f, includeAnimationManager: true);
+            yield return null;
+
+            InvokePrivateMethod(fixture.BuyingArea, "OnTriggerEnter", fixture.PlayerCollider);
+            yield return new WaitForSeconds(0.1f);
+
+            Assert.That(fixture.BuyingArea == null, Is.True);
+            Assert.That(fixture.Wallet.Money, Is.EqualTo(0));
+            LogAssert.NoUnexpectedReceived();
+
+            yield return DestroyFixture(fixture);
+        }
+
+        private static Fixture CreateFixture(int spendRate, float spendSpeed, bool includeAnimationManager = false)
         {
             var playerObject = new GameObject("PaymentTestPlayer");
             playerObject.tag = "Player";
@@ -72,11 +88,33 @@ namespace Engineering.Tests
             var economyManager = managerObject.AddComponent<EconomyManager>();
             SetPrivateField(economyManager, "sEconomy", economy);
 
+            GameObject moneyPrefab = null;
+            GameObject animationManagerObject = null;
+            if (includeAnimationManager)
+            {
+                moneyPrefab = new GameObject("PaymentTestMoneyPrefab");
+                economy.moneyPrefab = moneyPrefab;
+
+                animationManagerObject = new GameObject("PaymentTestAnimationManager");
+                var animationManager = animationManagerObject.AddComponent<AnimationManager>();
+                SetPrivateField(animationManager, "sEconomy", economy);
+                SetPrivateField(animationManager, "_duration", 0.05f);
+            }
+
             var buyingAreaObject = new GameObject("PaymentTestBuyingArea");
             buyingAreaObject.AddComponent<BoxCollider>().isTrigger = true;
             var buyingArea = buyingAreaObject.AddComponent<BuyingArea>();
 
-            return new Fixture(playerObject, wallet, playerCollider, managerObject, economy, buyingAreaObject, buyingArea);
+            return new Fixture(
+                playerObject,
+                wallet,
+                playerCollider,
+                managerObject,
+                economy,
+                buyingAreaObject,
+                buyingArea,
+                moneyPrefab,
+                animationManagerObject);
         }
 
         private static IEnumerator DestroyFixture(Fixture fixture)
@@ -84,6 +122,11 @@ namespace Engineering.Tests
             if (fixture.ManagerObject != null)
             {
                 UnityEngine.Object.Destroy(fixture.ManagerObject);
+            }
+
+            if (fixture.AnimationManagerObject != null)
+            {
+                UnityEngine.Object.Destroy(fixture.AnimationManagerObject);
             }
 
             if (fixture.PlayerObject != null)
@@ -99,6 +142,11 @@ namespace Engineering.Tests
             if (fixture.Economy != null)
             {
                 UnityEngine.Object.Destroy(fixture.Economy);
+            }
+
+            if (fixture.MoneyPrefab != null)
+            {
+                UnityEngine.Object.Destroy(fixture.MoneyPrefab);
             }
 
             yield return null;
@@ -120,7 +168,16 @@ namespace Engineering.Tests
 
         private sealed class Fixture
         {
-            public Fixture(GameObject playerObject, PlayerWallet wallet, Collider playerCollider, GameObject managerObject, SEconomy economy, GameObject buyingAreaObject, BuyingArea buyingArea)
+            public Fixture(
+                GameObject playerObject,
+                PlayerWallet wallet,
+                Collider playerCollider,
+                GameObject managerObject,
+                SEconomy economy,
+                GameObject buyingAreaObject,
+                BuyingArea buyingArea,
+                GameObject moneyPrefab,
+                GameObject animationManagerObject)
             {
                 PlayerObject = playerObject;
                 Wallet = wallet;
@@ -129,6 +186,8 @@ namespace Engineering.Tests
                 Economy = economy;
                 BuyingAreaObject = buyingAreaObject;
                 BuyingArea = buyingArea;
+                MoneyPrefab = moneyPrefab;
+                AnimationManagerObject = animationManagerObject;
             }
 
             public GameObject PlayerObject { get; }
@@ -138,6 +197,8 @@ namespace Engineering.Tests
             public SEconomy Economy { get; }
             public GameObject BuyingAreaObject { get; }
             public BuyingArea BuyingArea { get; }
+            public GameObject MoneyPrefab { get; }
+            public GameObject AnimationManagerObject { get; }
         }
     }
 }
