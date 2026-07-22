@@ -1,0 +1,19 @@
+{
+  "name": "Engineering.Tests.PlayMode",
+  "rootNamespace": "Engineering.Tests",
+  "references": [
+    "GUID:a1be7b0b32be4dc0a3aa7ce4d4436c7e"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

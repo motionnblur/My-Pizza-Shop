@@ -24,7 +24,7 @@
 | Input | Input System 1.19.0; `InputManager` uses an asset-backed `Player` action map | Confirmed | `Packages/manifest.json`, `ProjectSettings/ProjectSettings.asset`, `Assets/Engineering/Scripts/Mono/Managers/InputManager.cs` |
 | Navigation | AI Navigation 2.0.13 is installed; gameplay usage not found in inspected sources | Confirmed / unknown usage | `Packages/manifest.json` |
 | UI | UGUI 2.0.0 is installed; project UI usage not inspected | Confirmed / unknown usage | `Packages/manifest.json` |
-| Tests | Unity Test Framework 1.6.0 is installed; 7 first-party EditMode tests protect wallet, trigger, and movement behavior | Confirmed | `Packages/manifest.json`, `Assets/Engineering/Tests/Editor/CoreGameplayTests.cs` |
+| Tests | Unity Test Framework 1.6.0 is installed; 7 EditMode and 3 PlayMode tests protect movement, wallet, trigger, and economy purchase behavior | Confirmed | `Packages/manifest.json`, `Assets/Engineering/Tests/` |
 | Other tooling | Timeline, Visual Scripting, Rider and Visual Studio integrations are installed; first-party usage is unverified | Confirmed / unverified usage | `Packages/manifest.json` |
 
 ## Directory Structure
@@ -40,7 +40,7 @@
 
 ## Assembly Boundaries
 
-No first-party `.asmdef` or `.asmref` files were found. First-party code therefore compiles into Unity's default assemblies. There are no recorded editor-only or test assembly boundaries.
+`Engineering.asmdef` compiles first-party runtime code into the `Engineering` assembly and explicitly references `Unity.InputSystem`. `Engineering.Tests.Editor.asmdef` and `Engineering.Tests.PlayMode.asmdef` reference that runtime assembly and Unity Test Framework test assemblies, keeping tests separated from player code.
 
 ## Scenes And Startup Flow
 
@@ -73,10 +73,10 @@ No first-party `.asmdef` or `.asmref` files were found. First-party code therefo
 ## Testing And Validation
 
 - **EditMode tests:** 7 tests in `Assets/Engineering/Tests/Editor/CoreGameplayTests.cs`; they cover wallet defaults/mutation, trigger event relays, and base/sprint/idle movement velocity.
-- **PlayMode tests:** None found.
+- **PlayMode tests:** 3 tests in `Assets/Engineering/Tests/PlayMode/EconomyPaymentPlayModeTests.cs`; they cover payment on entry, cancellation on exit, and purchase-area removal.
 - **CI/build validation:** None found.
-- **Validated command:** `Unity.exe -batchmode -projectPath <project> -runTests -testPlatform EditMode -testFilter Engineering.Tests -testResults Temp/Engineering.EditModeTests.xml` (7/7 passed on 2026-07-22).
-- **Recommended minimum validation:** Run the EditMode suite, then test scene-dependent payment and purchase flows in Play Mode.
+- **Validated commands:** EditMode (`-testPlatform EditMode -testFilter Engineering.Tests`) 7/7 passed; PlayMode (`-testPlatform PlayMode -testFilter Engineering.Tests.EconomyPaymentPlayModeTests`) 3/3 passed on 2026-07-22.
+- **Recommended minimum validation:** Run both test suites, then manually exercise the scene physical trigger, camera, and input wiring in Play Mode.
 
 ## Available Unity Tooling
 
@@ -115,6 +115,8 @@ No first-party `.asmdef` or `.asmref` files were found. First-party code therefo
 - `Assets/Engineering/Scripts/Mono/Areas/BuyingArea.cs`
 - `Assets/Engineering/Scripts/Class/ETriggerAreas.cs`
 - `Assets/Engineering/ScriptableObjects/SEconomy.cs`
+- `Assets/Engineering/Engineering.asmdef`
 - `Assets/Engineering/Tests/Editor/CoreGameplayTests.cs`
+- `Assets/Engineering/Tests/PlayMode/EconomyPaymentPlayModeTests.cs`
 
 <!-- unity-onboarding:generated:end -->
