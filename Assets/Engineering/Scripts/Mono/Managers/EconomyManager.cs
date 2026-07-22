@@ -61,6 +61,7 @@ namespace Engineering.Scripts.Mono.Managers
                 {
                     _pWallet.Money = afterMoneyInPlayerPocket;
                     ba.AddPayment(pay);
+                    
                 }
                 else
                 {
@@ -68,6 +69,7 @@ namespace Engineering.Scripts.Mono.Managers
                 }
 
                 yield return new WaitForSeconds(delay);
+                AnimationManager.Instance.DoMoneyAnimation(_pWallet.transform.position, ba.transform.position);
             }
 
             _activePaymentCoroutine = null;

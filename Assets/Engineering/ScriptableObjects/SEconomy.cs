@@ -7,5 +7,6 @@ namespace Engineering.ScriptableObjects
     {
         public int playerMoneySpendRate = 5;
         public float playerMoneySpendSpeed = 1f;
+        public GameObject moneyPrefab;
     }
 }

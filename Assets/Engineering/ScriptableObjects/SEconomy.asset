@@ -14,3 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Engineering.ScriptableObjects.SEconomy
   playerMoneySpendRate: 5
   playerMoneySpendSpeed: 10
+  moneyPrefab: {fileID: 8298107306022927658, guid: 755e0a8a5b49ce24883a8ac586c9c5db, type: 3}
