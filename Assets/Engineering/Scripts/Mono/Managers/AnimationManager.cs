@@ -1,8 +1,8 @@
-﻿using DG.Tweening;
+﻿using System.Collections.Generic;
+using DG.Tweening;
 using Engineering.ScriptableObjects;
-using Engineering.Scripts.Class;
-using Engineering.Scripts.Mono.Areas;
 using UnityEngine;
+using UnityEngine.Pool;
 
 namespace Engineering.Scripts.Mono.Managers
 {
@@ -19,6 +19,14 @@ namespace Engineering.Scripts.Mono.Managers
         [SerializeField] private float _scalePunch = 0.3f;
         [SerializeField] private float _rotationAmount = 360f;
 
+        [Header("Pooling")]
+        [SerializeField] private int _initialPoolSize = 8;
+        [SerializeField] private int _maxPoolSize = 16;
+
+        private ObjectPool<GameObject> _moneyPool;
+        private HashSet<GameObject> _activeMoneyObjects = new();
+        private Vector3 _moneyPrefabScale;
+
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -31,9 +39,76 @@ namespace Engineering.Scripts.Mono.Managers
             DontDestroyOnLoad(gameObject);
         }
 
+        private void OnDestroy()
+        {
+            foreach (var go in _activeMoneyObjects)
+            {
+                if (go != null)
+                    go.transform.DOKill();
+            }
+
+            _activeMoneyObjects.Clear();
+            _moneyPool?.Dispose();
+            _moneyPool = null;
+        }
+
+        private ObjectPool<GameObject> MoneyPool
+        {
+            get
+            {
+                if (_moneyPool == null)
+                    InitializeMoneyPool();
+                return _moneyPool;
+            }
+        }
+
+        private void InitializeMoneyPool()
+        {
+            if (sEconomy == null || sEconomy.moneyPrefab == null) return;
+
+            _moneyPrefabScale = sEconomy.moneyPrefab.transform.localScale;
+
+            _moneyPool = new ObjectPool<GameObject>(
+                createFunc: () =>
+                {
+                    var go = Instantiate(sEconomy.moneyPrefab, transform);
+                    go.transform.localScale = _moneyPrefabScale;
+                    go.SetActive(false);
+                    return go;
+                },
+                actionOnGet: go =>
+                {
+                    go.transform.localScale = _moneyPrefabScale;
+                    go.SetActive(true);
+                    _activeMoneyObjects.Add(go);
+                },
+                actionOnRelease: go =>
+                {
+                    if (go == null) return;
+                    go.transform.DOKill();
+                    go.transform.localScale = _moneyPrefabScale;
+                    go.transform.rotation = Quaternion.identity;
+                    go.SetActive(false);
+                    _activeMoneyObjects.Remove(go);
+                },
+                actionOnDestroy: Destroy,
+                collectionCheck: true,
+                defaultCapacity: _initialPoolSize,
+                maxSize: _maxPoolSize);
+
+            var buffer = new GameObject[_initialPoolSize];
+            for (var i = 0; i < _initialPoolSize; i++)
+                buffer[i] = _moneyPool.Get();
+            for (var i = 0; i < _initialPoolSize; i++)
+                _moneyPool.Release(buffer[i]);
+        }
+
         public void DoMoneyAnimation(Vector3 positionFrom, Vector3 positionTo)
         {
             if (sEconomy == null || sEconomy.moneyPrefab == null) return;
+
+            var pool = MoneyPool;
+            if (pool == null) return;
 
             Vector3 randomStartOffset = new Vector3(
                 Random.Range(-_randomOffsetRadius, _randomOffsetRadius),
@@ -41,28 +116,30 @@ namespace Engineering.Scripts.Mono.Managers
                 Random.Range(-_randomOffsetRadius, _randomOffsetRadius));
             positionFrom += randomStartOffset;
 
-            GameObject go = Instantiate(sEconomy.moneyPrefab, positionFrom, Quaternion.identity);
-
-            Sequence sequence = DOTween.Sequence();
-
-            sequence.Append(go.transform.DOJump(positionTo, _jumpPower, 1, _duration)
-                .SetEase(_moveEase));
-
-            Vector3 targetScale = go.transform.localScale;
-            go.transform.localScale = Vector3.zero;
-            sequence.Join(go.transform.DOScale(targetScale, _duration * 0.3f));
+            GameObject go = pool.Get();
+            go.transform.position = positionFrom;
 
             go.transform.localRotation = Quaternion.Euler(
                 Random.Range(0f, 360f),
                 Random.Range(0f, 360f),
                 Random.Range(0f, 360f));
+
+            Sequence sequence = DOTween.Sequence();
+            sequence.SetRecyclable(true);
+
+            sequence.Append(go.transform.DOJump(positionTo, _jumpPower, 1, _duration)
+                .SetEase(_moveEase));
+
+            go.transform.localScale = Vector3.zero;
+            sequence.Join(go.transform.DOScale(_moneyPrefabScale, _duration * 0.3f));
+
             sequence.Join(go.transform.DORotate(
                 new Vector3(0f, _rotationAmount, 0f),
                 _duration,
                 RotateMode.LocalAxisAdd)
                 .SetEase(Ease.Linear));
 
-            sequence.OnComplete(() => Destroy(go));
+            sequence.OnComplete(() => pool.Release(go));
         }
     }
 }
