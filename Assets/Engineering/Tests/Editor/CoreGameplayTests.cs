@@ -37,6 +37,33 @@ namespace Engineering.Tests
 
             Assert.That(_wallet.Money, Is.EqualTo(35));
         }
+
+        [Test]
+        public void MoneyAnimationOriginPosition_ReturnsAssignedAnchorWorldPosition()
+        {
+            var anchor = new GameObject("MoneyAnimationOrigin");
+            anchor.transform.position = new Vector3(1f, 2f, 3f);
+            SetPrivateField(_wallet, "moneyAnimationOrigin", anchor.transform);
+
+            Assert.That(_wallet.MoneyAnimationOriginPosition, Is.EqualTo(new Vector3(1f, 2f, 3f)));
+
+            Object.DestroyImmediate(anchor);
+        }
+
+        [Test]
+        public void MoneyAnimationOriginPosition_FallsBackToTransformPositionWhenNoAnchorAssigned()
+        {
+            _gameObject.transform.position = new Vector3(5f, 0f, 5f);
+
+            Assert.That(_wallet.MoneyAnimationOriginPosition, Is.EqualTo(new Vector3(5f, 0f, 5f)));
+        }
+
+        private static void SetPrivateField(object target, string fieldName, object value)
+        {
+            var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, $"Expected {target.GetType().Name} to define '{fieldName}'.");
+            field.SetValue(target, value);
+        }
     }
 
     public class PlayerTriggerTests

@@ -27,7 +27,7 @@ namespace Engineering.Scripts.Mono.Managers
 
         private void Start()
         {
-            _pWallet = GameObject.FindGameObjectWithTag("Player").GetComponent<PlayerWallet>();
+            _pWallet = FindFirstObjectByType<PlayerWallet>();
         }
 
         public void ProcessPayment(BuyingArea ba)
@@ -69,7 +69,7 @@ namespace Engineering.Scripts.Mono.Managers
                 }
 
                 yield return new WaitForSeconds(delay);
-                AnimationManager.Instance.DoMoneyAnimation(_pWallet.transform.position, ba.transform.position);
+                AnimationManager.Instance.DoMoneyAnimation(_pWallet.MoneyAnimationOriginPosition, ba.transform.position);
             }
 
             _activePaymentCoroutine = null;
