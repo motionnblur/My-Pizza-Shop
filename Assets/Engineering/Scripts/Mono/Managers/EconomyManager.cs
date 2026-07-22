@@ -10,6 +10,7 @@ namespace Engineering.Scripts.Mono.Managers
     {
         public static EconomyManager Instance { get; private set; }
         [SerializeField] private SEconomy sEconomy;
+        [SerializeField] private SAnimation _sAnimation;
         private PlayerWallet _pWallet;
         private Coroutine _activePaymentCoroutine;
 
@@ -32,7 +33,7 @@ namespace Engineering.Scripts.Mono.Managers
 
         public void ProcessPayment(BuyingArea ba)
         {
-            if (sEconomy.playerMoneySpendSpeed <= 0) return;
+            if (_sAnimation == null || _sAnimation.moneySpendSpeed <= 0) return;
             if (_activePaymentCoroutine != null) return;
             _activePaymentCoroutine = StartCoroutine(DelayedPayment(ba));
         }
@@ -51,7 +52,9 @@ namespace Engineering.Scripts.Mono.Managers
             if (ba == null || _pWallet == null) yield break;
 
             var pay = sEconomy.playerMoneySpendRate;
-            var delay = 1f / sEconomy.playerMoneySpendSpeed;
+            var delay = 1f / _sAnimation.moneySpendSpeed;
+
+            yield return new WaitForSeconds(_sAnimation.moneySpendDelay);
 
             while (ba != null && _pWallet != null)
             {

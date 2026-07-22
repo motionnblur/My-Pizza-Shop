@@ -32,6 +32,9 @@ namespace Engineering.Tests
             if (_fixture?.Economy != null)
                 UnityEngine.Object.Destroy(_fixture.Economy);
 
+            if (_fixture?.SAnimation != null)
+                UnityEngine.Object.Destroy(_fixture.SAnimation);
+
             yield return null;
             _fixture = null;
         }
@@ -169,10 +172,13 @@ namespace Engineering.Tests
 
             var managerObject = new GameObject("MoneyAnimationTestManager");
             var manager = managerObject.AddComponent<AnimationManager>();
-            SetPrivateField(manager, "sEconomy", economy);
-            SetPrivateField(manager, "_duration", 0.05f);
+            var sAnimation = ScriptableObject.CreateInstance<SAnimation>();
+            sAnimation.duration = 0.05f;
 
-            return new Fixture(prefab, economy, managerObject, manager);
+            SetPrivateField(manager, "sEconomy", economy);
+            SetPrivateField(manager, "_sAnimation", sAnimation);
+
+            return new Fixture(prefab, economy, sAnimation, managerObject, manager);
         }
 
         private static void SetPrivateField(object target, string fieldName, object value)
@@ -199,16 +205,18 @@ namespace Engineering.Tests
 
         private sealed class Fixture
         {
-            public Fixture(GameObject prefab, SEconomy economy, GameObject managerObject, AnimationManager manager)
+            public Fixture(GameObject prefab, SEconomy economy, SAnimation sAnimation, GameObject managerObject, AnimationManager manager)
             {
                 Prefab = prefab;
                 Economy = economy;
+                SAnimation = sAnimation;
                 ManagerObject = managerObject;
                 Manager = manager;
             }
 
             public GameObject Prefab { get; }
             public SEconomy Economy { get; }
+            public SAnimation SAnimation { get; }
             public GameObject ManagerObject { get; }
             public AnimationManager Manager { get; }
         }

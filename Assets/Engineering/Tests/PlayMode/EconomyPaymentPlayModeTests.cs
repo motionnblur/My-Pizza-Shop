@@ -82,11 +82,15 @@ namespace Engineering.Tests
 
             var economy = ScriptableObject.CreateInstance<SEconomy>();
             economy.playerMoneySpendRate = spendRate;
-            economy.playerMoneySpendSpeed = spendSpeed;
+
+            var sAnimation = ScriptableObject.CreateInstance<SAnimation>();
+            sAnimation.moneySpendDelay = 0f;
+            sAnimation.moneySpendSpeed = spendSpeed;
 
             var managerObject = new GameObject("PaymentTestEconomyManager");
             var economyManager = managerObject.AddComponent<EconomyManager>();
             SetPrivateField(economyManager, "sEconomy", economy);
+            SetPrivateField(economyManager, "_sAnimation", sAnimation);
 
             GameObject moneyPrefab = null;
             GameObject animationManagerObject = null;
@@ -97,8 +101,9 @@ namespace Engineering.Tests
 
                 animationManagerObject = new GameObject("PaymentTestAnimationManager");
                 var animationManager = animationManagerObject.AddComponent<AnimationManager>();
+                sAnimation.duration = 0.05f;
                 SetPrivateField(animationManager, "sEconomy", economy);
-                SetPrivateField(animationManager, "_duration", 0.05f);
+                SetPrivateField(animationManager, "_sAnimation", sAnimation);
             }
 
             var buyingAreaObject = new GameObject("PaymentTestBuyingArea");
@@ -111,6 +116,7 @@ namespace Engineering.Tests
                 playerCollider,
                 managerObject,
                 economy,
+                sAnimation,
                 buyingAreaObject,
                 buyingArea,
                 moneyPrefab,
@@ -144,6 +150,11 @@ namespace Engineering.Tests
                 UnityEngine.Object.Destroy(fixture.Economy);
             }
 
+            if (fixture.SAnimation != null)
+            {
+                UnityEngine.Object.Destroy(fixture.SAnimation);
+            }
+
             if (fixture.MoneyPrefab != null)
             {
                 UnityEngine.Object.Destroy(fixture.MoneyPrefab);
@@ -174,6 +185,7 @@ namespace Engineering.Tests
                 Collider playerCollider,
                 GameObject managerObject,
                 SEconomy economy,
+                SAnimation sAnimation,
                 GameObject buyingAreaObject,
                 BuyingArea buyingArea,
                 GameObject moneyPrefab,
@@ -184,6 +196,7 @@ namespace Engineering.Tests
                 PlayerCollider = playerCollider;
                 ManagerObject = managerObject;
                 Economy = economy;
+                SAnimation = sAnimation;
                 BuyingAreaObject = buyingAreaObject;
                 BuyingArea = buyingArea;
                 MoneyPrefab = moneyPrefab;
@@ -195,6 +208,7 @@ namespace Engineering.Tests
             public Collider PlayerCollider { get; }
             public GameObject ManagerObject { get; }
             public SEconomy Economy { get; }
+            public SAnimation SAnimation { get; }
             public GameObject BuyingAreaObject { get; }
             public BuyingArea BuyingArea { get; }
             public GameObject MoneyPrefab { get; }

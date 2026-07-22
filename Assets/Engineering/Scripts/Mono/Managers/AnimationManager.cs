@@ -12,12 +12,7 @@ namespace Engineering.Scripts.Mono.Managers
         [SerializeField] private SEconomy sEconomy;
 
         [Header("Money Animation")]
-        [SerializeField] private float _jumpPower = 3f;
-        [SerializeField] private float _duration = 0.5f;
-        [SerializeField] private float _randomOffsetRadius = 0.5f;
-        [SerializeField] private Ease _moveEase = Ease.OutQuad;
-        [SerializeField] private float _scalePunch = 0.3f;
-        [SerializeField] private float _rotationAmount = 360f;
+        [SerializeField] private SAnimation _sAnimation;
 
         [Header("Pooling")]
         [SerializeField] private int _initialPoolSize = 8;
@@ -105,15 +100,15 @@ namespace Engineering.Scripts.Mono.Managers
 
         public void DoMoneyAnimation(Vector3 positionFrom, Vector3 positionTo)
         {
-            if (sEconomy == null || sEconomy.moneyPrefab == null) return;
+            if (sEconomy == null || sEconomy.moneyPrefab == null || _sAnimation == null) return;
 
             var pool = MoneyPool;
             if (pool == null) return;
 
             Vector3 randomStartOffset = new Vector3(
-                Random.Range(-_randomOffsetRadius, _randomOffsetRadius),
+                Random.Range(-_sAnimation.randomOffsetRadius, _sAnimation.randomOffsetRadius),
                 0f,
-                Random.Range(-_randomOffsetRadius, _randomOffsetRadius));
+                Random.Range(-_sAnimation.randomOffsetRadius, _sAnimation.randomOffsetRadius));
             positionFrom += randomStartOffset;
 
             GameObject go = pool.Get();
@@ -141,17 +136,17 @@ namespace Engineering.Scripts.Mono.Managers
             sequence = DOTween.Sequence();
             sequence.SetRecyclable(true).SetTarget(go.transform);
 
-            sequence.Append(go.transform.DOJump(positionTo, _jumpPower, 1, _duration)
-                .SetEase(_moveEase)
+            sequence.Append(go.transform.DOJump(positionTo, _sAnimation.jumpPower, 1, _sAnimation.duration)
+                .SetEase(_sAnimation.moveEase)
                 .OnKill(ReturnToPool));
 
             go.transform.localScale = Vector3.zero;
-            sequence.Join(go.transform.DOScale(_moneyPrefabScale, _duration * 0.3f)
+            sequence.Join(go.transform.DOScale(_moneyPrefabScale, _sAnimation.duration * 0.3f)
                 .OnKill(ReturnToPool));
 
             sequence.Join(go.transform.DORotate(
-                new Vector3(0f, _rotationAmount, 0f),
-                _duration,
+                new Vector3(0f, _sAnimation.rotationAmount, 0f),
+                _sAnimation.duration,
                 RotateMode.LocalAxisAdd)
                 .SetEase(Ease.Linear)
                 .OnKill(ReturnToPool));

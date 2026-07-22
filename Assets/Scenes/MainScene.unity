@@ -335,12 +335,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Engineering::Engineering.Scripts.Mono.Managers.AnimationManager
   sEconomy: {fileID: 11400000, guid: c11de12e6b81dfd4d91ffe391159c899, type: 2}
-  _jumpPower: 3
-  _duration: 0.5
-  _randomOffsetRadius: 0.5
-  _moveEase: 6
-  _scalePunch: 0.3
-  _rotationAmount: 360
+  _sAnimation: {fileID: 11400000, guid: 517fd9fd3f0d2934b885866674a67f92, type: 2}
+  _initialPoolSize: 8
+  _maxPoolSize: 16
 --- !u!1 &510139377
 GameObject:
   m_ObjectHideFlags: 0
@@ -386,6 +383,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Engineering.Scripts.Mono.Managers.EconomyManager
   sEconomy: {fileID: 11400000, guid: c11de12e6b81dfd4d91ffe391159c899, type: 2}
+  _sAnimation: {fileID: 11400000, guid: 517fd9fd3f0d2934b885866674a67f92, type: 2}
 --- !u!4 &657796370 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4831733395383477562, guid: d4b4612156a02f94aa6701a115a1486d, type: 3}
