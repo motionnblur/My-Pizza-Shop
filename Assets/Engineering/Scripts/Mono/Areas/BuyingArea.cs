@@ -1,4 +1,6 @@
 ﻿using System;
+using Engineering.Scripts.Mono.Managers;
+using Engineering.Scripts.Mono.Player;
 using UnityEngine;
 
 namespace Engineering.Scripts.Mono.Areas
@@ -7,9 +9,7 @@ namespace Engineering.Scripts.Mono.Areas
     {
         private int _unlockPrice = 100;
         private int _totalPricePlayerGive = 0;
-
-        public event Action<int> PlayerSpendMoneyEvent;
-        public event Action PlayerBuyBuyingAreaEvent;
+        private bool isPurchased = false;
 
         private void OnTriggerEnter(Collider other)
         {
@@ -21,13 +21,12 @@ namespace Engineering.Scripts.Mono.Areas
 
         private void OnTriggerStay(Collider other)
         {
+            if (isPurchased) return;
+            
             if (other.gameObject.tag.Equals("Player"))
             {
-                _totalPricePlayerGive += 1;
-                PlayerSpendMoneyEvent?.Invoke(1);
-                
-                if (_totalPricePlayerGive == _unlockPrice)
-                    PlayerBuyBuyingAreaEvent?.Invoke();
+                PlayerWallet pWallet = other.GetComponent<PlayerWallet>();
+                EconomyManager.Instance.ProcessPayment(pWallet, _unlockPrice);
             }
         }
 
@@ -37,6 +36,20 @@ namespace Engineering.Scripts.Mono.Areas
             {
                 //
             }
+        }
+        
+        public void AddPayment(int money)
+        {
+            _totalPricePlayerGive += money;
+            if (_totalPricePlayerGive >= _unlockPrice)
+            {
+                CompletePurchase();
+            }
+        }
+
+        private void CompletePurchase()
+        {
+            isPurchased = true;
         }
     }
 }

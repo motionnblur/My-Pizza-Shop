@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Engineering.Scripts.Mono.Player;
+using UnityEngine;
 
 namespace Engineering.Scripts.Mono.Managers
 {
@@ -16,6 +17,16 @@ namespace Engineering.Scripts.Mono.Managers
 
             Instance = this;
             DontDestroyOnLoad(gameObject);
+        }
+
+        public void ProcessPayment(PlayerWallet pWallet, int money)
+        {
+            Debug.Log("PlayerSpendMoney: " + money);
+        }
+
+        public void PlayerBuyBuyingArea()
+        {
+            
         }
     }
 }
