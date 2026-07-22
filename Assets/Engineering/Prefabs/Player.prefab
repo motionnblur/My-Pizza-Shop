@@ -11,9 +11,10 @@ GameObject:
   - component: {fileID: 5995662132651403117}
   - component: {fileID: 5069393921449071744}
   - component: {fileID: 6554547544734132325}
+  - component: {fileID: 810272628905234864}
   m_Layer: 0
   m_Name: Scripts
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -64,6 +65,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65a39071be5c48a19fccee184aa5db7e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Engineering.Scripts.Mono.Player.PlayerTrigger
+--- !u!114 &810272628905234864
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1033184541141458600}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d2e39cf8ce34b6394e34bd49bb524f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Engineering.Scripts.Mono.Player.PlayerWallet
+  money: 150
 --- !u!1 &2034507407284336888
 GameObject:
   m_ObjectHideFlags: 0
@@ -113,7 +127,7 @@ GameObject:
   - component: {fileID: 2159264832011995415}
   m_Layer: 0
   m_Name: Mesh
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -267,7 +281,7 @@ GameObject:
   - component: {fileID: 8096880253374771191}
   m_Layer: 0
   m_Name: Sphere
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

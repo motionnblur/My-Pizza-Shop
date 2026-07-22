@@ -13,10 +13,7 @@ namespace Engineering.Scripts.Mono.Areas
 
         private void OnTriggerEnter(Collider other)
         {
-            if (other.gameObject.tag.Equals("Player"))
-            {
-                //
-            }
+            //
         }
 
         private void OnTriggerStay(Collider other)
@@ -25,8 +22,7 @@ namespace Engineering.Scripts.Mono.Areas
             
             if (other.gameObject.tag.Equals("Player"))
             {
-                PlayerWallet pWallet = other.GetComponent<PlayerWallet>();
-                EconomyManager.Instance.ProcessPayment(pWallet, _unlockPrice);
+                EconomyManager.Instance.ProcessPayment(this);
             }
         }
 
@@ -38,18 +34,14 @@ namespace Engineering.Scripts.Mono.Areas
             }
         }
         
-        public void AddPayment(int money)
+        public void AddPayment(int amount)
         {
-            _totalPricePlayerGive += money;
+            _totalPricePlayerGive += amount;
             if (_totalPricePlayerGive >= _unlockPrice)
             {
-                CompletePurchase();
+                isPurchased = true;
+                EconomyManager.Instance.PlayerBuyBuyingArea(this);
             }
-        }
-
-        private void CompletePurchase()
-        {
-            isPurchased = true;
         }
     }
 }
