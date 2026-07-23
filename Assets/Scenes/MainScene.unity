@@ -167,6 +167,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Engineering::Engineering.Scripts.Mono.Managers.SoundManager
   sfxSource: {fileID: 1488909377}
   musicSource: {fileID: 1321611476}
+  sSound: {fileID: 11400000, guid: 3e180050c63ddde43812d509edbafa4a, type: 2}
+  groundMoneyCollectedEvent: {fileID: 11400000, guid: 9c5eda88e09543cfb45ac9cc8adf2d37, type: 2}
+  buyingAreaPurchasedEvent: {fileID: 11400000, guid: 5667cf0398ec4585a0035a62cb82fd62, type: 2}
 --- !u!1 &292602394
 GameObject:
   m_ObjectHideFlags: 0
@@ -434,6 +437,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Engineering.Scripts.Mono.Managers.EconomyManager
   sEconomy: {fileID: 11400000, guid: c11de12e6b81dfd4d91ffe391159c899, type: 2}
   _sAnimation: {fileID: 11400000, guid: 517fd9fd3f0d2934b885866674a67f92, type: 2}
+  groundMoneyCollectedEvent: {fileID: 11400000, guid: 9c5eda88e09543cfb45ac9cc8adf2d37, type: 2}
+  buyingAreaPurchasedEvent: {fileID: 11400000, guid: 5667cf0398ec4585a0035a62cb82fd62, type: 2}
 --- !u!1001 &524464888
 PrefabInstance:
   m_ObjectHideFlags: 0

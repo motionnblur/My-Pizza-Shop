@@ -12,6 +12,8 @@ namespace Engineering.Scripts.Mono.Managers
         public static EconomyManager Instance { get; private set; }
         [SerializeField] private SEconomy sEconomy;
         [SerializeField] private SAnimation _sAnimation;
+        [SerializeField] private SVoidEventChannel groundMoneyCollectedEvent;
+        [SerializeField] private SVoidEventChannel buyingAreaPurchasedEvent;
         private PlayerWallet _pWallet;
         private Coroutine _activePaymentCoroutine;
 
@@ -107,6 +109,7 @@ namespace Engineering.Scripts.Mono.Managers
         {
             if (ba == null || ba.gameObject == null) return;
             Destroy(ba.gameObject);
+            buyingAreaPurchasedEvent?.Raise();
         }
 
         public void CollectMoneyFromGround(MoneyToCollect mc, int money)
@@ -124,6 +127,7 @@ namespace Engineering.Scripts.Mono.Managers
                     _pWallet.MoneyAnimationOrigin);
             }
 
+            groundMoneyCollectedEvent?.Raise();
             mc.Destroy();
         }
     }

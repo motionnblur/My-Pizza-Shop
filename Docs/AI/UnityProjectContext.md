@@ -7,7 +7,7 @@
 - **Project root:** repository root
 - **Last analyzed:** 2026-07-23
 - **Last analyzed commit:** `db88ad9`
-- **Summary:** Early-stage casual 3D game named *My Pizza Shop*. The current gameplay slice includes movement, wallet and ground-money collection, timed area purchases, UI money display, and pooled DOTween money-transfer effects.
+- **Summary:** Early-stage casual 3D game named *My Pizza Shop*. The current gameplay slice includes movement, wallet and ground-money collection, timed area purchases, UI money display, pooled DOTween money-transfer effects, and ScriptableObject event channels for decoupled gameplay feedback.
 
 ## Confirmed Environment
 
@@ -26,6 +26,7 @@
 | UI | UGUI 2.0.0 is installed; project UI usage not inspected | Confirmed / unknown usage | `Packages/manifest.json` |
 | Tests | Unity Test Framework 1.6.0 is installed; 10 EditMode and 17 PlayMode tests cover core gameplay, UI, economy, and money-animation pooling | Confirmed | `Packages/manifest.json`, `Assets/Engineering/Tests/` |
 | Tweening | DOTween is included as a vendor plugin and actively used for money-transfer animation | Confirmed | `Assets/Plugins/Demigiant/DOTween/`, `AnimationManager.cs` |
+| Gameplay events | Parameterless ScriptableObject event channels decouple economy feedback from audio playback | Confirmed | `VoidEventChannel.cs`, event assets, `EconomyManager.cs`, `SoundManager.cs` |
 | Other tooling | Timeline, Visual Scripting, Rider and Visual Studio integrations are installed; first-party usage is unverified | Confirmed / unverified usage | `Packages/manifest.json` |
 
 ## Directory Structure
@@ -60,6 +61,7 @@
 | Global state | `EconomyManager`, `UIManager`, and `AnimationManager` are `DontDestroyOnLoad` singletons | Confirmed | Manager sources |
 | Player movement | Rigidbody velocity set in `FixedUpdate`, camera-relative | Confirmed | `PlayerMovement.cs` |
 | Economy | ScriptableObject-configured payment rate, coroutine-based purchase areas, and trigger-based ground-money collection | Confirmed | `SEconomy.cs`, `SAnimation.cs`, `EconomyManager.cs`, `BuyingArea.cs`, `MoneyToCollect.cs` |
+| Gameplay feedback | `EconomyManager` raises `GroundMoneyCollected` and `BuyingAreaPurchased`; `SoundManager` subscribes and maps them to `SSound` clips | Confirmed | `EconomyManager.cs`, `SoundManager.cs`, `VoidEventChannel.cs` |
 | Presentation | UI money text is updated by `UIManager`; `AnimationManager` pools money objects and animates them with DOTween | Confirmed | `UIManager.cs`, `AnimationManager.cs` |
 | Networking | No first-party networking usage found | Unknown | Package inventory and inspected gameplay sources |
 | Persistence/save | No save system found in inspected sources | Unknown | Inspected gameplay source set |
@@ -75,8 +77,8 @@
 
 ## Testing And Validation
 
-- **EditMode tests:** 10 tests in `Assets/Engineering/Tests/Editor/CoreGameplayTests.cs`; they cover wallet, trigger relays, movement, and ground-money prefab configuration.
-- **PlayMode tests:** 17 tests in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, pickup collection/UI updates, player-only collection, duplicate-trigger protection, moving-player animation targeting, UI singleton behavior, and money-animation pool reuse/cleanup.
+- **EditMode tests:** 12 tests in `Assets/Engineering/Tests/Editor/`; they cover wallet, trigger relays, movement, ground-money prefab configuration, and Event Channel listener registration.
+- **PlayMode tests:** 19 tests in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, pickup collection/UI updates, player-only collection, duplicate-trigger protection, moving-player animation targeting, economy Event Channel publication, UI singleton behavior, and money-animation pool reuse/cleanup.
 - **CI/build validation:** None found.
 - **Validated commands:** EditMode (`-testPlatform EditMode`) 10/10 passed; PlayMode (`-testPlatform PlayMode`) 17/17 passed on 2026-07-23.
 - **Recommended minimum validation:** Run both test suites, then manually exercise the scene physical trigger, camera, and input wiring in Play Mode.
@@ -125,6 +127,9 @@
 - `Assets/Engineering/Scripts/Class/ETriggerAreas.cs`
 - `Assets/Engineering/ScriptableObjects/SEconomy.cs`
 - `Assets/Engineering/ScriptableObjects/SAnimation.cs`
+- `Assets/Engineering/ScriptableObjects/VoidEventChannel.cs`
+- `Assets/Engineering/ScriptableObjects/Events/GroundMoneyCollected.asset`
+- `Assets/Engineering/ScriptableObjects/Events/BuyingAreaPurchased.asset`
 - `Assets/InputSystem_Actions.inputactions`
 - `Assets/Engineering/Prefabs/Player.prefab`
 - `Assets/Engineering/Prefabs/MoneyArea.prefab`

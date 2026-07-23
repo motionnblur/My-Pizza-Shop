@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fe3124cbcff4de7afffff139aad0a61, type: 3}
+  m_Name: SSound
+  m_EditorClassIdentifier: Engineering::Engineering.ScriptableObjects.SSound
+  moneyCollectEffect: {fileID: 8300000, guid: 65bcd91f187d4c54da1ed793ae5722c1, type: 3}
+  buyEffect: {fileID: 8300000, guid: fcea551e527b54c4085213c075ac1cad, type: 3}

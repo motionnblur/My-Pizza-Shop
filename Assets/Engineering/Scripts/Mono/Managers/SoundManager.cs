@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Engineering.ScriptableObjects;
+using UnityEngine;
 
 namespace Engineering.Scripts.Mono.Managers
 {
@@ -8,6 +9,10 @@ namespace Engineering.Scripts.Mono.Managers
 
         [SerializeField] private AudioSource sfxSource;
         [SerializeField] private AudioSource musicSource;
+        
+        [SerializeField] private SSound sSound;
+        [SerializeField] private SVoidEventChannel groundMoneyCollectedEvent;
+        [SerializeField] private SVoidEventChannel buyingAreaPurchasedEvent;
 
         private void Awake()
         {
@@ -19,6 +24,18 @@ namespace Engineering.Scripts.Mono.Managers
 
             Instance = this;
             DontDestroyOnLoad(gameObject);
+        }
+
+        private void OnEnable()
+        {
+            groundMoneyCollectedEvent?.RegisterListener(OnGroundMoneyCollected);
+            buyingAreaPurchasedEvent?.RegisterListener(OnBuyingAreaPurchased);
+        }
+
+        private void OnDisable()
+        {
+            groundMoneyCollectedEvent?.UnregisterListener(OnGroundMoneyCollected);
+            buyingAreaPurchasedEvent?.UnregisterListener(OnBuyingAreaPurchased);
         }
 
         public void PlaySFX(AudioClip clip)
@@ -48,6 +65,18 @@ namespace Engineering.Scripts.Mono.Managers
         public void SetMusicVolume(float volume)
         {
             musicSource.volume = Mathf.Clamp01(volume);
+        }
+
+        private void OnGroundMoneyCollected()
+        {
+            if (sSound != null)
+                PlaySFX(sSound.moneyCollectEffect);
+        }
+
+        private void OnBuyingAreaPurchased()
+        {
+            if (sSound != null)
+                PlaySFX(sSound.buyEffect);
         }
     }
 }

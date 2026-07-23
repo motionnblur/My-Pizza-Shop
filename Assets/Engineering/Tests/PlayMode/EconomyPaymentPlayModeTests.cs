@@ -67,6 +67,20 @@ namespace Engineering.Tests
         }
 
         [UnityTest]
+        public IEnumerator CompletingPurchase_RaisesBuyingAreaPurchasedEventOnce()
+        {
+            _fixture = CreateFixture(spendRate: 5, spendSpeed: 1f);
+            var invocationCount = 0;
+            _fixture.BuyingAreaPurchasedEvent.RegisterListener(() => invocationCount++);
+            yield return null;
+
+            _fixture.BuyingArea.AddPayment(100);
+            yield return null;
+
+            Assert.That(invocationCount, Is.EqualTo(1));
+        }
+
+        [UnityTest]
         public IEnumerator CompletingPurchaseDuringPayment_UsesCachedAnimationDestination()
         {
             _fixture = CreateFixture(spendRate: 100, spendSpeed: 20f, includeAnimationManager: true);
@@ -96,6 +110,23 @@ namespace Engineering.Tests
             Assert.That(_fixture.Wallet.Money, Is.EqualTo(125));
             Assert.That(_fixture.MoneyText.text, Is.EqualTo("125"));
             Assert.That(pickup == null, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator CollectingGroundMoney_RaisesGroundMoneyCollectedEventOnce()
+        {
+            _fixture = CreateFixture(spendRate: 5, spendSpeed: 1f);
+            var invocationCount = 0;
+            _fixture.GroundMoneyCollectedEvent.RegisterListener(() => invocationCount++);
+            var pickupObject = new GameObject("MoneyToCollectEventPickup");
+            var pickup = pickupObject.AddComponent<MoneyToCollect>();
+            pickupObject.AddComponent<BoxCollider>().isTrigger = true;
+            yield return null;
+
+            InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
+            yield return null;
+
+            Assert.That(invocationCount, Is.EqualTo(1));
         }
 
         [UnityTest]
@@ -206,10 +237,15 @@ namespace Engineering.Tests
             sAnimation.moneySpendDelay = 0f;
             sAnimation.moneySpendSpeed = spendSpeed;
 
+            var groundMoneyCollectedEvent = ScriptableObject.CreateInstance<SVoidEventChannel>();
+            var buyingAreaPurchasedEvent = ScriptableObject.CreateInstance<SVoidEventChannel>();
+
             var managerObject = new GameObject("PaymentTestEconomyManager");
             var economyManager = managerObject.AddComponent<EconomyManager>();
             SetPrivateField(economyManager, "sEconomy", economy);
             SetPrivateField(economyManager, "_sAnimation", sAnimation);
+            SetPrivateField(economyManager, "groundMoneyCollectedEvent", groundMoneyCollectedEvent);
+            SetPrivateField(economyManager, "buyingAreaPurchasedEvent", buyingAreaPurchasedEvent);
 
             GameObject moneyPrefab = null;
             GameObject animationManagerObject = null;
@@ -242,7 +278,9 @@ namespace Engineering.Tests
                 buyingAreaObject,
                 buyingArea,
                 moneyPrefab,
-                animationManagerObject);
+                animationManagerObject,
+                groundMoneyCollectedEvent,
+                buyingAreaPurchasedEvent);
         }
 
         private static IEnumerator DestroyFixture(Fixture fixture)
@@ -290,6 +328,16 @@ namespace Engineering.Tests
             if (fixture.MoneyPrefab != null)
             {
                 UnityEngine.Object.Destroy(fixture.MoneyPrefab);
+            }
+
+            if (fixture.GroundMoneyCollectedEvent != null)
+            {
+                UnityEngine.Object.Destroy(fixture.GroundMoneyCollectedEvent);
+            }
+
+            if (fixture.BuyingAreaPurchasedEvent != null)
+            {
+                UnityEngine.Object.Destroy(fixture.BuyingAreaPurchasedEvent);
             }
 
             yield return null;
@@ -347,7 +395,9 @@ namespace Engineering.Tests
                 GameObject buyingAreaObject,
                 BuyingArea buyingArea,
                 GameObject moneyPrefab,
-                GameObject animationManagerObject)
+                GameObject animationManagerObject,
+                SVoidEventChannel groundMoneyCollectedEvent,
+                SVoidEventChannel buyingAreaPurchasedEvent)
             {
                 PlayerObject = playerObject;
                 Wallet = wallet;
@@ -362,6 +412,8 @@ namespace Engineering.Tests
                 BuyingArea = buyingArea;
                 MoneyPrefab = moneyPrefab;
                 AnimationManagerObject = animationManagerObject;
+                GroundMoneyCollectedEvent = groundMoneyCollectedEvent;
+                BuyingAreaPurchasedEvent = buyingAreaPurchasedEvent;
             }
 
             public GameObject PlayerObject { get; }
@@ -377,6 +429,8 @@ namespace Engineering.Tests
             public BuyingArea BuyingArea { get; }
             public GameObject MoneyPrefab { get; }
             public GameObject AnimationManagerObject { get; }
+            public SVoidEventChannel GroundMoneyCollectedEvent { get; }
+            public SVoidEventChannel BuyingAreaPurchasedEvent { get; }
         }
     }
 }
