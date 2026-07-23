@@ -63,10 +63,11 @@ namespace Engineering.Tests
         {
             var plateObject = new GameObject("PizzaPlateTest");
             plateObject.transform.position = new Vector3(3f, 2f, 4f);
-            var plateCollider = plateObject.AddComponent<BoxCollider>();
-            plateCollider.center = new Vector3(0f, 0.5f, 0f);
-            plateCollider.size = new Vector3(2f, 1f, 2f);
+            var plateColliderComponent = plateObject.AddComponent<BoxCollider>();
+            plateColliderComponent.center = new Vector3(0f, 0.5f, 0f);
+            plateColliderComponent.size = new Vector3(2f, 1f, 2f);
             var grillPlate = plateObject.AddComponent<GrillPlate>();
+            SetPrivateField(grillPlate, "plateCollider", plateColliderComponent);
 
             Assert.That(grillPlate.PizzaStackBasePosition, Is.EqualTo(new Vector3(3f, 3f, 4f)));
 
