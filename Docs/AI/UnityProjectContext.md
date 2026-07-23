@@ -7,7 +7,7 @@
 - **Project root:** repository root
 - **Last analyzed:** 2026-07-23
 - **Last analyzed commit:** `db88ad9`
-- **Summary:** Early-stage casual 3D game named *My Pizza Shop*. The current gameplay slice includes movement, wallet and ground-money collection, timed area purchases, UI money display, pooled DOTween money-transfer effects, and ScriptableObject event channels for decoupled gameplay feedback.
+- **Summary:** Early-stage casual 3D game named *My Pizza Shop*. The current gameplay slice includes movement, wallet and ground-money collection, timed area purchases, autonomous pizza production and collection, player pizza stacks, UI counters, pooled DOTween money-transfer effects, and ScriptableObject event channels for decoupled gameplay feedback.
 
 ## Confirmed Environment
 
@@ -34,6 +34,7 @@
 | Path | Purpose | Confidence | Evidence |
 | --- | --- | --- | --- |
 | `Assets/Engineering/Scripts/Mono/` | First-party runtime MonoBehaviours: managers, player, areas, and collectible items | Confirmed | Folder and source inventory |
+| `Assets/Engineering/Scripts/Mono/Actors/GrillStation/` | Autonomous pizza production and its collection trigger | Confirmed | `GrillStation.cs`, `GrillPlate.cs` |
 | `Assets/Engineering/ScriptableObjects/` | First-party ScriptableObject definitions for economy and animation tuning | Confirmed | `SEconomy.cs`, `SAnimation.cs` |
 | `Assets/Engineering/Prefabs/` | Player, purchase-area, animated-money, and ground-money prefabs | Confirmed | Prefab inventory and serialized script-reference inspection |
 | `Assets/Scenes/` | Authored scene assets; contains `MainScene.unity` | Confirmed | File inventory |
@@ -61,6 +62,8 @@
 | Global state | `EconomyManager`, `UIManager`, and `AnimationManager` are `DontDestroyOnLoad` singletons | Confirmed | Manager sources |
 | Player movement | Rigidbody velocity set in `FixedUpdate`, camera-relative | Confirmed | `PlayerMovement.cs` |
 | Economy | ScriptableObject-configured payment rate, coroutine-based purchase areas, and trigger-based ground-money collection | Confirmed | `SEconomy.cs`, `SAnimation.cs`, `EconomyManager.cs`, `BuyingArea.cs`, `MoneyToCollect.cs` |
+| Pizza production | Each `GrillStation` produces independently up to a ScriptableObject-configured capacity; `GrillPlate` collects ready pizzas into the player inventory | Confirmed | `SGrillStation.cs`, `GrillStation.cs`, `GrillPlate.cs`, `PlayerPizzaInventory.cs` |
+| Pizza presentation | The player inventory maintains a pooled overhead pizza stack; a typed inventory-count Event Channel updates UI | Confirmed | `PlayerPizzaInventory.cs`, `SIntEventChannel.cs`, `UIManager.cs` |
 | Gameplay feedback | `EconomyManager` raises `GroundMoneyCollected` and `BuyingAreaPurchased`; `SoundManager` subscribes and maps them to `SSound` clips | Confirmed | `EconomyManager.cs`, `SoundManager.cs`, `VoidEventChannel.cs` |
 | Presentation | UI money text is updated by `UIManager`; `AnimationManager` pools money objects and animates them with DOTween | Confirmed | `UIManager.cs`, `AnimationManager.cs` |
 | Networking | No first-party networking usage found | Unknown | Package inventory and inspected gameplay sources |
@@ -77,8 +80,8 @@
 
 ## Testing And Validation
 
-- **EditMode tests:** 12 tests in `Assets/Engineering/Tests/Editor/`; they cover wallet, trigger relays, movement, ground-money prefab configuration, and Event Channel listener registration.
-- **PlayMode tests:** 19 tests in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, pickup collection/UI updates, player-only collection, duplicate-trigger protection, moving-player animation targeting, economy Event Channel publication, UI singleton behavior, and money-animation pool reuse/cleanup.
+- **EditMode tests:** 13 tests in `Assets/Engineering/Tests/Editor/`; they cover wallet, trigger relays, movement, ground-money prefab configuration, Event Channel listener registration, and pizza inventory capacity.
+- **PlayMode tests:** 20 tests in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, pickup collection/UI updates, player-only collection, duplicate-trigger protection, moving-player animation targeting, economy Event Channel publication, pizza production/partial collection, UI singleton behavior, and money-animation pool reuse/cleanup.
 - **CI/build validation:** None found.
 - **Validated commands:** EditMode (`-testPlatform EditMode`) 10/10 passed; PlayMode (`-testPlatform PlayMode`) 17/17 passed on 2026-07-23.
 - **Recommended minimum validation:** Run both test suites, then manually exercise the scene physical trigger, camera, and input wiring in Play Mode.
@@ -120,6 +123,7 @@
 - `Assets/Engineering/Scripts/Mono/Managers/AnimationManager.cs`
 - `Assets/Engineering/Scripts/Mono/Player/PlayerMovement.cs`
 - `Assets/Engineering/Scripts/Mono/Player/PlayerWallet.cs`
+- `Assets/Engineering/Scripts/Mono/Player/PlayerPizzaInventory.cs`
 - `Assets/Engineering/Scripts/Mono/Player/PlayerTrigger.cs`
 - `Assets/Engineering/Scripts/Mono/Player/PlayerTriggerRelay.cs`
 - `Assets/Engineering/Scripts/Mono/Areas/BuyingArea.cs`
@@ -127,6 +131,10 @@
 - `Assets/Engineering/Scripts/Class/ETriggerAreas.cs`
 - `Assets/Engineering/ScriptableObjects/SEconomy.cs`
 - `Assets/Engineering/ScriptableObjects/SAnimation.cs`
+- `Assets/Engineering/ScriptableObjects/SGrillStation.cs`
+- `Assets/Engineering/ScriptableObjects/SIntEventChannel.cs`
+- `Assets/Engineering/Scripts/Mono/Actors/GrillStation/GrillStation.cs`
+- `Assets/Engineering/Scripts/Mono/Actors/GrillStation/GrillPlate.cs`
 - `Assets/Engineering/ScriptableObjects/VoidEventChannel.cs`
 - `Assets/Engineering/ScriptableObjects/Events/GroundMoneyCollected.asset`
 - `Assets/Engineering/ScriptableObjects/Events/BuyingAreaPurchased.asset`

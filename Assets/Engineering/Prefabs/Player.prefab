@@ -88,6 +88,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7823266616813979655}
+  - component: {fileID: 810272628905234865}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -112,6 +113,23 @@ Transform:
   - {fileID: 5995662132651403117}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &810272628905234865
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2034507407284336888}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc6364fccab24ce1af0035059f7174ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Engineering::Engineering.Scripts.Mono.Player.PlayerPizzaInventory
+  capacity: 10
+  pizzaStackAnchor: {fileID: 8000000000000000012}
+  pizzaVisualPrefab: {fileID: 6504674961691310178, guid: 16bdc8937be73d74ba3a701b01cbbf0a, type: 3}
+  pizzaStackSpacing: 0.14
+  pizzaInventoryChangedEvent: {fileID: 11400000, guid: 30702b2334c240009064e7208b905ff8, type: 2}
 --- !u!1 &2500394808416289218
 GameObject:
   m_ObjectHideFlags: 0
@@ -148,6 +166,7 @@ Transform:
   m_Children:
   - {fileID: 656055083137080601}
   - {fileID: 8000000000000000002}
+  - {fileID: 8000000000000000012}
   m_Father: {fileID: 7823266616813979655}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &5931005716034784668
@@ -386,6 +405,37 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 1.2, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4831733395383477562}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &8000000000000000011
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8000000000000000012}
+  m_Layer: 0
+  m_Name: PizzaStackAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8000000000000000012
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8000000000000000011}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.1400001, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
