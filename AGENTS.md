@@ -9,7 +9,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 - **Engine:** Unity 6.3 (`6000.3.20f1`), Universal Render Pipeline (URP).
 - **Game:** `My Pizza Shop`, an early-stage casual/mobile-oriented 3D game.
 - **Gameplay code:** `Assets/Engineering/`.
-- **Current gameplay slice:** player movement and wallet, Input System event relay, timed payments, purchasable trigger areas, autonomous pizza production, player pizza stacks, and ScriptableObject event channels for gameplay feedback.
+- **Current gameplay slice:** player movement and wallet, Input System event relay, timed payments, purchasable trigger areas, autonomous pizza production, player pizza stacks, pizza serving station with money reward, and ScriptableObject event channels for gameplay feedback.
 - **Primary authored scene on disk:** `Assets/Scenes/MainScene.unity`.
 
 ## Start Here
@@ -28,12 +28,15 @@ This file is the fast entry point for AI agents and contributors. Read it before
 | `Assets/Engineering/Scripts/Mono/Player/` | Player movement, wallet, and trigger helpers. |
 | `Assets/Engineering/Scripts/Mono/Areas/BuyingArea.cs` | Trigger-driven unlock/purchase zone. |
 | `Assets/Engineering/Scripts/Mono/Actors/GrillStation/` | Autonomous pizza production station and its player-collection trigger. |
-| `Assets/Engineering/Scripts/Mono/Player/PlayerPizzaInventory.cs` | Player pizza capacity, count, and overhead visual stack. |
+| `Assets/Engineering/Scripts/Mono/Actors/ServeStation/` | Player-to-station pizza deposit; awards money per pizza, raises `PizzaServed` event. |
+| `Assets/Engineering/Scripts/Mono/Player/PlayerPizzaInventory.cs` | Player pizza capacity, count (`TryAdd`/`TryRemove`), and overhead visual stack. |
 | `Assets/Engineering/ScriptableObjects/SEconomy.cs` | Economy tuning asset definition. |
 | `Assets/Engineering/ScriptableObjects/SGrillStation.cs` | Pizza production-rate and station-capacity tuning asset definition. |
+| `Assets/Engineering/ScriptableObjects/SServeStation.cs` | Pizza serving-station capacity and price-per-pizza tuning asset definition. |
 | `Assets/Engineering/ScriptableObjects/SVoidEventChannel.cs` | Decoupled, parameterless gameplay-event channel. |
 | `Assets/Engineering/ScriptableObjects/SIntEventChannel.cs` | Decoupled integer-value event channel used by the pizza inventory UI. |
-| `Assets/Engineering/Prefabs/PizzaVisual.prefab` | Placeholder pizza visual used by the oven and player stacks. |
+| `Assets/Engineering/Prefabs/PizzaVisual.prefab` | Placeholder pizza visual used by the oven, player stacks, and serving station. |
+| `Assets/Engineering/Prefabs/ServingStation.prefab` | Serving-station prefab — `ServeStation` on root, `ServePlate` on `triggerArea`. |
 | `Assets/Scenes/` | Authored scenes. |
 | `Assets/Settings/` | Render-pipeline assets and project visual settings. |
 
@@ -46,7 +49,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 - Input is event-driven: subscribe in `OnEnable` and unsubscribe in `OnDisable`. Extend `InputManager` rather than polling duplicate input actions in consumers.
 - Cross-system gameplay feedback uses `SVoidEventChannel` and `SIntEventChannel` assets. Publishers raise an intent event; consumers subscribe through Inspector-assigned channel references rather than calling each other directly.
 - Pizza inventory count is published through the typed `SIntEventChannel`; UI listens to the channel instead of depending on the player inventory component.
-- `EconomyManager` is currently the sole persistent singleton. Do not add another global manager unless the feature genuinely needs it.
+- `EconomyManager` is the primary persistent singleton for money operations. `UIManager`, `AnimationManager`, and `SoundManager` are also `DontDestroyOnLoad` singletons.
 - The player is located by the `Player` tag in `EconomyManager`; retain or deliberately migrate this contract together with scene/prefab changes.
 - Use physics movement in `FixedUpdate`, as `PlayerMovement` does.
 
@@ -58,6 +61,8 @@ This file is the fast entry point for AI agents and contributors. Read it before
 - `EconomyManager` raises `GroundMoneyCollected` after a successful ground-money transaction and `BuyingAreaPurchased` after an area is purchased. `SoundManager` listens to these channels and owns clip selection/playback.
 - `GrillStation` owns ready-pizza state and production; `GrillPlate` only forwards player trigger collection. `PlayerPizzaInventory.TryAdd` enforces player capacity and returns the accepted amount.
 - `GrillStation` positions its ready-pizza stack from `GrillPlate.PizzaStackBasePosition`, which uses the plate collider's `bounds.max.y`; do not replace this with a hard-coded pivot offset.
+- `ServeStation` receives pizzas from the player via `PlayerPizzaInventory.TryRemove`, awards money through `EconomyManager.AwardMoney`, and raises `PizzaServed` event for SFX.
+- `ServePlate` lives on `triggerArea` and uses its trigger `BoxCollider` for player detection; the plate object has a separate non-trigger `BoxCollider` for `PizzaStackBasePosition`. The pizza stack anchor position comes from the plate collider's `bounds.max.y`.
 - Do not rename Input action maps/actions, tags, or serialized fields without updating their scene/prefab and code consumers.
 
 ## Scene And Build Caution
@@ -72,7 +77,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 
 ## Validation
 
-- The project currently contains 14 EditMode and 20 PlayMode tests. Run the affected suite after gameplay changes; test counts alone do not prove they passed.
+- The project currently contains 15 EditMode and 27 PlayMode tests. Run the affected suite after gameplay changes; test counts alone do not prove they passed.
 - For script changes, compile in Unity and check Console errors. For gameplay changes, exercise the affected flow in Play Mode when the Editor is available.
 - Do not claim a successful build or scene validation without actually performing it.
 
