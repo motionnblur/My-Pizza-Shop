@@ -3,6 +3,7 @@ using Engineering.Scripts.Mono.Managers;
 using Engineering.Scripts.Mono.Player;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Engineering.Tests
 {
@@ -188,6 +189,65 @@ namespace Engineering.Tests
             var method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(method, Is.Not.Null, $"Expected {target.GetType().Name} to define '{methodName}'.");
             method.Invoke(target, arguments);
+        }
+
+        private static void SetPrivateField(object target, string fieldName, object value)
+        {
+            var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, $"Expected {target.GetType().Name} to define '{fieldName}'.");
+            field.SetValue(target, value);
+        }
+    }
+
+    public class UIManagerTests
+    {
+        private GameObject _gameObject;
+        private UIManager _uiManager;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _gameObject = new GameObject("UIManagerTest");
+            _uiManager = _gameObject.AddComponent<UIManager>();
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Object.DestroyImmediate(_gameObject);
+            typeof(UIManager).GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)
+                ?.SetValue(null, null);
+        }
+
+        [Test]
+        public void Awake_SetsStaticInstance()
+        {
+            Assert.That(UIManager.Instance, Is.SameAs(_uiManager));
+        }
+
+        [Test]
+        public void Awake_DestroysDuplicateInstance()
+        {
+            var duplicateObject = new GameObject("UIManagerDuplicate");
+            var duplicate = duplicateObject.AddComponent<UIManager>();
+
+            Assert.That(duplicate == null, Is.True);
+
+            Object.DestroyImmediate(duplicateObject);
+        }
+
+        [Test]
+        public void UpdateMoneyText_UpdatesTextComponent()
+        {
+            var textObject = new GameObject("MoneyText");
+            var text = textObject.AddComponent<Text>();
+            SetPrivateField(_uiManager, "moneyText", text);
+
+            _uiManager.UpdateMoneyText(42);
+
+            Assert.That(text.text, Is.EqualTo("42"));
+
+            Object.DestroyImmediate(textObject);
         }
 
         private static void SetPrivateField(object target, string fieldName, object value)
