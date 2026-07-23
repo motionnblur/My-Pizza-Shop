@@ -435,6 +435,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Engineering::Engineering.Scripts.Mono.Managers.UIManager
   sEconomy: {fileID: 11400000, guid: c11de12e6b81dfd4d91ffe391159c899, type: 2}
+  moneyText: {fileID: 2038879678}
 --- !u!1 &885361908
 GameObject:
   m_ObjectHideFlags: 0

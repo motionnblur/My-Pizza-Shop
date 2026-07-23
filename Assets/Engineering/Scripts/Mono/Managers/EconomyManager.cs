@@ -29,6 +29,7 @@ namespace Engineering.Scripts.Mono.Managers
         private void Start()
         {
             _pWallet = FindFirstObjectByType<PlayerWallet>();
+            UIManager.Instance.UpdateMoneyText(_pWallet.Money);
         }
 
         public void ProcessPayment(BuyingArea ba)
@@ -77,6 +78,8 @@ namespace Engineering.Scripts.Mono.Managers
                             _pWallet.MoneyAnimationOriginPosition,
                             animationTargetPosition);
                     }
+                    
+                    UIManager.Instance.UpdateMoneyText(_pWallet.Money);
                 }
                 else
                 {
