@@ -1,7 +1,9 @@
 using System.Reflection;
+using Engineering.Engineering.Scripts.Mono.Items;
 using Engineering.Scripts.Mono.Managers;
 using Engineering.Scripts.Mono.Player;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 
 namespace Engineering.Tests
@@ -195,6 +197,30 @@ namespace Engineering.Tests
             var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(field, Is.Not.Null, $"Expected {target.GetType().Name} to define '{fieldName}'.");
             field.SetValue(target, value);
+        }
+    }
+
+    public class MoneyToCollectPrefabTests
+    {
+        [Test]
+        public void MoneyToCollectPrefab_IsConfiguredAsATriggerWithTheDefaultCollectionValue()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/Engineering/Prefabs/MoneyToCollect.prefab");
+
+            Assert.That(prefab, Is.Not.Null);
+
+            var moneyToCollect = prefab.GetComponent<MoneyToCollect>();
+            var trigger = prefab.GetComponent<BoxCollider>();
+
+            Assert.That(moneyToCollect, Is.Not.Null);
+            Assert.That(trigger, Is.Not.Null);
+            Assert.That(trigger.isTrigger, Is.True);
+
+            var serializedMoney = new SerializedObject(moneyToCollect)
+                .FindProperty("moneyToCollect");
+            Assert.That(serializedMoney, Is.Not.Null);
+            Assert.That(serializedMoney.intValue, Is.EqualTo(5));
         }
     }
 

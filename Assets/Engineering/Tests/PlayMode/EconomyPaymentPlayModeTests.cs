@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Reflection;
+using Engineering.Engineering.Scripts.Mono.Items;
 using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Areas;
 using Engineering.Scripts.Mono.Managers;
@@ -8,6 +9,7 @@ using Engineering.Scripts.Mono.Player;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
+using UnityEngine.UI;
 
 namespace Engineering.Tests
 {
@@ -78,12 +80,36 @@ namespace Engineering.Tests
             LogAssert.NoUnexpectedReceived();
         }
 
+        [UnityTest]
+        public IEnumerator CollectingGroundMoney_AddsTheConfiguredAmountUpdatesTheUiAndDestroysThePickup()
+        {
+            _fixture = CreateFixture(spendRate: 5, spendSpeed: 1f);
+            var pickupObject = new GameObject("MoneyToCollectTestPickup");
+            var pickup = pickupObject.AddComponent<MoneyToCollect>();
+            pickupObject.AddComponent<BoxCollider>().isTrigger = true;
+            SetPrivateField(pickup, "moneyToCollect", 25);
+            yield return null;
+
+            InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
+            yield return null;
+
+            Assert.That(_fixture.Wallet.Money, Is.EqualTo(125));
+            Assert.That(_fixture.MoneyText.text, Is.EqualTo("125"));
+            Assert.That(pickup == null, Is.True);
+        }
+
         private static Fixture CreateFixture(int spendRate, float spendSpeed, bool includeAnimationManager = false)
         {
             var playerObject = new GameObject("PaymentTestPlayer");
             playerObject.tag = "Player";
             var wallet = playerObject.AddComponent<PlayerWallet>();
             var playerCollider = playerObject.AddComponent<CapsuleCollider>();
+
+            var moneyTextObject = new GameObject("PaymentTestMoneyText");
+            var moneyText = moneyTextObject.AddComponent<Text>();
+            var uiManagerObject = new GameObject("PaymentTestUiManager");
+            var uiManager = uiManagerObject.AddComponent<UIManager>();
+            SetPrivateField(uiManager, "moneyText", moneyText);
 
             var economy = ScriptableObject.CreateInstance<SEconomy>();
             economy.playerMoneySpendRate = spendRate;
@@ -119,6 +145,9 @@ namespace Engineering.Tests
                 playerObject,
                 wallet,
                 playerCollider,
+                moneyTextObject,
+                moneyText,
+                uiManagerObject,
                 managerObject,
                 economy,
                 sAnimation,
@@ -130,6 +159,16 @@ namespace Engineering.Tests
 
         private static IEnumerator DestroyFixture(Fixture fixture)
         {
+            if (fixture.UiManagerObject != null)
+            {
+                UnityEngine.Object.Destroy(fixture.UiManagerObject);
+            }
+
+            if (fixture.MoneyTextObject != null)
+            {
+                UnityEngine.Object.Destroy(fixture.MoneyTextObject);
+            }
+
             if (fixture.ManagerObject != null)
             {
                 UnityEngine.Object.Destroy(fixture.ManagerObject);
@@ -188,6 +227,9 @@ namespace Engineering.Tests
                 GameObject playerObject,
                 PlayerWallet wallet,
                 Collider playerCollider,
+                GameObject moneyTextObject,
+                Text moneyText,
+                GameObject uiManagerObject,
                 GameObject managerObject,
                 SEconomy economy,
                 SAnimation sAnimation,
@@ -199,6 +241,9 @@ namespace Engineering.Tests
                 PlayerObject = playerObject;
                 Wallet = wallet;
                 PlayerCollider = playerCollider;
+                MoneyTextObject = moneyTextObject;
+                MoneyText = moneyText;
+                UiManagerObject = uiManagerObject;
                 ManagerObject = managerObject;
                 Economy = economy;
                 SAnimation = sAnimation;
@@ -211,6 +256,9 @@ namespace Engineering.Tests
             public GameObject PlayerObject { get; }
             public PlayerWallet Wallet { get; }
             public Collider PlayerCollider { get; }
+            public GameObject MoneyTextObject { get; }
+            public Text MoneyText { get; }
+            public GameObject UiManagerObject { get; }
             public GameObject ManagerObject { get; }
             public SEconomy Economy { get; }
             public SAnimation SAnimation { get; }
