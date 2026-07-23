@@ -17,6 +17,8 @@ namespace Engineering.Scripts.Mono.Player
 
         public int Count => _count;
         public int Capacity => capacity;
+        public Transform PizzaStackAnchor => pizzaStackAnchor;
+        public float PizzaStackSpacing => pizzaStackSpacing;
 
         private void Awake()
         {

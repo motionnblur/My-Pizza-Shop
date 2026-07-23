@@ -171,6 +171,7 @@ MonoBehaviour:
   groundMoneyCollectedEvent: {fileID: 11400000, guid: 9c5eda88e09543cfb45ac9cc8adf2d37, type: 2}
   buyingAreaPurchasedEvent: {fileID: 11400000, guid: 5667cf0398ec4585a0035a62cb82fd62, type: 2}
   pizzaServedEvent: {fileID: 0}
+  pizzaTrashedEvent: {fileID: 11400000, guid: f1f2f3f4e5e6d7c8b9a0a1a2a3a4b5c6, type: 2}
 --- !u!1 &292602394
 GameObject:
   m_ObjectHideFlags: 0

@@ -122,6 +122,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5413763255921091106}
   - component: {fileID: 6167215196896504739}
+  - component: {fileID: 5551111111111115501}
   m_Layer: 0
   m_Name: triggerArea
   m_TagString: Untagged
@@ -165,6 +166,50 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.4936376, y: 0.22422624, z: 0.5688571}
   m_Center: {x: 0.3738364, y: -0.38788688, z: -0.77313906}
+--- !u!114 &5551111111111115501
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4750291222779626385}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd13459ac15e42ad890eb3f949fdab77, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Engineering::Engineering.Engineering.Scripts.Mono.Actors.TrashStation.TrashPlate
+  trashStation: {fileID: 5551111111111115101}
+--- !u!1 &5551111111111115001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5551111111111115002}
+  m_Layer: 0
+  m_Name: TrashTarget
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5551111111111115002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5551111111111115001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.5, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1128711473655658581}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &9165957919392761935
 GameObject:
   m_ObjectHideFlags: 0
@@ -174,6 +219,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1128711473655658581}
+  - component: {fileID: 5551111111111115101}
   m_Layer: 0
   m_Name: TrashStation
   m_TagString: Untagged
@@ -196,5 +242,22 @@ Transform:
   m_Children:
   - {fileID: 5265880493037016719}
   - {fileID: 5413763255921091106}
+  - {fileID: 5551111111111115002}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5551111111111115101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9165957919392761935}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c82c9311e0ec4b0188113c54c13e7308, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Engineering::Engineering.Engineering.Scripts.Mono.Actors.TrashStation.TrashStation
+  sTrashStation: {fileID: 11400000, guid: b1b2b3b4c5c6d7d8e9e0f1f2a3a4b5b6, type: 2}
+  pizzaVisualPrefab: {fileID: 1600000000000000001, guid: 251eef3a01034fb5b859d2403c666375, type: 3}
+  trashTarget: {fileID: 5551111111111115002}
+  pizzaTrashedEvent: {fileID: 11400000, guid: f1f2f3f4e5e6d7c8b9a0a1a2a3a4b5c6, type: 2}

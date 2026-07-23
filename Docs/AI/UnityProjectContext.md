@@ -5,9 +5,9 @@
 ## Project Summary
 
 - **Project root:** repository root
-- **Last analyzed:** 2026-07-23
+- **Last analyzed:** 2026-07-24
 - **Last analyzed commit:** `50aeb0e`
-- **Summary:** Early-stage casual 3D game named *My Pizza Shop*. The current gameplay slice includes movement, wallet and ground-money collection, timed area purchases, autonomous pizza production and collection, player pizza stacks, pizza serving station with money reward, UI counters, pooled DOTween money-transfer effects, and ScriptableObject event channels for decoupled gameplay feedback.
+- **Summary:** Early-stage casual 3D game named *My Pizza Shop*. The current gameplay slice includes movement, wallet and ground-money collection, timed area purchases, autonomous pizza production and collection, player pizza stacks, pizza serving station with money reward, trash station with DoTween fly-and-shrink animation, UI counters, pooled DOTween money-transfer effects, and ScriptableObject event channels for decoupled gameplay feedback.
 
 ## Confirmed Environment
 
@@ -36,6 +36,7 @@
 | `Assets/Engineering/Scripts/Mono/` | First-party runtime MonoBehaviours: managers, player, areas, and collectible items | Confirmed | Folder and source inventory |
 | `Assets/Engineering/Scripts/Mono/Actors/GrillStation/` | Autonomous pizza production and its collection trigger | Confirmed | `GrillStation.cs`, `GrillPlate.cs` |
 | `Assets/Engineering/Scripts/Mono/Actors/ServeStation/` | Player-to-station pizza serving with money reward | Confirmed | `ServeStation.cs`, `ServePlate.cs` |
+| `Assets/Engineering/Scripts/Mono/Actors/TrashStation/` | Player-to-station pizza disposal with DoTween animation | Confirmed | `TrashStation.cs`, `TrashPlate.cs` |
 | `Assets/Engineering/ScriptableObjects/` | First-party ScriptableObject definitions for economy and animation tuning | Confirmed | `SEconomy.cs`, `SAnimation.cs` |
 | `Assets/Engineering/Prefabs/` | Player, purchase-area, animated-money, ground-money, pizza-maker, serving-station, and placeholder-pizza prefabs | Confirmed | Prefab inventory and serialized script-reference inspection |
 | `Assets/Scenes/` | Authored scene assets; contains `MainScene.unity` | Confirmed | File inventory |
@@ -65,8 +66,9 @@
 | Economy | ScriptableObject-configured payment rate, coroutine-based purchase areas, trigger-based ground-money collection, and pizza-serving money rewards | Confirmed | `SEconomy.cs`, `SAnimation.cs`, `EconomyManager.cs`, `BuyingArea.cs`, `MoneyToCollect.cs`, `ServeStation.cs` |
 | Pizza production | Each `GrillStation` produces independently up to a ScriptableObject-configured capacity; `GrillPlate` collects ready pizzas into the player inventory | Confirmed | `SGrillStation.cs`, `GrillStation.cs`, `GrillPlate.cs`, `PlayerPizzaInventory.cs` |
 | Pizza serving | `ServeStation` receives pizzas from the player, awards money, and raises `PizzaServed`; `ServePlate` on triggerArea detects the player and forwards to the station | Confirmed | `SServeStation.cs`, `ServeStation.cs`, `ServePlate.cs`, `PlayerPizzaInventory.cs`, `EconomyManager.cs` |
+| Pizza trash | `TrashStation` removes all pizzas from the player, spawns temp visuals at the player's pizza stack world positions, animates them to `TrashTarget` with staggered DoTween (`DOMove` + `DOScale(0)`), then destroys them; raises `PizzaTrashed` event for SFX | Confirmed | `STrashStation.cs`, `TrashStation.cs`, `TrashPlate.cs`, `PlayerPizzaInventory.cs` |
 | Pizza presentation | The player inventory maintains a pooled overhead pizza stack; the oven stack starts at the plate collider's world-space top surface; a typed inventory-count Event Channel updates UI | Confirmed | `GrillStation.cs`, `GrillPlate.cs`, `PlayerPizzaInventory.cs`, `SIntEventChannel.cs`, `UIManager.cs` |
-| Gameplay feedback | `EconomyManager` raises `GroundMoneyCollected` and `BuyingAreaPurchased`; `ServeStation` raises `PizzaServed`; `SoundManager` subscribes and maps them to `SSound` clips through `SVoidEventChannel` assets | Confirmed | `EconomyManager.cs`, `ServeStation.cs`, `SoundManager.cs`, `SVoidEventChannel.cs` |
+| Gameplay feedback | `EconomyManager` raises `GroundMoneyCollected` and `BuyingAreaPurchased`; `ServeStation` raises `PizzaServed`; `TrashStation` raises `PizzaTrashed`; `SoundManager` subscribes and maps them to `SSound` clips through `SVoidEventChannel` assets | Confirmed | `EconomyManager.cs`, `ServeStation.cs`, `TrashStation.cs`, `SoundManager.cs`, `SVoidEventChannel.cs` |
 | Presentation | UI money text is updated by `UIManager`; `AnimationManager` pools money objects and animates them with DOTween | Confirmed | `UIManager.cs`, `AnimationManager.cs` |
 | Networking | No first-party networking usage found | Unknown | Package inventory and inspected gameplay sources |
 | Persistence/save | No save system found in inspected sources | Unknown | Inspected gameplay source set |
@@ -83,7 +85,7 @@
 ## Testing And Validation
 
 - **EditMode tests:** 15 tests in `Assets/Engineering/Tests/Editor/`; they cover wallet, trigger relays, movement, ground-money prefab configuration, Event Channel listener registration, pizza inventory capacity (TryAdd/TryRemove), and the plate-collider stack origin.
-- **PlayMode tests:** 27 tests in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, pickup collection/UI updates, player-only collection, duplicate-trigger protection, moving-player animation targeting, economy Event Channel publication, pizza production/partial collection, pizza serving (capacity, money, events, trigger flow), UI singleton behavior, and money-animation pool reuse/cleanup.
+- **PlayMode tests:** 36 tests in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, pickup collection/UI updates, player-only collection, duplicate-trigger protection, moving-player animation targeting, economy Event Channel publication, pizza production/partial collection, pizza serving (capacity, money, events, trigger flow), pizza trashing (removal, events, animation, guard conditions, trigger flow), UI singleton behavior, and money-animation pool reuse/cleanup.
 - **CI/build validation:** None found.
 - **Last recorded commands:** EditMode (`-testPlatform EditMode`) 10/10 passed; PlayMode (`-testPlatform PlayMode`) 17/17 passed on 2026-07-23, before the pizza tests were added. The current 14/20 suites have not been recorded as executed.
 - **Recommended minimum validation:** Run both test suites, then manually exercise the scene physical trigger, camera, and input wiring in Play Mode.
@@ -135,11 +137,14 @@
 - `Assets/Engineering/ScriptableObjects/SAnimation.cs`
 - `Assets/Engineering/ScriptableObjects/SGrillStation.cs`
 - `Assets/Engineering/ScriptableObjects/SServeStation.cs`
+- `Assets/Engineering/ScriptableObjects/STrashStation.cs`
 - `Assets/Engineering/ScriptableObjects/SIntEventChannel.cs`
 - `Assets/Engineering/Scripts/Mono/Actors/GrillStation/GrillStation.cs`
 - `Assets/Engineering/Scripts/Mono/Actors/GrillStation/GrillPlate.cs`
 - `Assets/Engineering/Scripts/Mono/Actors/ServeStation/ServeStation.cs`
 - `Assets/Engineering/Scripts/Mono/Actors/ServeStation/ServePlate.cs`
+- `Assets/Engineering/Scripts/Mono/Actors/TrashStation/TrashStation.cs`
+- `Assets/Engineering/Scripts/Mono/Actors/TrashStation/TrashPlate.cs`
 - `Assets/Engineering/ScriptableObjects/SVoidEventChannel.cs`
 - `Assets/Engineering/ScriptableObjects/Events/PizzaInventoryChanged.asset`
 - `Assets/Engineering/ScriptableObjects/SGrillStation.asset`
@@ -151,6 +156,7 @@
 - `Assets/Engineering/Prefabs/PizzaMaker.prefab`
 - `Assets/Engineering/Prefabs/PizzaVisual.prefab`
 - `Assets/Engineering/Prefabs/ServingStation.prefab`
+- `Assets/Engineering/Prefabs/TrashStation.prefab`
 - `Assets/Engineering/Prefabs/MoneyArea.prefab`
 - `Assets/Engineering/Prefabs/MoneyToCollect.prefab`
 - `Assets/Engineering/Engineering.asmdef`
@@ -161,5 +167,6 @@
 - `Assets/Engineering/Tests/PlayMode/MoneyAnimationPoolPlayModeTests.cs`
 - `Assets/Engineering/Tests/PlayMode/GrillStationPlayModeTests.cs`
 - `Assets/Engineering/Tests/PlayMode/ServeStationPlayModeTests.cs`
+- `Assets/Engineering/Tests/PlayMode/TrashStationPlayModeTests.cs`
 
 <!-- unity-onboarding:generated:end -->

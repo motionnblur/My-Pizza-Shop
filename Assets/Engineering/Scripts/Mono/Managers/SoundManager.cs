@@ -14,6 +14,7 @@ namespace Engineering.Scripts.Mono.Managers
         [SerializeField] private SVoidEventChannel groundMoneyCollectedEvent;
         [SerializeField] private SVoidEventChannel buyingAreaPurchasedEvent;
         [SerializeField] private SVoidEventChannel pizzaServedEvent;
+        [SerializeField] private SVoidEventChannel pizzaTrashedEvent;
 
         private void Awake()
         {
@@ -32,6 +33,7 @@ namespace Engineering.Scripts.Mono.Managers
             groundMoneyCollectedEvent?.RegisterListener(OnGroundMoneyCollected);
             buyingAreaPurchasedEvent?.RegisterListener(OnBuyingAreaPurchased);
             pizzaServedEvent?.RegisterListener(OnPizzaServed);
+            pizzaTrashedEvent?.RegisterListener(OnPizzaTrashed);
         }
 
         private void OnDisable()
@@ -39,6 +41,7 @@ namespace Engineering.Scripts.Mono.Managers
             groundMoneyCollectedEvent?.UnregisterListener(OnGroundMoneyCollected);
             buyingAreaPurchasedEvent?.UnregisterListener(OnBuyingAreaPurchased);
             pizzaServedEvent?.UnregisterListener(OnPizzaServed);
+            pizzaTrashedEvent?.UnregisterListener(OnPizzaTrashed);
         }
 
         public void PlaySFX(AudioClip clip)
@@ -86,6 +89,12 @@ namespace Engineering.Scripts.Mono.Managers
         {
             if (sSound != null)
                 PlaySFX(sSound.pizzaServeEffect);
+        }
+
+        private void OnPizzaTrashed()
+        {
+            if (sSound != null)
+                PlaySFX(sSound.pizzaTrashEffect);
         }
     }
 }
