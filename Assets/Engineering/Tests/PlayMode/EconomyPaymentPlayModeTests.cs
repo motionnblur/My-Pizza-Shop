@@ -81,7 +81,7 @@ namespace Engineering.Tests
         }
 
         [UnityTest]
-        public IEnumerator CollectingGroundMoney_AddsTheConfiguredAmountUpdatesTheUiAndDestroysThePickup()
+        public IEnumerator CollectingGroundMoney_WithoutAnimationManager_AddsTheConfiguredAmountUpdatesTheUiAndDestroysThePickup()
         {
             _fixture = CreateFixture(spendRate: 5, spendSpeed: 1f);
             var pickupObject = new GameObject("MoneyToCollectTestPickup");
@@ -98,7 +98,75 @@ namespace Engineering.Tests
             Assert.That(pickup == null, Is.True);
         }
 
-        private static Fixture CreateFixture(int spendRate, float spendSpeed, bool includeAnimationManager = false)
+        [UnityTest]
+        public IEnumerator CollectingGroundMoney_WithAnimationManager_UpdatesTheBalanceAndStartsMoneyAnimation()
+        {
+            _fixture = CreateFixture(spendRate: 5, spendSpeed: 1f, includeAnimationManager: true, animationDuration: 1f);
+            var pickupObject = new GameObject("MoneyToCollectAnimatedPickup");
+            pickupObject.transform.position = new Vector3(3f, 0f, 2f);
+            var pickup = pickupObject.AddComponent<MoneyToCollect>();
+            pickupObject.AddComponent<BoxCollider>().isTrigger = true;
+            SetPrivateField(pickup, "moneyToCollect", 25);
+            yield return null;
+
+            InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
+
+            Assert.That(_fixture.Wallet.Money, Is.EqualTo(125));
+            Assert.That(_fixture.MoneyText.text, Is.EqualTo("125"));
+            Assert.That(CountActiveChildren(_fixture.AnimationManagerObject), Is.EqualTo(1));
+
+            yield return null;
+            Assert.That(pickup == null, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator CollectingGroundMoney_IgnoresNonPlayerColliders()
+        {
+            _fixture = CreateFixture(spendRate: 5, spendSpeed: 1f);
+            var pickupObject = new GameObject("MoneyToCollectNonPlayerPickup");
+            var pickup = pickupObject.AddComponent<MoneyToCollect>();
+            pickupObject.AddComponent<BoxCollider>().isTrigger = true;
+            SetPrivateField(pickup, "moneyToCollect", 25);
+            var nonPlayerObject = new GameObject("NonPlayerCollider");
+            var nonPlayerCollider = nonPlayerObject.AddComponent<BoxCollider>();
+            yield return null;
+
+            InvokePrivateMethod(pickup, "OnTriggerEnter", nonPlayerCollider);
+
+            Assert.That(_fixture.Wallet.Money, Is.EqualTo(100));
+            Assert.That(_fixture.MoneyText.text, Is.EqualTo("100"));
+            Assert.That(pickup, Is.Not.Null);
+
+            UnityEngine.Object.Destroy(pickupObject);
+            UnityEngine.Object.Destroy(nonPlayerObject);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator CollectingGroundMoney_OnlyAwardsMoneyOnceForRepeatedTriggers()
+        {
+            _fixture = CreateFixture(spendRate: 5, spendSpeed: 1f);
+            var pickupObject = new GameObject("MoneyToCollectRepeatedTriggerPickup");
+            var pickup = pickupObject.AddComponent<MoneyToCollect>();
+            pickupObject.AddComponent<BoxCollider>().isTrigger = true;
+            SetPrivateField(pickup, "moneyToCollect", 25);
+            yield return null;
+
+            InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
+            InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
+
+            Assert.That(_fixture.Wallet.Money, Is.EqualTo(125));
+            Assert.That(_fixture.MoneyText.text, Is.EqualTo("125"));
+
+            yield return null;
+            Assert.That(pickup == null, Is.True);
+        }
+
+        private static Fixture CreateFixture(
+            int spendRate,
+            float spendSpeed,
+            bool includeAnimationManager = false,
+            float animationDuration = 0.05f)
         {
             var playerObject = new GameObject("PaymentTestPlayer");
             playerObject.tag = "Player";
@@ -132,7 +200,7 @@ namespace Engineering.Tests
 
                 animationManagerObject = new GameObject("PaymentTestAnimationManager");
                 var animationManager = animationManagerObject.AddComponent<AnimationManager>();
-                sAnimation.duration = 0.05f;
+                sAnimation.duration = animationDuration;
                 SetPrivateField(animationManager, "sEconomy", economy);
                 SetPrivateField(animationManager, "_sAnimation", sAnimation);
             }
@@ -205,6 +273,18 @@ namespace Engineering.Tests
             }
 
             yield return null;
+        }
+
+        private static int CountActiveChildren(GameObject gameObject)
+        {
+            var activeChildCount = 0;
+            foreach (Transform child in gameObject.transform)
+            {
+                if (child.gameObject.activeSelf)
+                    activeChildCount++;
+            }
+
+            return activeChildCount;
         }
 
         private static void InvokePrivateMethod(object target, string methodName, params object[] arguments)

@@ -111,8 +111,19 @@ namespace Engineering.Scripts.Mono.Managers
 
         public void CollectMoneyFromGround(MoneyToCollect mc, int money)
         {
+            if (mc == null || _pWallet == null) return;
+
+            var animationOriginPosition = mc.transform.position;
             _pWallet.Money += money;
-            UIManager.Instance.UpdateMoneyText(_pWallet.Money);
+            UpdateMoneyText();
+
+            if (AnimationManager.Instance != null)
+            {
+                AnimationManager.Instance.DoMoneyAnimation(
+                    animationOriginPosition,
+                    _pWallet.MoneyAnimationOriginPosition);
+            }
+
             mc.Destroy();
         }
     }
