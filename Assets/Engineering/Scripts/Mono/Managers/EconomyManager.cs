@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using Engineering.Engineering.Scripts.Mono.Items;
 using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Areas;
 using Engineering.Scripts.Mono.Player;
@@ -106,6 +107,13 @@ namespace Engineering.Scripts.Mono.Managers
         {
             if (ba == null || ba.gameObject == null) return;
             Destroy(ba.gameObject);
+        }
+
+        public void CollectMoneyFromGround(MoneyToCollect mc, int money)
+        {
+            _pWallet.Money += money;
+            UIManager.Instance.UpdateMoneyText(_pWallet.Money);
+            mc.Destroy();
         }
     }
 }
