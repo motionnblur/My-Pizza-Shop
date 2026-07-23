@@ -5,9 +5,9 @@
 ## Project Summary
 
 - **Project root:** repository root
-- **Last analyzed:** 2026-07-22
-- **Last analyzed commit:** `39f0f9b`
-- **Summary:** Early-stage casual 3D game named *My Pizza Shop*. Confirmed gameplay code implements movement, player money, timed purchases, and purchase-area triggers.
+- **Last analyzed:** 2026-07-23
+- **Last analyzed commit:** `db88ad9`
+- **Summary:** Early-stage casual 3D game named *My Pizza Shop*. The current gameplay slice includes movement, wallet and ground-money collection, timed area purchases, UI money display, and pooled DOTween money-transfer effects.
 
 ## Confirmed Environment
 
@@ -24,15 +24,17 @@
 | Input | Input System 1.19.0; `InputManager` uses an asset-backed `Player` action map | Confirmed | `Packages/manifest.json`, `ProjectSettings/ProjectSettings.asset`, `Assets/Engineering/Scripts/Mono/Managers/InputManager.cs` |
 | Navigation | AI Navigation 2.0.13 is installed; gameplay usage not found in inspected sources | Confirmed / unknown usage | `Packages/manifest.json` |
 | UI | UGUI 2.0.0 is installed; project UI usage not inspected | Confirmed / unknown usage | `Packages/manifest.json` |
-| Tests | Unity Test Framework 1.6.0 is installed; 7 EditMode and 3 PlayMode tests protect movement, wallet, trigger, and economy purchase behavior | Confirmed | `Packages/manifest.json`, `Assets/Engineering/Tests/` |
+| Tests | Unity Test Framework 1.6.0 is installed; 10 EditMode and 13 PlayMode tests cover core gameplay, UI, economy, and money-animation pooling | Confirmed | `Packages/manifest.json`, `Assets/Engineering/Tests/` |
+| Tweening | DOTween is included as a vendor plugin and actively used for money-transfer animation | Confirmed | `Assets/Plugins/Demigiant/DOTween/`, `AnimationManager.cs` |
 | Other tooling | Timeline, Visual Scripting, Rider and Visual Studio integrations are installed; first-party usage is unverified | Confirmed / unverified usage | `Packages/manifest.json` |
 
 ## Directory Structure
 
 | Path | Purpose | Confidence | Evidence |
 | --- | --- | --- | --- |
-| `Assets/Engineering/Scripts/Mono/` | First-party runtime MonoBehaviours: managers, player, and areas | Confirmed | Folder and source inventory |
-| `Assets/Engineering/ScriptableObjects/` | First-party ScriptableObject definitions, currently economy tuning | Confirmed | `SEconomy.cs` |
+| `Assets/Engineering/Scripts/Mono/` | First-party runtime MonoBehaviours: managers, player, areas, and collectible items | Confirmed | Folder and source inventory |
+| `Assets/Engineering/ScriptableObjects/` | First-party ScriptableObject definitions for economy and animation tuning | Confirmed | `SEconomy.cs`, `SAnimation.cs` |
+| `Assets/Engineering/Prefabs/` | Player, purchase-area, animated-money, and ground-money prefabs | Confirmed | Prefab inventory and serialized script-reference inspection |
 | `Assets/Scenes/` | Authored scene assets; contains `MainScene.unity` | Confirmed | File inventory |
 | `Assets/Settings/` | Project visual/render-pipeline configuration assets | Likely | Folder name plus URP project configuration |
 | `Assets/Art/` | Art assets | Likely | Folder name; contents not inspected |
@@ -55,9 +57,10 @@
 | --- | --- | --- | --- |
 | Runtime style | MonoBehaviour-centric | Confirmed | First-party gameplay sources |
 | Input flow | Central input adapter publishes C# events to consumers | Confirmed | `InputManager.cs`, `PlayerMovement.cs` |
-| Global state | `EconomyManager` is a `DontDestroyOnLoad` singleton | Confirmed | `EconomyManager.cs` |
+| Global state | `EconomyManager`, `UIManager`, and `AnimationManager` are `DontDestroyOnLoad` singletons | Confirmed | Manager sources |
 | Player movement | Rigidbody velocity set in `FixedUpdate`, camera-relative | Confirmed | `PlayerMovement.cs` |
-| Economy | ScriptableObject-configured rate/speed, coroutine-based payment into trigger area | Confirmed | `SEconomy.cs`, `EconomyManager.cs`, `BuyingArea.cs` |
+| Economy | ScriptableObject-configured payment rate, coroutine-based purchase areas, and trigger-based ground-money collection | Confirmed | `SEconomy.cs`, `SAnimation.cs`, `EconomyManager.cs`, `BuyingArea.cs`, `MoneyToCollect.cs` |
+| Presentation | UI money text is updated by `UIManager`; `AnimationManager` pools money objects and animates them with DOTween | Confirmed | `UIManager.cs`, `AnimationManager.cs` |
 | Networking | No first-party networking usage found | Unknown | Package inventory and inspected gameplay sources |
 | Persistence/save | No save system found in inspected sources | Unknown | Inspected gameplay source set |
 
@@ -72,10 +75,10 @@
 
 ## Testing And Validation
 
-- **EditMode tests:** 7 tests in `Assets/Engineering/Tests/Editor/CoreGameplayTests.cs`; they cover wallet defaults/mutation, trigger event relays, and base/sprint/idle movement velocity.
-- **PlayMode tests:** 3 tests in `Assets/Engineering/Tests/PlayMode/EconomyPaymentPlayModeTests.cs`; they cover payment on entry, cancellation on exit, and purchase-area removal.
+- **EditMode tests:** 10 tests in `Assets/Engineering/Tests/Editor/CoreGameplayTests.cs`; they cover wallet, trigger relays, movement, and ground-money prefab configuration.
+- **PlayMode tests:** 13 tests in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, collection/UI updates, UI singleton behavior, and money-animation pool reuse/cleanup.
 - **CI/build validation:** None found.
-- **Validated commands:** EditMode (`-testPlatform EditMode -testFilter Engineering.Tests`) 7/7 passed; PlayMode (`-testPlatform PlayMode -testFilter Engineering.Tests.EconomyPaymentPlayModeTests`) 3/3 passed on 2026-07-22.
+- **Validated commands:** A prior run recorded 7/7 EditMode and 3/3 targeted economy PlayMode tests on 2026-07-22. The current 23-test suite was not run during this read-only onboarding.
 - **Recommended minimum validation:** Run both test suites, then manually exercise the scene physical trigger, camera, and input wiring in Play Mode.
 
 ## Available Unity Tooling
@@ -90,14 +93,15 @@
 ## Important Constraints
 
 - Do not modify generated directories (`Library/`, `Temp/`, `Logs/`, `obj/`, build output, `UserSettings/`).
-- Preserve Input System action names and the `Player` tag unless all consumers and serialized references are migrated deliberately.
+- Preserve Input System action names and the `Player` tag unless all consumers and serialized references are migrated deliberately. The `Player` map also currently includes `Crouch` and `Jump`, though no inspected runtime consumer uses them.
 - Verify the Build Settings scene list in Unity before relying on it or changing it.
 - Do not infer that installed packages are actively used without source/asset evidence.
+- `AGENTS.md` describes `EconomyManager` as the sole persistent singleton, but current code also makes `UIManager` and `AnimationManager` persistent singletons; treat the code as authoritative until that guide is reconciled.
 
 ## Unknowns And Confidence
 
 - The intended startup scene is **unknown** due to the `SampleScene`/`MainScene` mismatch.
-- Scene hierarchy, prefab references, Input Action asset bindings, and runtime Console state were not inspected because no Unity Editor/MCP connection was available.
+- Scene hierarchy and runtime Console state were not inspected because no Unity Editor/MCP connection was available. Serialized references for the gameplay prefabs and action-map definitions were inspected from disk.
 - The project is likely Android-focused, based on explicit Android settings, but release targets are not confirmed.
 
 ## Source Files Inspected
@@ -110,13 +114,25 @@
 - `Packages/packages-lock.json`
 - `Assets/Engineering/Scripts/Mono/Managers/InputManager.cs`
 - `Assets/Engineering/Scripts/Mono/Managers/EconomyManager.cs`
+- `Assets/Engineering/Scripts/Mono/Managers/UIManager.cs`
+- `Assets/Engineering/Scripts/Mono/Managers/AnimationManager.cs`
 - `Assets/Engineering/Scripts/Mono/Player/PlayerMovement.cs`
 - `Assets/Engineering/Scripts/Mono/Player/PlayerWallet.cs`
+- `Assets/Engineering/Scripts/Mono/Player/PlayerTrigger.cs`
+- `Assets/Engineering/Scripts/Mono/Player/PlayerTriggerRelay.cs`
 - `Assets/Engineering/Scripts/Mono/Areas/BuyingArea.cs`
+- `Assets/Engineering/Scripts/Mono/Items/MoneyToCollect.cs`
 - `Assets/Engineering/Scripts/Class/ETriggerAreas.cs`
 - `Assets/Engineering/ScriptableObjects/SEconomy.cs`
+- `Assets/Engineering/ScriptableObjects/SAnimation.cs`
+- `Assets/InputSystem_Actions.inputactions`
+- `Assets/Engineering/Prefabs/Player.prefab`
+- `Assets/Engineering/Prefabs/MoneyArea.prefab`
+- `Assets/Engineering/Prefabs/MoneyToCollect.prefab`
 - `Assets/Engineering/Engineering.asmdef`
 - `Assets/Engineering/Tests/Editor/CoreGameplayTests.cs`
 - `Assets/Engineering/Tests/PlayMode/EconomyPaymentPlayModeTests.cs`
+- `Assets/Engineering/Tests/PlayMode/UIManagerPlayModeTests.cs`
+- `Assets/Engineering/Tests/PlayMode/MoneyAnimationPoolPlayModeTests.cs`
 
 <!-- unity-onboarding:generated:end -->
