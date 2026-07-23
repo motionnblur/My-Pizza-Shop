@@ -258,6 +258,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Engineering::Engineering.Engineering.Scripts.Mono.Actors.TrashStation.TrashStation
   sTrashStation: {fileID: 11400000, guid: b1b2b3b4c5c6d7d8e9e0f1f2a3a4b5b6, type: 2}
-  pizzaVisualPrefab: {fileID: 1600000000000000001, guid: 251eef3a01034fb5b859d2403c666375, type: 3}
+  pizzaVisualPrefab: {fileID: 6504674961691310178, guid: 16bdc8937be73d74ba3a701b01cbbf0a, type: 3}
   trashTarget: {fileID: 5551111111111115002}
   pizzaTrashedEvent: {fileID: 11400000, guid: f1f2f3f4e5e6d7c8b9a0a1a2a3a4b5c6, type: 2}
