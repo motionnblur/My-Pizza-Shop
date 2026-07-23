@@ -6,7 +6,7 @@
 
 - **Project root:** repository root
 - **Last analyzed:** 2026-07-23
-- **Last analyzed commit:** `db88ad9`
+- **Last analyzed commit:** `50aeb0e`
 - **Summary:** Early-stage casual 3D game named *My Pizza Shop*. The current gameplay slice includes movement, wallet and ground-money collection, timed area purchases, autonomous pizza production and collection, player pizza stacks, UI counters, pooled DOTween money-transfer effects, and ScriptableObject event channels for decoupled gameplay feedback.
 
 ## Confirmed Environment
@@ -24,9 +24,9 @@
 | Input | Input System 1.19.0; `InputManager` uses an asset-backed `Player` action map | Confirmed | `Packages/manifest.json`, `ProjectSettings/ProjectSettings.asset`, `Assets/Engineering/Scripts/Mono/Managers/InputManager.cs` |
 | Navigation | AI Navigation 2.0.13 is installed; gameplay usage not found in inspected sources | Confirmed / unknown usage | `Packages/manifest.json` |
 | UI | UGUI 2.0.0 is installed; project UI usage not inspected | Confirmed / unknown usage | `Packages/manifest.json` |
-| Tests | Unity Test Framework 1.6.0 is installed; 10 EditMode and 17 PlayMode tests cover core gameplay, UI, economy, and money-animation pooling | Confirmed | `Packages/manifest.json`, `Assets/Engineering/Tests/` |
+| Tests | Unity Test Framework 1.6.0 is installed; 14 EditMode and 20 PlayMode tests cover core gameplay, UI, economy, money-animation pooling, pizza inventory, and grill production | Confirmed | `Packages/manifest.json`, `Assets/Engineering/Tests/` |
 | Tweening | DOTween is included as a vendor plugin and actively used for money-transfer animation | Confirmed | `Assets/Plugins/Demigiant/DOTween/`, `AnimationManager.cs` |
-| Gameplay events | Parameterless ScriptableObject event channels decouple economy feedback from audio playback | Confirmed | `VoidEventChannel.cs`, event assets, `EconomyManager.cs`, `SoundManager.cs` |
+| Gameplay events | `SVoidEventChannel` decouples parameterless gameplay feedback; `SIntEventChannel` publishes pizza inventory counts to UI | Confirmed | Event-channel sources and assets, `EconomyManager.cs`, `SoundManager.cs`, `PlayerPizzaInventory.cs`, `UIManager.cs` |
 | Other tooling | Timeline, Visual Scripting, Rider and Visual Studio integrations are installed; first-party usage is unverified | Confirmed / unverified usage | `Packages/manifest.json` |
 
 ## Directory Structure
@@ -36,7 +36,7 @@
 | `Assets/Engineering/Scripts/Mono/` | First-party runtime MonoBehaviours: managers, player, areas, and collectible items | Confirmed | Folder and source inventory |
 | `Assets/Engineering/Scripts/Mono/Actors/GrillStation/` | Autonomous pizza production and its collection trigger | Confirmed | `GrillStation.cs`, `GrillPlate.cs` |
 | `Assets/Engineering/ScriptableObjects/` | First-party ScriptableObject definitions for economy and animation tuning | Confirmed | `SEconomy.cs`, `SAnimation.cs` |
-| `Assets/Engineering/Prefabs/` | Player, purchase-area, animated-money, and ground-money prefabs | Confirmed | Prefab inventory and serialized script-reference inspection |
+| `Assets/Engineering/Prefabs/` | Player, purchase-area, animated-money, ground-money, pizza-maker, and placeholder-pizza prefabs | Confirmed | Prefab inventory and serialized script-reference inspection |
 | `Assets/Scenes/` | Authored scene assets; contains `MainScene.unity` | Confirmed | File inventory |
 | `Assets/Settings/` | Project visual/render-pipeline configuration assets | Likely | Folder name plus URP project configuration |
 | `Assets/Art/` | Art assets | Likely | Folder name; contents not inspected |
@@ -63,8 +63,8 @@
 | Player movement | Rigidbody velocity set in `FixedUpdate`, camera-relative | Confirmed | `PlayerMovement.cs` |
 | Economy | ScriptableObject-configured payment rate, coroutine-based purchase areas, and trigger-based ground-money collection | Confirmed | `SEconomy.cs`, `SAnimation.cs`, `EconomyManager.cs`, `BuyingArea.cs`, `MoneyToCollect.cs` |
 | Pizza production | Each `GrillStation` produces independently up to a ScriptableObject-configured capacity; `GrillPlate` collects ready pizzas into the player inventory | Confirmed | `SGrillStation.cs`, `GrillStation.cs`, `GrillPlate.cs`, `PlayerPizzaInventory.cs` |
-| Pizza presentation | The player inventory maintains a pooled overhead pizza stack; a typed inventory-count Event Channel updates UI | Confirmed | `PlayerPizzaInventory.cs`, `SIntEventChannel.cs`, `UIManager.cs` |
-| Gameplay feedback | `EconomyManager` raises `GroundMoneyCollected` and `BuyingAreaPurchased`; `SoundManager` subscribes and maps them to `SSound` clips | Confirmed | `EconomyManager.cs`, `SoundManager.cs`, `VoidEventChannel.cs` |
+| Pizza presentation | The player inventory maintains a pooled overhead pizza stack; the oven stack starts at the plate collider's world-space top surface; a typed inventory-count Event Channel updates UI | Confirmed | `GrillStation.cs`, `GrillPlate.cs`, `PlayerPizzaInventory.cs`, `SIntEventChannel.cs`, `UIManager.cs` |
+| Gameplay feedback | `EconomyManager` raises `GroundMoneyCollected` and `BuyingAreaPurchased`; `SoundManager` subscribes and maps them to `SSound` clips through `SVoidEventChannel` assets | Confirmed | `EconomyManager.cs`, `SoundManager.cs`, `SVoidEventChannel.cs` |
 | Presentation | UI money text is updated by `UIManager`; `AnimationManager` pools money objects and animates them with DOTween | Confirmed | `UIManager.cs`, `AnimationManager.cs` |
 | Networking | No first-party networking usage found | Unknown | Package inventory and inspected gameplay sources |
 | Persistence/save | No save system found in inspected sources | Unknown | Inspected gameplay source set |
@@ -80,10 +80,10 @@
 
 ## Testing And Validation
 
-- **EditMode tests:** 13 tests in `Assets/Engineering/Tests/Editor/`; they cover wallet, trigger relays, movement, ground-money prefab configuration, Event Channel listener registration, and pizza inventory capacity.
+- **EditMode tests:** 14 tests in `Assets/Engineering/Tests/Editor/`; they cover wallet, trigger relays, movement, ground-money prefab configuration, Event Channel listener registration, pizza inventory capacity, and the plate-collider stack origin.
 - **PlayMode tests:** 20 tests in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, pickup collection/UI updates, player-only collection, duplicate-trigger protection, moving-player animation targeting, economy Event Channel publication, pizza production/partial collection, UI singleton behavior, and money-animation pool reuse/cleanup.
 - **CI/build validation:** None found.
-- **Validated commands:** EditMode (`-testPlatform EditMode`) 10/10 passed; PlayMode (`-testPlatform PlayMode`) 17/17 passed on 2026-07-23.
+- **Last recorded commands:** EditMode (`-testPlatform EditMode`) 10/10 passed; PlayMode (`-testPlatform PlayMode`) 17/17 passed on 2026-07-23, before the pizza tests were added. The current 14/20 suites have not been recorded as executed.
 - **Recommended minimum validation:** Run both test suites, then manually exercise the scene physical trigger, camera, and input wiring in Play Mode.
 
 ## Available Unity Tooling
@@ -106,7 +106,7 @@
 ## Unknowns And Confidence
 
 - The intended startup scene is **unknown** due to the `SampleScene`/`MainScene` mismatch.
-- Scene hierarchy and runtime Console state were not inspected because no Unity Editor/MCP connection was available. Serialized references for the gameplay prefabs and action-map definitions were inspected from disk.
+- Scene hierarchy was not inspected through a Unity MCP connection. Active Editor logs confirmed imports and no new C# compiler errors, but full current test execution and Play Mode verification remain unrecorded.
 - The project is likely Android-focused, based on explicit Android settings, but release targets are not confirmed.
 
 ## Source Files Inspected
@@ -135,17 +135,23 @@
 - `Assets/Engineering/ScriptableObjects/SIntEventChannel.cs`
 - `Assets/Engineering/Scripts/Mono/Actors/GrillStation/GrillStation.cs`
 - `Assets/Engineering/Scripts/Mono/Actors/GrillStation/GrillPlate.cs`
-- `Assets/Engineering/ScriptableObjects/VoidEventChannel.cs`
+- `Assets/Engineering/ScriptableObjects/SVoidEventChannel.cs`
+- `Assets/Engineering/ScriptableObjects/Events/PizzaInventoryChanged.asset`
+- `Assets/Engineering/ScriptableObjects/SGrillStation.asset`
 - `Assets/Engineering/ScriptableObjects/Events/GroundMoneyCollected.asset`
 - `Assets/Engineering/ScriptableObjects/Events/BuyingAreaPurchased.asset`
 - `Assets/InputSystem_Actions.inputactions`
 - `Assets/Engineering/Prefabs/Player.prefab`
+- `Assets/Engineering/Prefabs/PizzaMaker.prefab`
+- `Assets/Engineering/Prefabs/PizzaVisual.prefab`
 - `Assets/Engineering/Prefabs/MoneyArea.prefab`
 - `Assets/Engineering/Prefabs/MoneyToCollect.prefab`
 - `Assets/Engineering/Engineering.asmdef`
 - `Assets/Engineering/Tests/Editor/CoreGameplayTests.cs`
+- `Assets/Engineering/Tests/Editor/PlayerPizzaInventoryTests.cs`
 - `Assets/Engineering/Tests/PlayMode/EconomyPaymentPlayModeTests.cs`
 - `Assets/Engineering/Tests/PlayMode/UIManagerPlayModeTests.cs`
 - `Assets/Engineering/Tests/PlayMode/MoneyAnimationPoolPlayModeTests.cs`
+- `Assets/Engineering/Tests/PlayMode/GrillStationPlayModeTests.cs`
 
 <!-- unity-onboarding:generated:end -->

@@ -31,18 +31,20 @@ This file is the fast entry point for AI agents and contributors. Read it before
 | `Assets/Engineering/Scripts/Mono/Player/PlayerPizzaInventory.cs` | Player pizza capacity, count, and overhead visual stack. |
 | `Assets/Engineering/ScriptableObjects/SEconomy.cs` | Economy tuning asset definition. |
 | `Assets/Engineering/ScriptableObjects/SGrillStation.cs` | Pizza production-rate and station-capacity tuning asset definition. |
-| `Assets/Engineering/ScriptableObjects/VoidEventChannel.cs` | Decoupled, parameterless gameplay-event channel. |
+| `Assets/Engineering/ScriptableObjects/SVoidEventChannel.cs` | Decoupled, parameterless gameplay-event channel. |
+| `Assets/Engineering/ScriptableObjects/SIntEventChannel.cs` | Decoupled integer-value event channel used by the pizza inventory UI. |
+| `Assets/Engineering/Prefabs/PizzaVisual.prefab` | Placeholder pizza visual used by the oven and player stacks. |
 | `Assets/Scenes/` | Authored scenes. |
 | `Assets/Settings/` | Render-pipeline assets and project visual settings. |
 
 ## Architecture And Conventions
 
-- Runtime behavior is **MonoBehaviour-centric**; there are no first-party assembly definitions or test assemblies.
+- Runtime behavior is **MonoBehaviour-centric**. `Engineering.asmdef` owns gameplay code, while separate EditMode and PlayMode test assemblies reference it.
 - Use namespaces rooted at `Engineering` and preserve the existing folder-to-namespace pattern.
 - Use `[SerializeField] private` for Inspector-assigned dependencies and tuning values.
 - Private runtime fields use `_camelCase`; serialized fields in existing code may use either `_camelCase` or `camelCase`. Follow the nearest file's convention.
 - Input is event-driven: subscribe in `OnEnable` and unsubscribe in `OnDisable`. Extend `InputManager` rather than polling duplicate input actions in consumers.
-- Cross-system gameplay feedback uses `VoidEventChannel` assets. Publishers raise an intent event; consumers subscribe through Inspector-assigned channel references rather than calling each other directly.
+- Cross-system gameplay feedback uses `SVoidEventChannel` and `SIntEventChannel` assets. Publishers raise an intent event; consumers subscribe through Inspector-assigned channel references rather than calling each other directly.
 - Pizza inventory count is published through the typed `SIntEventChannel`; UI listens to the channel instead of depending on the player inventory component.
 - `EconomyManager` is currently the sole persistent singleton. Do not add another global manager unless the feature genuinely needs it.
 - The player is located by the `Player` tag in `EconomyManager`; retain or deliberately migrate this contract together with scene/prefab changes.
@@ -55,6 +57,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 - `BuyingArea` expects collider trigger callbacks and calls `EconomyManager.Instance`.
 - `EconomyManager` raises `GroundMoneyCollected` after a successful ground-money transaction and `BuyingAreaPurchased` after an area is purchased. `SoundManager` listens to these channels and owns clip selection/playback.
 - `GrillStation` owns ready-pizza state and production; `GrillPlate` only forwards player trigger collection. `PlayerPizzaInventory.TryAdd` enforces player capacity and returns the accepted amount.
+- `GrillStation` positions its ready-pizza stack from `GrillPlate.PizzaStackBasePosition`, which uses the plate collider's `bounds.max.y`; do not replace this with a hard-coded pivot offset.
 - Do not rename Input action maps/actions, tags, or serialized fields without updating their scene/prefab and code consumers.
 
 ## Scene And Build Caution
@@ -69,7 +72,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 
 ## Validation
 
-- No first-party EditMode or PlayMode tests were found.
+- The project currently contains 14 EditMode and 20 PlayMode tests. Run the affected suite after gameplay changes; test counts alone do not prove they passed.
 - For script changes, compile in Unity and check Console errors. For gameplay changes, exercise the affected flow in Play Mode when the Editor is available.
 - Do not claim a successful build or scene validation without actually performing it.
 
