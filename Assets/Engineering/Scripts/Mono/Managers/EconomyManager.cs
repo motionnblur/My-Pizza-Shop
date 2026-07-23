@@ -112,6 +112,13 @@ namespace Engineering.Scripts.Mono.Managers
             buyingAreaPurchasedEvent?.Raise();
         }
 
+        public void AwardMoney(int money)
+        {
+            if (_pWallet == null || money <= 0) return;
+            _pWallet.Money += money;
+            UpdateMoneyText();
+        }
+
         public void CollectMoneyFromGround(MoneyToCollect mc, int money)
         {
             if (mc == null || _pWallet == null) return;

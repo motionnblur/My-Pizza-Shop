@@ -7,5 +7,6 @@ namespace Engineering.ScriptableObjects
     {
         public AudioClip moneyCollectEffect;
         public AudioClip buyEffect;
+        public AudioClip pizzaServeEffect;
     }
 }

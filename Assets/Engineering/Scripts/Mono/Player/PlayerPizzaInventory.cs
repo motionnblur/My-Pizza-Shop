@@ -44,6 +44,21 @@ namespace Engineering.Scripts.Mono.Player
             return acceptedAmount;
         }
 
+        public int TryRemove(int requestedAmount)
+        {
+            if (requestedAmount <= 0)
+                return 0;
+
+            var removedAmount = Mathf.Min(requestedAmount, _count);
+            if (removedAmount <= 0)
+                return 0;
+
+            _count -= removedAmount;
+            RefreshVisuals();
+            pizzaInventoryChangedEvent?.Raise(_count);
+            return removedAmount;
+        }
+
         private void CreateVisualPool()
         {
             if (pizzaVisualPrefab == null || pizzaStackAnchor == null)

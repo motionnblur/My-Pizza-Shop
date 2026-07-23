@@ -45,6 +45,20 @@ namespace Engineering.Tests
         }
 
         [Test]
+        public void TryRemove_OnlyRemovesWhatPlayerHasAndPublishesTheNewCount()
+        {
+            var lastPublishedCount = -1;
+            _pizzaInventoryChangedEvent.RegisterListener(value => lastPublishedCount = value);
+
+            _inventory.TryAdd(4);
+            var removedAmount = _inventory.TryRemove(6);
+
+            Assert.That(removedAmount, Is.EqualTo(4));
+            Assert.That(_inventory.Count, Is.EqualTo(0));
+            Assert.That(lastPublishedCount, Is.EqualTo(0));
+        }
+
+        [Test]
         public void PizzaStackBasePosition_UsesThePlateColliderTopSurface()
         {
             var plateObject = new GameObject("PizzaPlateTest");
