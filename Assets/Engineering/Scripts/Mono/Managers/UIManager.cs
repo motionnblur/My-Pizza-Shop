@@ -22,6 +22,12 @@ namespace Engineering.Scripts.Mono.Managers
             DontDestroyOnLoad(gameObject);
         }
 
+        private void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
+        }
+
         public void UpdateMoneyText(int money)
         {
             moneyText.text = money.ToString();

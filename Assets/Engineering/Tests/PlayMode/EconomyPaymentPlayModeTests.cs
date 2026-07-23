@@ -13,64 +13,69 @@ namespace Engineering.Tests
 {
     public class EconomyPaymentPlayModeTests
     {
+        private Fixture _fixture;
+
+        [UnityTearDown]
+        public IEnumerator TearDown()
+        {
+            if (_fixture != null)
+                yield return DestroyFixture(_fixture);
+
+            _fixture = null;
+        }
+
         [UnityTest]
         public IEnumerator EnteringBuyingArea_TransfersTheConfiguredPaymentRate()
         {
-            var fixture = CreateFixture(spendRate: 5, spendSpeed: 1f);
+            _fixture = CreateFixture(spendRate: 5, spendSpeed: 1f);
             yield return null;
 
-            InvokePrivateMethod(fixture.BuyingArea, "OnTriggerEnter", fixture.PlayerCollider);
+            InvokePrivateMethod(_fixture.BuyingArea, "OnTriggerEnter", _fixture.PlayerCollider);
             yield return null;
 
-            Assert.That(fixture.Wallet.Money, Is.EqualTo(95));
-            Assert.That(fixture.BuyingArea, Is.Not.Null);
-
-            yield return DestroyFixture(fixture);
+            Assert.That(_fixture.Wallet.Money, Is.EqualTo(95));
+            Assert.That(_fixture.BuyingArea, Is.Not.Null);
         }
 
         [UnityTest]
         public IEnumerator LeavingBuyingArea_CancelsFurtherScheduledPayments()
         {
-            var fixture = CreateFixture(spendRate: 5, spendSpeed: 20f);
+            _fixture = CreateFixture(spendRate: 5, spendSpeed: 20f);
             yield return null;
 
-            InvokePrivateMethod(fixture.BuyingArea, "OnTriggerEnter", fixture.PlayerCollider);
-            InvokePrivateMethod(fixture.BuyingArea, "OnTriggerExit", fixture.PlayerCollider);
+            InvokePrivateMethod(_fixture.BuyingArea, "OnTriggerEnter", _fixture.PlayerCollider);
+            yield return null;
+
+            InvokePrivateMethod(_fixture.BuyingArea, "OnTriggerExit", _fixture.PlayerCollider);
             yield return new WaitForSeconds(0.1f);
 
-            Assert.That(fixture.Wallet.Money, Is.EqualTo(95));
-
-            yield return DestroyFixture(fixture);
+            Assert.That(_fixture.Wallet.Money, Is.EqualTo(95));
         }
 
         [UnityTest]
         public IEnumerator CompletingPurchase_DestroysTheBuyingArea()
         {
-            var fixture = CreateFixture(spendRate: 5, spendSpeed: 1f);
+            _fixture = CreateFixture(spendRate: 5, spendSpeed: 1f);
             yield return null;
 
-            fixture.BuyingArea.AddPayment(100);
+            _fixture.BuyingArea.AddPayment(100);
             yield return null;
 
-            Assert.That(fixture.BuyingArea == null, Is.True);
-
-            yield return DestroyFixture(fixture);
+            Assert.That(_fixture.BuyingArea == null, Is.True);
         }
 
         [UnityTest]
         public IEnumerator CompletingPurchaseDuringPayment_UsesCachedAnimationDestination()
         {
-            var fixture = CreateFixture(spendRate: 100, spendSpeed: 20f, includeAnimationManager: true);
+            _fixture = CreateFixture(spendRate: 100, spendSpeed: 20f, includeAnimationManager: true);
             yield return null;
 
-            InvokePrivateMethod(fixture.BuyingArea, "OnTriggerEnter", fixture.PlayerCollider);
+            InvokePrivateMethod(_fixture.BuyingArea, "OnTriggerEnter", _fixture.PlayerCollider);
             yield return new WaitForSeconds(0.1f);
 
-            Assert.That(fixture.BuyingArea == null, Is.True);
-            Assert.That(fixture.Wallet.Money, Is.EqualTo(0));
+            Assert.That(_fixture.BuyingArea == null, Is.True);
+            Assert.That(_fixture.Wallet.Money, Is.EqualTo(0));
             LogAssert.NoUnexpectedReceived();
-
-            yield return DestroyFixture(fixture);
         }
 
         private static Fixture CreateFixture(int spendRate, float spendSpeed, bool includeAnimationManager = false)

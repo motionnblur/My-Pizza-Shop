@@ -36,7 +36,10 @@ namespace Engineering.Scripts.Mono.Managers
 
         private void OnDestroy()
         {
-            foreach (var go in _activeMoneyObjects)
+            if (Instance == this)
+                Instance = null;
+
+            foreach (var go in new List<GameObject>(_activeMoneyObjects))
             {
                 if (go != null)
                     go.transform.DOKill();

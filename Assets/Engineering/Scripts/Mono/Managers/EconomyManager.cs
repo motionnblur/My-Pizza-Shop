@@ -29,7 +29,13 @@ namespace Engineering.Scripts.Mono.Managers
         private void Start()
         {
             _pWallet = FindFirstObjectByType<PlayerWallet>();
-            UIManager.Instance.UpdateMoneyText(_pWallet.Money);
+            UpdateMoneyText();
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
         }
 
         public void ProcessPayment(BuyingArea ba)
@@ -79,7 +85,7 @@ namespace Engineering.Scripts.Mono.Managers
                             animationTargetPosition);
                     }
                     
-                    UIManager.Instance.UpdateMoneyText(_pWallet.Money);
+                    UpdateMoneyText();
                 }
                 else
                 {
@@ -88,6 +94,12 @@ namespace Engineering.Scripts.Mono.Managers
             }
 
             _activePaymentCoroutine = null;
+        }
+
+        private void UpdateMoneyText()
+        {
+            if (UIManager.Instance != null && _pWallet != null)
+                UIManager.Instance.UpdateMoneyText(_pWallet.Money);
         }
 
         public void PlayerBuyBuyingArea(BuyingArea ba)
