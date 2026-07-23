@@ -120,6 +120,26 @@ namespace Engineering.Tests
         }
 
         [UnityTest]
+        public IEnumerator CollectingGroundMoney_FollowsTheMovingPlayerAnimationTarget()
+        {
+            _fixture = CreateFixture(spendRate: 5, spendSpeed: 1f, includeAnimationManager: true, animationDuration: 0.1f);
+            var pickupObject = new GameObject("MoneyToCollectMovingPlayerPickup");
+            pickupObject.transform.position = new Vector3(5f, 0f, 0f);
+            var pickup = pickupObject.AddComponent<MoneyToCollect>();
+            pickupObject.AddComponent<BoxCollider>().isTrigger = true;
+            yield return null;
+
+            InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
+            _fixture.PlayerObject.transform.position = new Vector3(10f, 0f, 0f);
+            yield return new WaitForSeconds(0.2f);
+
+            Assert.That(
+                HasChildAtPosition(_fixture.AnimationManagerObject, _fixture.Wallet.MoneyAnimationOriginPosition),
+                Is.True,
+                "Collected money should finish at the player's latest animation origin.");
+        }
+
+        [UnityTest]
         public IEnumerator CollectingGroundMoney_IgnoresNonPlayerColliders()
         {
             _fixture = CreateFixture(spendRate: 5, spendSpeed: 1f);
@@ -285,6 +305,17 @@ namespace Engineering.Tests
             }
 
             return activeChildCount;
+        }
+
+        private static bool HasChildAtPosition(GameObject gameObject, Vector3 position)
+        {
+            foreach (Transform child in gameObject.transform)
+            {
+                if (Vector3.Distance(child.position, position) < 0.01f)
+                    return true;
+            }
+
+            return false;
         }
 
         private static void InvokePrivateMethod(object target, string methodName, params object[] arguments)

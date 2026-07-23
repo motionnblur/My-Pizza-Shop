@@ -103,6 +103,34 @@ namespace Engineering.Scripts.Mono.Managers
 
         public void DoMoneyAnimation(Vector3 positionFrom, Vector3 positionTo)
         {
+            PlayMoneyAnimation(
+                positionFrom,
+                go => go.transform.DOJump(positionTo, _sAnimation.jumpPower, 1, _sAnimation.duration));
+        }
+
+        public void DoMoneyAnimation(Vector3 positionFrom, Transform targetTransform)
+        {
+            if (targetTransform == null) return;
+
+            PlayMoneyAnimation(positionFrom, go =>
+            {
+                var animationStartPosition = go.transform.position;
+                var lastTargetPosition = targetTransform.position;
+
+                return DOVirtual.Float(0f, 1f, _sAnimation.duration, progress =>
+                {
+                    if (targetTransform != null)
+                        lastTargetPosition = targetTransform.position;
+
+                    var position = Vector3.Lerp(animationStartPosition, lastTargetPosition, progress);
+                    position.y += _sAnimation.jumpPower * 4f * progress * (1f - progress);
+                    go.transform.position = position;
+                });
+            });
+        }
+
+        private void PlayMoneyAnimation(Vector3 positionFrom, System.Func<GameObject, Tween> createMovementTween)
+        {
             if (sEconomy == null || sEconomy.moneyPrefab == null || _sAnimation == null) return;
 
             var pool = MoneyPool;
@@ -139,7 +167,7 @@ namespace Engineering.Scripts.Mono.Managers
             sequence = DOTween.Sequence();
             sequence.SetRecyclable(true).SetTarget(go.transform);
 
-            sequence.Append(go.transform.DOJump(positionTo, _sAnimation.jumpPower, 1, _sAnimation.duration)
+            sequence.Append(createMovementTween(go)
                 .SetEase(_sAnimation.moveEase)
                 .OnKill(ReturnToPool));
 

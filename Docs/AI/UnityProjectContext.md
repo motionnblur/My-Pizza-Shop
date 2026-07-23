@@ -24,7 +24,7 @@
 | Input | Input System 1.19.0; `InputManager` uses an asset-backed `Player` action map | Confirmed | `Packages/manifest.json`, `ProjectSettings/ProjectSettings.asset`, `Assets/Engineering/Scripts/Mono/Managers/InputManager.cs` |
 | Navigation | AI Navigation 2.0.13 is installed; gameplay usage not found in inspected sources | Confirmed / unknown usage | `Packages/manifest.json` |
 | UI | UGUI 2.0.0 is installed; project UI usage not inspected | Confirmed / unknown usage | `Packages/manifest.json` |
-| Tests | Unity Test Framework 1.6.0 is installed; 10 EditMode and 16 PlayMode tests cover core gameplay, UI, economy, and money-animation pooling | Confirmed | `Packages/manifest.json`, `Assets/Engineering/Tests/` |
+| Tests | Unity Test Framework 1.6.0 is installed; 10 EditMode and 17 PlayMode tests cover core gameplay, UI, economy, and money-animation pooling | Confirmed | `Packages/manifest.json`, `Assets/Engineering/Tests/` |
 | Tweening | DOTween is included as a vendor plugin and actively used for money-transfer animation | Confirmed | `Assets/Plugins/Demigiant/DOTween/`, `AnimationManager.cs` |
 | Other tooling | Timeline, Visual Scripting, Rider and Visual Studio integrations are installed; first-party usage is unverified | Confirmed / unverified usage | `Packages/manifest.json` |
 
@@ -76,9 +76,9 @@
 ## Testing And Validation
 
 - **EditMode tests:** 10 tests in `Assets/Engineering/Tests/Editor/CoreGameplayTests.cs`; they cover wallet, trigger relays, movement, and ground-money prefab configuration.
-- **PlayMode tests:** 16 tests in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, pickup collection/UI updates, player-only collection, duplicate-trigger protection, UI singleton behavior, and money-animation pool reuse/cleanup.
+- **PlayMode tests:** 17 tests in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, pickup collection/UI updates, player-only collection, duplicate-trigger protection, moving-player animation targeting, UI singleton behavior, and money-animation pool reuse/cleanup.
 - **CI/build validation:** None found.
-- **Validated commands:** EditMode (`-testPlatform EditMode`) 10/10 passed; targeted economy PlayMode (`-testPlatform PlayMode -testFilter Engineering.Tests.EconomyPaymentPlayModeTests`) 8/8 passed on 2026-07-23. The remaining PlayMode tests were not run after this change.
+- **Validated commands:** EditMode (`-testPlatform EditMode`) 10/10 passed; PlayMode (`-testPlatform PlayMode`) 17/17 passed on 2026-07-23.
 - **Recommended minimum validation:** Run both test suites, then manually exercise the scene physical trigger, camera, and input wiring in Play Mode.
 
 ## Available Unity Tooling

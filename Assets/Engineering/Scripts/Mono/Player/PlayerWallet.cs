@@ -13,8 +13,10 @@ namespace Engineering.Scripts.Mono.Player
             set => money = value;
         }
 
-        public Vector3 MoneyAnimationOriginPosition => moneyAnimationOrigin != null
-            ? moneyAnimationOrigin.position
-            : transform.position;
+        public Transform MoneyAnimationOrigin => moneyAnimationOrigin != null
+            ? moneyAnimationOrigin
+            : transform;
+
+        public Vector3 MoneyAnimationOriginPosition => MoneyAnimationOrigin.position;
     }
 }

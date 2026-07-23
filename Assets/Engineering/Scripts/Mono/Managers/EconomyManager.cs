@@ -121,7 +121,7 @@ namespace Engineering.Scripts.Mono.Managers
             {
                 AnimationManager.Instance.DoMoneyAnimation(
                     animationOriginPosition,
-                    _pWallet.MoneyAnimationOriginPosition);
+                    _pWallet.MoneyAnimationOrigin);
             }
 
             mc.Destroy();
