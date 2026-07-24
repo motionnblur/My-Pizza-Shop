@@ -9,8 +9,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2772415428707791061}
-  - component: {fileID: 8192705262950915237}
-  - component: {fileID: 1111111111111111501}
   m_Layer: 0
   m_Name: triggerArea
   m_TagString: Untagged
@@ -30,44 +28,11 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1212641354364507185}
+  - {fileID: 177428277907697228}
   m_Father: {fileID: 2350328394199862730}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &8192705262950915237
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 791184491916706624}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 2.3692975, y: 0.3210756, z: 0.9728738}
-  m_Center: {x: 0.005977154, y: -0.33946222, z: 0.9142365}
---- !u!114 &1111111111111111501
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 791184491916706624}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 664c785b479034643a6b5ab6333128c3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Engineering::Engineering.Engineering.Scripts.Mono.Actors.ServeStation.ServePlate
-  serveStation: {fileID: 1111111111111111101}
-  plateCollider: {fileID: 1111111111111111401}
 --- !u!1 &3100000000000000001
 GameObject:
   m_ObjectHideFlags: 0
@@ -158,7 +123,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Engineering::Engineering.Engineering.Scripts.Mono.Actors.ServeStation.ServeStation
   sServeStation: {fileID: 11400000, guid: 41fa959125113844b936a8df75a1944e, type: 2}
-  servePlate: {fileID: 1111111111111111501}
+  servePlate: {fileID: 0}
   pizzaServedEvent: {fileID: 11400000, guid: 9820046290d0fdb4198c926c8681b513, type: 2}
   queueSlots:
   - {fileID: 4400000000000000001}
@@ -707,3 +672,137 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 0.05}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &6716079087280315827
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 177428277907697228}
+  - component: {fileID: 6013908344808655944}
+  - component: {fileID: 9096434058130492870}
+  m_Layer: 0
+  m_Name: serveTrigger
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &177428277907697228
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6716079087280315827}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0.998}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2772415428707791061}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &6013908344808655944
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6716079087280315827}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.4300995, y: 0.33079118, z: 0.5323988}
+  m_Center: {x: 0.6378975, y: -0.3346044, z: -0.23380059}
+--- !u!114 &9096434058130492870
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6716079087280315827}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6f55a71716e43c3ba7fb4c59e1100a4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Engineering::Engineering.Engineering.Scripts.Mono.Actors.ServeStation.ServeTrigger
+  serveStation: {fileID: 1111111111111111101}
+--- !u!1 &8276607539646461528
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1212641354364507185}
+  - component: {fileID: 8291109315391052791}
+  - component: {fileID: 3205386741150682798}
+  m_Layer: 0
+  m_Name: plateTrigger
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1212641354364507185
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8276607539646461528}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1.73, y: 0, z: 0}
+  m_LocalScale: {x: 0.7, y: 1, z: 0.7}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2772415428707791061}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &8291109315391052791
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8276607539646461528}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 0.25998783, z: 1}
+  m_Center: {x: 0, y: -0.37000608, z: 0}
+--- !u!114 &3205386741150682798
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8276607539646461528}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07dac36bfdaa45bd93a1a38f2c697c22, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Engineering::Engineering.Engineering.Scripts.Mono.Actors.ServeStation.PlateTrigger
+  serveStation: {fileID: 1111111111111111101}

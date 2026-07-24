@@ -10,10 +10,10 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.ServeStation
     public class ServeStation : MonoBehaviour
     {
         [SerializeField] private SServeStation sServeStation;
-        [SerializeField] private ServePlate servePlate;
         [SerializeField] private SVoidEventChannel pizzaServedEvent;
         [SerializeField] private Transform[] queueSlots;
         [SerializeField] private GameObject pizzaVisualPrefab;
+        [SerializeField] private BoxCollider plateCollider;
         [SerializeField, Min(0.01f)] private float pizzaStackSpacing = 0.14f;
 
         private readonly List<CustomerBot> _customers = new List<CustomerBot>();
@@ -132,7 +132,7 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.ServeStation
 
         private void RefreshVisuals()
         {
-            var basePos = servePlate != null ? servePlate.PizzaStackBasePosition : transform.position;
+            var basePos = PizzaStackBasePosition;
 
             for (var index = 0; index < _pizzaVisuals.Count; index++)
             {
@@ -142,6 +142,25 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.ServeStation
                 _pizzaVisuals[index].transform.position = basePos + Vector3.up * (index * pizzaStackSpacing);
                 _pizzaVisuals[index].transform.rotation = Quaternion.identity;
                 _pizzaVisuals[index].SetActive(index < _storedPizzaCount);
+            }
+        }
+        
+        public void TryServePizzas(Collider other)
+        {
+            if (!other.CompareTag("Player"))
+                return;
+            TryServeFrontCustomer();
+        }
+        
+        private Vector3 PizzaStackBasePosition
+        {
+            get
+            {
+                if (plateCollider == null)
+                    return transform.position;
+
+                var bounds = plateCollider.bounds;
+                return new Vector3(bounds.center.x, bounds.max.y, bounds.center.z);
             }
         }
     }
