@@ -123,6 +123,93 @@ namespace Engineering.Tests
         }
 
         [UnityTest]
+        public IEnumerator TryDepositPizzas_WorksWhenNoCustomer()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+
+            var deposited = serveStation.TryDepositPizzas(_playerInventory);
+
+            Assert.That(deposited, Is.EqualTo(3));
+            Assert.That(serveStation.StoredPizzaCount, Is.EqualTo(3));
+            Assert.That(_playerInventory.Count, Is.EqualTo(0));
+        }
+
+        [UnityTest]
+        public IEnumerator TryDepositPizzas_DoesNotExceedMaxStored()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 10);
+            _serveSettings.maxStoredPizzas = 10;
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+
+            var deposited = serveStation.TryDepositPizzas(_playerInventory);
+            Assert.That(deposited, Is.EqualTo(10));
+            Assert.That(serveStation.StoredPizzaCount, Is.EqualTo(10));
+            Assert.That(_playerInventory.Count, Is.EqualTo(0));
+
+            _playerInventory.TryAdd(5);
+            var secondDeposit = serveStation.TryDepositPizzas(_playerInventory);
+            Assert.That(secondDeposit, Is.EqualTo(0));
+            Assert.That(serveStation.StoredPizzaCount, Is.EqualTo(10));
+        }
+
+        [UnityTest]
+        public IEnumerator StationPizzaVisuals_FollowStoredCount()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var visualPrefab = new GameObject("PizzaVisual");
+            visualPrefab.AddComponent<MeshRenderer>();
+            SetPrivateField(serveStation, "pizzaVisualPrefab", visualPrefab);
+
+            var pizzaVisualsField = typeof(ServeStation).GetField("_pizzaVisuals",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            var pizzaVisuals = (List<GameObject>)pizzaVisualsField.GetValue(serveStation);
+            pizzaVisuals.Clear();
+
+            InvokePrivateMethod(serveStation, "CreateVisualPool");
+            InvokePrivateMethod(serveStation, "RefreshVisuals");
+
+            pizzaVisuals = (List<GameObject>)pizzaVisualsField.GetValue(serveStation);
+            Assert.That(pizzaVisuals.Count, Is.EqualTo(10));
+
+            var activeCount = CountActive(pizzaVisuals);
+            Assert.That(activeCount, Is.EqualTo(0));
+
+            serveStation.TryDepositPizzas(_playerInventory);
+            pizzaVisuals = (List<GameObject>)pizzaVisualsField.GetValue(serveStation);
+            Assert.That(CountActive(pizzaVisuals), Is.EqualTo(3));
+
+            _playerInventory.TryAdd(5);
+            serveStation.TryDepositPizzas(_playerInventory);
+            pizzaVisuals = (List<GameObject>)pizzaVisualsField.GetValue(serveStation);
+            Assert.That(CountActive(pizzaVisuals), Is.EqualTo(8));
+
+            Object.Destroy(visualPrefab);
+        }
+
+        [UnityTest]
+        public IEnumerator TryDepositPizzas_DoesNotAwardMoneyOrRaiseEvent()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3, startMoney: 50);
+            var invocationCount = 0;
+            _pizzaServedEvent.RegisterListener(() => invocationCount++);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            serveStation.TryDepositPizzas(_playerInventory);
+
+            Assert.That(_playerObject.GetComponent<PlayerWallet>().Money, Is.EqualTo(50));
+            Assert.That(invocationCount, Is.EqualTo(0));
+        }
+
+        [UnityTest]
         public IEnumerator TryServeFrontCustomer_TransfersPizzasToFrontCustomer()
         {
             CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
@@ -133,10 +220,12 @@ namespace Engineering.Tests
 
             SetPrivateField(customer, "_hasReachedAssignedSlot", true);
 
-            var result = serveStation.TryServeFrontCustomer(_playerInventory);
+            serveStation.TryDepositPizzas(_playerInventory);
+            var result = serveStation.TryServeFrontCustomer();
 
             Assert.That(result, Is.EqualTo(3));
             Assert.That(_playerInventory.Count, Is.EqualTo(0));
+            Assert.That(serveStation.StoredPizzaCount, Is.EqualTo(0));
             Assert.That(customer.RemainingPizzaCount, Is.EqualTo(2));
         }
 
@@ -153,7 +242,8 @@ namespace Engineering.Tests
             SetPrivateField(firstCustomer, "_hasReachedAssignedSlot", true);
             SetPrivateField(secondCustomer, "_hasReachedAssignedSlot", true);
 
-            var result = serveStation.TryServeFrontCustomer(_playerInventory);
+            serveStation.TryDepositPizzas(_playerInventory);
+            var result = serveStation.TryServeFrontCustomer();
 
             Assert.That(result, Is.EqualTo(5));
             Assert.That(firstCustomer.RemainingPizzaCount, Is.EqualTo(0));
@@ -171,11 +261,13 @@ namespace Engineering.Tests
 
             SetPrivateField(customer, "_hasReachedAssignedSlot", true);
 
-            var result = serveStation.TryServeFrontCustomer(_playerInventory);
+            serveStation.TryDepositPizzas(_playerInventory);
+            var result = serveStation.TryServeFrontCustomer();
 
             Assert.That(result, Is.EqualTo(3));
             Assert.That(serveStation.CustomerCount, Is.EqualTo(1));
             Assert.That(customer.RemainingPizzaCount, Is.EqualTo(2));
+            Assert.That(serveStation.StoredPizzaCount, Is.EqualTo(0));
         }
 
         [UnityTest]
@@ -193,11 +285,13 @@ namespace Engineering.Tests
             SetPrivateField(firstCustomer, "_hasReachedAssignedSlot", true);
             SetPrivateField(secondCustomer, "_hasReachedAssignedSlot", true);
 
-            serveStation.TryServeFrontCustomer(_playerInventory);
+            serveStation.TryDepositPizzas(_playerInventory);
+            serveStation.TryServeFrontCustomer();
             yield return null;
 
             Assert.That(serveStation.CustomerCount, Is.EqualTo(1));
             Assert.That(secondCustomer.RemainingPizzaCount, Is.EqualTo(5));
+            Assert.That(serveStation.StoredPizzaCount, Is.EqualTo(1));
         }
 
         [UnityTest]
@@ -210,13 +304,14 @@ namespace Engineering.Tests
             CreateAndRegisterBot(serveStation, orderAmount: 5);
             yield return null;
 
-            var result = serveStation.TryServeFrontCustomer(_playerInventory);
+            serveStation.TryDepositPizzas(_playerInventory);
+            var result = serveStation.TryServeFrontCustomer();
 
             Assert.That(result, Is.EqualTo(0));
         }
 
         [UnityTest]
-        public IEnumerator TryServeFrontCustomer_ReturnsZeroWhenPlayerHasNoPizzas()
+        public IEnumerator TryServeFrontCustomer_ReturnsZeroWhenStationEmpty()
         {
             CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 0);
             yield return null;
@@ -226,9 +321,31 @@ namespace Engineering.Tests
 
             SetPrivateField(customer, "_hasReachedAssignedSlot", true);
 
-            var result = serveStation.TryServeFrontCustomer(_playerInventory);
+            var result = serveStation.TryServeFrontCustomer();
 
             Assert.That(result, Is.EqualTo(0));
+        }
+
+        [UnityTest]
+        public IEnumerator TryServeFrontCustomer_TakesFromStationStorageOnly()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var customer = CreateAndRegisterBot(serveStation, orderAmount: 5);
+
+            SetPrivateField(customer, "_hasReachedAssignedSlot", true);
+
+            var result = serveStation.TryServeFrontCustomer();
+            Assert.That(result, Is.EqualTo(0));
+            Assert.That(_playerInventory.Count, Is.EqualTo(3));
+
+            serveStation.TryDepositPizzas(_playerInventory);
+            result = serveStation.TryServeFrontCustomer();
+            Assert.That(result, Is.EqualTo(3));
+            Assert.That(serveStation.StoredPizzaCount, Is.EqualTo(0));
+            Assert.That(_playerInventory.Count, Is.EqualTo(0));
         }
 
         [UnityTest]
@@ -291,7 +408,8 @@ namespace Engineering.Tests
             var rejectedCustomer = CreateCustomerBot(3);
             Assert.That(serveStation.RegisterCustomer(rejectedCustomer), Is.False);
 
-            serveStation.TryServeFrontCustomer(_playerInventory);
+            serveStation.TryDepositPizzas(_playerInventory);
+            serveStation.TryServeFrontCustomer();
             yield return null;
 
             Assert.That(serveStation.CustomerCount, Is.EqualTo(1));
@@ -311,7 +429,8 @@ namespace Engineering.Tests
 
             SetPrivateField(customer, "_hasReachedAssignedSlot", true);
 
-            serveStation.TryServeFrontCustomer(_playerInventory);
+            serveStation.TryDepositPizzas(_playerInventory);
+            serveStation.TryServeFrontCustomer();
             yield return null;
 
             Assert.That(_playerObject.GetComponent<PlayerWallet>().Money, Is.EqualTo(80));
@@ -330,9 +449,37 @@ namespace Engineering.Tests
 
             SetPrivateField(customer, "_hasReachedAssignedSlot", true);
 
-            serveStation.TryServeFrontCustomer(_playerInventory);
+            serveStation.TryDepositPizzas(_playerInventory);
+            serveStation.TryServeFrontCustomer();
 
             Assert.That(invocationCount, Is.EqualTo(1));
+        }
+
+        [UnityTest]
+        public IEnumerator TryServeFrontCustomer_CompleteOrderPaysEventRemovesAndAdvances()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 5, startMoney: 50);
+            var invocationCount = 0;
+            _pizzaServedEvent.RegisterListener(() => invocationCount++);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var firstCustomer = CreateAndRegisterBot(serveStation, orderAmount: 2);
+            var secondCustomer = CreateAndRegisterBot(serveStation, orderAmount: 3);
+            _botsToCleanup.Remove(firstCustomer.gameObject);
+            _botsToCleanup.Remove(secondCustomer.gameObject);
+
+            SetPrivateField(firstCustomer, "_hasReachedAssignedSlot", true);
+            SetPrivateField(secondCustomer, "_hasReachedAssignedSlot", true);
+
+            serveStation.TryDepositPizzas(_playerInventory);
+            serveStation.TryServeFrontCustomer();
+
+            Assert.That(invocationCount, Is.EqualTo(1));
+            Assert.That(_playerObject.GetComponent<PlayerWallet>().Money, Is.EqualTo(70));
+            Assert.That(serveStation.CustomerCount, Is.EqualTo(1));
+            Assert.That(serveStation.StoredPizzaCount, Is.EqualTo(3));
+            Assert.That(secondCustomer.RemainingPizzaCount, Is.EqualTo(3));
         }
 
         [UnityTest]
@@ -352,6 +499,8 @@ namespace Engineering.Tests
                 "OnTriggerEnter", playerCollider);
             yield return null;
 
+            Assert.That(_playerInventory.Count, Is.EqualTo(0));
+            Assert.That(serveStation.StoredPizzaCount, Is.EqualTo(0));
             Assert.That(customer.RemainingPizzaCount, Is.EqualTo(2));
         }
 
@@ -375,6 +524,33 @@ namespace Engineering.Tests
             yield return null;
 
             Assert.That(customer.RemainingPizzaCount, Is.EqualTo(5));
+            Assert.That(_playerInventory.Count, Is.EqualTo(3));
+        }
+
+        [UnityTest]
+        public IEnumerator ServePlateTrigger_DepositsThenServes()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var customer = CreateAndRegisterBot(serveStation, orderAmount: 5);
+
+            SetPrivateField(customer, "_hasReachedAssignedSlot", true);
+
+            var playerCollider = _playerObject.AddComponent<CapsuleCollider>();
+
+            Assert.That(_playerInventory.Count, Is.EqualTo(3));
+            Assert.That(serveStation.StoredPizzaCount, Is.EqualTo(0));
+            Assert.That(customer.RemainingPizzaCount, Is.EqualTo(5));
+
+            InvokePrivateMethod(
+                _serveStationObject.GetComponentInChildren<ServePlate>(),
+                "OnTriggerEnter", playerCollider);
+
+            Assert.That(_playerInventory.Count, Is.EqualTo(0));
+            Assert.That(serveStation.StoredPizzaCount, Is.EqualTo(0));
+            Assert.That(customer.RemainingPizzaCount, Is.EqualTo(2));
         }
 
         [UnityTest]
@@ -504,6 +680,7 @@ namespace Engineering.Tests
             _serveSettings.maxPizzasPerOrder = 5;
             _serveSettings.minPizzasPerOrder = 1;
             _serveSettings.pricePerPizza = pricePerPizza;
+            _serveSettings.maxStoredPizzas = 10;
 
             _pizzaServedEvent = ScriptableObject.CreateInstance<SVoidEventChannel>();
 
@@ -590,6 +767,14 @@ namespace Engineering.Tests
             var method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(method, Is.Not.Null, $"Expected {target.GetType().Name} to define '{methodName}'.");
             method.Invoke(target, arguments);
+        }
+
+        private static int CountActive(List<GameObject> visuals)
+        {
+            var count = 0;
+            foreach (var visual in visuals)
+                if (visual.activeSelf) count++;
+            return count;
         }
     }
 }
