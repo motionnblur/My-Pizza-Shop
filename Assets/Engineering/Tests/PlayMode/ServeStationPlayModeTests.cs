@@ -1,11 +1,14 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
+using Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue;
 using Engineering.Engineering.Scripts.Mono.Actors.ServeStation;
 using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Managers;
 using Engineering.Scripts.Mono.Player;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.TestTools;
 
 namespace Engineering.Tests
@@ -17,10 +20,19 @@ namespace Engineering.Tests
         private GameObject _economyManagerObject;
         private SServeStation _serveSettings;
         private SVoidEventChannel _pizzaServedEvent;
+        private PlayerPizzaInventory _playerInventory;
+        private readonly List<GameObject> _botsToCleanup = new List<GameObject>();
 
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            foreach (var bot in _botsToCleanup)
+            {
+                if (bot != null)
+                    Object.Destroy(bot);
+            }
+            _botsToCleanup.Clear();
+
             if (_serveStationObject != null)
                 Object.Destroy(_serveStationObject);
 
@@ -40,113 +52,358 @@ namespace Engineering.Tests
         }
 
         [UnityTest]
-        public IEnumerator ServeAll_CollectsPizzasFromPlayerAndStacksThemOnTheStation()
+        public IEnumerator TryServeFrontCustomer_TransfersPizzasToFrontCustomer()
         {
-            CreateFixture(maxPizzas: 5, pricePerPizza: 10, playerPizzaCount: 3);
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
             yield return null;
 
-            var result = _serveStationObject.GetComponent<ServeStation>().TryServeAll(
-                _playerObject.GetComponent<PlayerPizzaInventory>());
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var customer = CreateAndRegisterBot(serveStation, orderAmount: 5);
+
+            SetPrivateField(customer, "_hasReachedAssignedSlot", true);
+
+            var result = serveStation.TryServeFrontCustomer(_playerInventory);
 
             Assert.That(result, Is.EqualTo(3));
-            Assert.That(_playerObject.GetComponent<PlayerPizzaInventory>().Count, Is.EqualTo(0));
-            Assert.That(_serveStationObject.GetComponent<ServeStation>().ServedPizzaCount, Is.EqualTo(3));
+            Assert.That(_playerInventory.Count, Is.EqualTo(0));
+            Assert.That(customer.RemainingPizzaCount, Is.EqualTo(2));
         }
 
         [UnityTest]
-        public IEnumerator ServeAll_DoesNotExceedStationCapacity()
+        public IEnumerator TryServeFrontCustomer_TransfersToFirstCustomerOnly()
         {
-            CreateFixture(maxPizzas: 2, pricePerPizza: 10, playerPizzaCount: 5);
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 5);
             yield return null;
 
             var serveStation = _serveStationObject.GetComponent<ServeStation>();
-            var result = serveStation.TryServeAll(_playerObject.GetComponent<PlayerPizzaInventory>());
+            var firstCustomer = CreateAndRegisterBot(serveStation, orderAmount: 5);
+            var secondCustomer = CreateAndRegisterBot(serveStation, orderAmount: 5);
 
-            Assert.That(result, Is.EqualTo(2));
-            Assert.That(serveStation.ServedPizzaCount, Is.EqualTo(2));
-            Assert.That(_playerObject.GetComponent<PlayerPizzaInventory>().Count, Is.EqualTo(3));
+            SetPrivateField(firstCustomer, "_hasReachedAssignedSlot", true);
+            SetPrivateField(secondCustomer, "_hasReachedAssignedSlot", true);
+
+            var result = serveStation.TryServeFrontCustomer(_playerInventory);
+
+            Assert.That(result, Is.EqualTo(5));
+            Assert.That(firstCustomer.RemainingPizzaCount, Is.EqualTo(0));
+            Assert.That(secondCustomer.RemainingPizzaCount, Is.EqualTo(5));
         }
 
         [UnityTest]
-        public IEnumerator ServeAll_ReturnsZeroWhenPlayerHasNoPizzas()
+        public IEnumerator TryServeFrontCustomer_PartialDeliveryDoesNotAdvanceQueue()
         {
-            CreateFixture(maxPizzas: 5, pricePerPizza: 10, playerPizzaCount: 0);
-            yield return null;
-
-            var result = _serveStationObject.GetComponent<ServeStation>().TryServeAll(
-                _playerObject.GetComponent<PlayerPizzaInventory>());
-
-            Assert.That(result, Is.EqualTo(0));
-            Assert.That(_serveStationObject.GetComponent<ServeStation>().ServedPizzaCount, Is.EqualTo(0));
-        }
-
-        [UnityTest]
-        public IEnumerator ServeAll_ReturnsZeroWhenStationIsFull()
-        {
-            CreateFixture(maxPizzas: 2, pricePerPizza: 10, playerPizzaCount: 3);
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
             yield return null;
 
             var serveStation = _serveStationObject.GetComponent<ServeStation>();
-            var playerInventory = _playerObject.GetComponent<PlayerPizzaInventory>();
+            var customer = CreateAndRegisterBot(serveStation, orderAmount: 5);
 
-            serveStation.TryServeAll(playerInventory);
-            var result = serveStation.TryServeAll(playerInventory);
+            SetPrivateField(customer, "_hasReachedAssignedSlot", true);
 
-            Assert.That(result, Is.EqualTo(0));
-            Assert.That(serveStation.ServedPizzaCount, Is.EqualTo(2));
+            var result = serveStation.TryServeFrontCustomer(_playerInventory);
+
+            Assert.That(result, Is.EqualTo(3));
+            Assert.That(serveStation.CustomerCount, Is.EqualTo(1));
+            Assert.That(customer.RemainingPizzaCount, Is.EqualTo(2));
         }
 
         [UnityTest]
-        public IEnumerator ServeAll_AwardsMoneyForEachServedPizza()
+        public IEnumerator TryServeFrontCustomer_CompletedOrderRemovesAndReassigns()
         {
-            CreateFixture(maxPizzas: 5, pricePerPizza: 10, playerPizzaCount: 3, startMoney: 50);
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
             yield return null;
 
-            _serveStationObject.GetComponent<ServeStation>().TryServeAll(
-                _playerObject.GetComponent<PlayerPizzaInventory>());
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var firstCustomer = CreateAndRegisterBot(serveStation, orderAmount: 2);
+            var secondCustomer = CreateAndRegisterBot(serveStation, orderAmount: 5);
+            _botsToCleanup.Remove(firstCustomer.gameObject);
+            _botsToCleanup.Remove(secondCustomer.gameObject);
+
+            SetPrivateField(firstCustomer, "_hasReachedAssignedSlot", true);
+            SetPrivateField(secondCustomer, "_hasReachedAssignedSlot", true);
+
+            serveStation.TryServeFrontCustomer(_playerInventory);
+            yield return null;
+
+            Assert.That(serveStation.CustomerCount, Is.EqualTo(1));
+            Assert.That(secondCustomer.RemainingPizzaCount, Is.EqualTo(5));
+        }
+
+        [UnityTest]
+        public IEnumerator TryServeFrontCustomer_ReturnsZeroWhenCustomerNotAtSlot()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            CreateAndRegisterBot(serveStation, orderAmount: 5);
+            yield return null;
+
+            var result = serveStation.TryServeFrontCustomer(_playerInventory);
+
+            Assert.That(result, Is.EqualTo(0));
+        }
+
+        [UnityTest]
+        public IEnumerator TryServeFrontCustomer_ReturnsZeroWhenPlayerHasNoPizzas()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 0);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var customer = CreateAndRegisterBot(serveStation, orderAmount: 5);
+
+            SetPrivateField(customer, "_hasReachedAssignedSlot", true);
+
+            var result = serveStation.TryServeFrontCustomer(_playerInventory);
+
+            Assert.That(result, Is.EqualTo(0));
+        }
+
+        [UnityTest]
+        public IEnumerator RegisterCustomer_RejectsBeyondCapacity()
+        {
+            CreateQueueFixture(maxQueueCustomers: 3, pricePerPizza: 10, playerPizzaCount: 5);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+
+            for (var i = 0; i < 3; i++)
+            {
+                var customer = CreateCustomerBot(3);
+                var registered = serveStation.RegisterCustomer(customer);
+                Assert.That(registered, Is.True, $"Customer {i} should register.");
+            }
+
+            var extraCustomer = CreateCustomerBot(3);
+            var rejected = serveStation.RegisterCustomer(extraCustomer);
+
+            Assert.That(rejected, Is.False);
+            Assert.That(serveStation.CustomerCount, Is.EqualTo(3));
+        }
+
+        [UnityTest]
+        public IEnumerator RegisterCustomer_AcceptsAfterFrontCompletes()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 5);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var customer1 = CreateAndRegisterBot(serveStation, orderAmount: 1);
+            _botsToCleanup.Remove(customer1.gameObject);
+            var customer2 = CreateAndRegisterBot(serveStation, orderAmount: 3);
+            _botsToCleanup.Remove(customer2.gameObject);
+
+            SetPrivateField(customer1, "_hasReachedAssignedSlot", true);
+            SetPrivateField(customer2, "_hasReachedAssignedSlot", true);
+
+            var rejectedCustomer = CreateCustomerBot(3);
+            Assert.That(serveStation.RegisterCustomer(rejectedCustomer), Is.False);
+
+            serveStation.TryServeFrontCustomer(_playerInventory);
+            yield return null;
+
+            Assert.That(serveStation.CustomerCount, Is.EqualTo(1));
+
+            var newCustomer = CreateAndRegisterBot(serveStation, orderAmount: 4);
+            Assert.That(serveStation.CustomerCount, Is.EqualTo(2));
+        }
+
+        [UnityTest]
+        public IEnumerator TryServeFrontCustomer_AwardsMoneyForDeliveredPizzas()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3, startMoney: 50);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var customer = CreateAndRegisterBot(serveStation, orderAmount: 5);
+
+            SetPrivateField(customer, "_hasReachedAssignedSlot", true);
+
+            serveStation.TryServeFrontCustomer(_playerInventory);
+            yield return null;
 
             Assert.That(_playerObject.GetComponent<PlayerWallet>().Money, Is.EqualTo(80));
         }
 
         [UnityTest]
-        public IEnumerator ServeAll_RaisesPizzaServedEventOnce()
+        public IEnumerator TryServeFrontCustomer_RaisesPizzaServedEventOnce()
         {
-            CreateFixture(maxPizzas: 5, pricePerPizza: 10, playerPizzaCount: 3);
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
             var invocationCount = 0;
             _pizzaServedEvent.RegisterListener(() => invocationCount++);
             yield return null;
 
-            _serveStationObject.GetComponent<ServeStation>().TryServeAll(
-                _playerObject.GetComponent<PlayerPizzaInventory>());
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var customer = CreateAndRegisterBot(serveStation, orderAmount: 5);
+
+            SetPrivateField(customer, "_hasReachedAssignedSlot", true);
+
+            serveStation.TryServeFrontCustomer(_playerInventory);
 
             Assert.That(invocationCount, Is.EqualTo(1));
         }
 
         [UnityTest]
-        public IEnumerator ServePlateTriggers_ServePizzasToTheStation()
+        public IEnumerator ServePlateTriggers_ServeFrontCustomerWithPlayerTag()
         {
-            CreateFixture(maxPizzas: 5, pricePerPizza: 10, playerPizzaCount: 3);
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
             yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var customer = CreateAndRegisterBot(serveStation, orderAmount: 5);
+
+            SetPrivateField(customer, "_hasReachedAssignedSlot", true);
 
             var playerCollider = _playerObject.AddComponent<CapsuleCollider>();
-
-            InvokePrivateMethod(_serveStationObject.GetComponentInChildren<ServePlate>(),
+            InvokePrivateMethod(
+                _serveStationObject.GetComponentInChildren<ServePlate>(),
                 "OnTriggerEnter", playerCollider);
-
             yield return null;
 
-            Assert.That(_serveStationObject.GetComponent<ServeStation>().ServedPizzaCount, Is.EqualTo(3));
-            Assert.That(_playerObject.GetComponent<PlayerPizzaInventory>().Count, Is.EqualTo(0));
+            Assert.That(customer.RemainingPizzaCount, Is.EqualTo(2));
         }
 
-        private void CreateFixture(
-            int maxPizzas,
+        [UnityTest]
+        public IEnumerator ServePlateTriggers_DoesNotServeWithNonPlayerTag()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var customer = CreateAndRegisterBot(serveStation, orderAmount: 5);
+
+            SetPrivateField(customer, "_hasReachedAssignedSlot", true);
+
+            var nonPlayer = new GameObject("NonPlayer");
+            var nonPlayerCollider = nonPlayer.AddComponent<CapsuleCollider>();
+            InvokePrivateMethod(
+                _serveStationObject.GetComponentInChildren<ServePlate>(),
+                "OnTriggerEnter", nonPlayerCollider);
+            Object.Destroy(nonPlayer);
+            yield return null;
+
+            Assert.That(customer.RemainingPizzaCount, Is.EqualTo(5));
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerSpawner_OrdersWithinRange()
+        {
+            CreateQueueFixture(maxQueueCustomers: 10, pricePerPizza: 10, playerPizzaCount: 0);
+            _serveSettings.minPizzasPerOrder = 1;
+            _serveSettings.maxPizzasPerOrder = 5;
+            _serveSettings.customerSpawnInterval = 0.5f;
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var spawnerObject = new GameObject("Spawner");
+            var spawner = spawnerObject.AddComponent<CustomerSpawner>();
+            SetPrivateField(spawner, "station", serveStation);
+            SetPrivateField(spawner, "sServeStation", _serveSettings);
+
+            var prefabTemplate = new GameObject("CustomerPrefab");
+            prefabTemplate.SetActive(false);
+            prefabTemplate.AddComponent<NavMeshAgent>();
+            prefabTemplate.AddComponent<CustomerBot>();
+            SetPrivateField(spawner, "customerPrefab", prefabTemplate);
+
+            var spawnPoint = new GameObject("SpawnPoint").transform;
+            SetPrivateField(spawner, "spawnPoint", spawnPoint);
+
+            spawnerObject.SetActive(true);
+            yield return new WaitForSeconds(1.2f);
+
+            var customers = GetPrivateField<List<CustomerBot>>(serveStation, "_customers");
+            foreach (var bot in customers)
+            {
+                Assert.That(bot.RemainingPizzaCount, Is.InRange(1, 5));
+            }
+
+            spawnerObject.SetActive(false);
+            Object.Destroy(prefabTemplate);
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerSpawner_DoesNotExceedCapacity()
+        {
+            CreateQueueFixture(maxQueueCustomers: 3, pricePerPizza: 10, playerPizzaCount: 0);
+            _serveSettings.minPizzasPerOrder = 1;
+            _serveSettings.maxPizzasPerOrder = 3;
+            _serveSettings.customerSpawnInterval = 0.5f;
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var spawnerObject = new GameObject("Spawner");
+            var spawner = spawnerObject.AddComponent<CustomerSpawner>();
+            SetPrivateField(spawner, "station", serveStation);
+            SetPrivateField(spawner, "sServeStation", _serveSettings);
+
+            var prefabTemplate = new GameObject("CustomerPrefab");
+            prefabTemplate.SetActive(false);
+            prefabTemplate.AddComponent<NavMeshAgent>();
+            prefabTemplate.AddComponent<CustomerBot>();
+            SetPrivateField(spawner, "customerPrefab", prefabTemplate);
+
+            var spawnPoint = new GameObject("SpawnPoint").transform;
+            SetPrivateField(spawner, "spawnPoint", spawnPoint);
+
+            spawnerObject.SetActive(true);
+            yield return new WaitForSeconds(4f);
+
+            Assert.That(serveStation.CustomerCount, Is.LessThanOrEqualTo(3));
+
+            spawnerObject.SetActive(false);
+            Object.Destroy(prefabTemplate);
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerSpawner_DisabledStopsSpawning()
+        {
+            CreateQueueFixture(maxQueueCustomers: 10, pricePerPizza: 10, playerPizzaCount: 0);
+            _serveSettings.minPizzasPerOrder = 1;
+            _serveSettings.maxPizzasPerOrder = 1;
+            _serveSettings.customerSpawnInterval = 0.5f;
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var spawnerObject = new GameObject("Spawner");
+            var spawner = spawnerObject.AddComponent<CustomerSpawner>();
+            SetPrivateField(spawner, "station", serveStation);
+            SetPrivateField(spawner, "sServeStation", _serveSettings);
+
+            var prefabTemplate = new GameObject("CustomerPrefab");
+            prefabTemplate.SetActive(false);
+            prefabTemplate.AddComponent<NavMeshAgent>();
+            prefabTemplate.AddComponent<CustomerBot>();
+            SetPrivateField(spawner, "customerPrefab", prefabTemplate);
+
+            var spawnPoint = new GameObject("SpawnPoint").transform;
+            SetPrivateField(spawner, "spawnPoint", spawnPoint);
+
+            spawnerObject.SetActive(true);
+            yield return new WaitForSeconds(1.2f);
+
+            var countBeforeDisable = serveStation.CustomerCount;
+            Assert.That(countBeforeDisable, Is.GreaterThanOrEqualTo(1));
+
+            spawnerObject.SetActive(false);
+            yield return new WaitForSeconds(2f);
+
+            Assert.That(serveStation.CustomerCount, Is.EqualTo(countBeforeDisable));
+
+            Object.Destroy(prefabTemplate);
+        }
+
+        private void CreateQueueFixture(
+            int maxQueueCustomers,
             int pricePerPizza,
             int playerPizzaCount,
             int startMoney = 100)
         {
             _serveSettings = ScriptableObject.CreateInstance<SServeStation>();
-            _serveSettings.maxPizzas = maxPizzas;
+            _serveSettings.maxQueueCustomers = maxQueueCustomers;
+            _serveSettings.maxPizzasPerOrder = 5;
+            _serveSettings.minPizzasPerOrder = 1;
             _serveSettings.pricePerPizza = pricePerPizza;
 
             _pizzaServedEvent = ScriptableObject.CreateInstance<SVoidEventChannel>();
@@ -156,6 +413,16 @@ namespace Engineering.Tests
             var serveStation = _serveStationObject.AddComponent<ServeStation>();
             SetPrivateField(serveStation, "sServeStation", _serveSettings);
             SetPrivateField(serveStation, "pizzaServedEvent", _pizzaServedEvent);
+
+            var queueSlots = new Transform[10];
+            for (var i = 0; i < 10; i++)
+            {
+                var slotObject = new GameObject($"QueueSlot_{i}");
+                slotObject.transform.SetParent(_serveStationObject.transform);
+                slotObject.transform.localPosition = new Vector3(0f, 0f, i * -1.5f);
+                queueSlots[i] = slotObject.transform;
+            }
+            SetPrivateField(serveStation, "queueSlots", queueSlots);
 
             var plateObject = new GameObject("ServePlateTest");
             plateObject.transform.SetParent(_serveStationObject.transform);
@@ -168,10 +435,6 @@ namespace Engineering.Tests
             SetPrivateField(servePlate, "plateCollider", plateCollider);
             SetPrivateField(serveStation, "servePlate", servePlate);
 
-            var anchorObject = new GameObject("ServeStationAnchor");
-            anchorObject.transform.SetParent(_serveStationObject.transform);
-            SetPrivateField(serveStation, "pizzaStackAnchor", anchorObject.transform);
-
             _serveStationObject.SetActive(true);
 
             _playerObject = new GameObject("ServePlayerTest");
@@ -179,14 +442,34 @@ namespace Engineering.Tests
             _playerObject.tag = "Player";
             var wallet = _playerObject.AddComponent<PlayerWallet>();
             SetPrivateField(wallet, "money", startMoney);
-            var inventory = _playerObject.AddComponent<PlayerPizzaInventory>();
-            SetPrivateField(inventory, "capacity", 10);
+            _playerInventory = _playerObject.AddComponent<PlayerPizzaInventory>();
+            SetPrivateField(_playerInventory, "capacity", 10);
             _playerObject.SetActive(true);
 
-            inventory.TryAdd(playerPizzaCount);
+            _playerInventory.TryAdd(playerPizzaCount);
 
             _economyManagerObject = new GameObject("ServeEconomyManagerTest");
-            var economyManager = _economyManagerObject.AddComponent<EconomyManager>();
+            _economyManagerObject.AddComponent<EconomyManager>();
+        }
+
+        private CustomerBot CreateCustomerBot(int orderAmount)
+        {
+            var botObject = new GameObject("CustomerBotTest");
+            botObject.transform.position = Vector3.zero;
+            var agent = botObject.AddComponent<NavMeshAgent>();
+            agent.enabled = false;
+            var bot = botObject.AddComponent<CustomerBot>();
+            _botsToCleanup.Add(botObject);
+            return bot;
+        }
+
+        private CustomerBot CreateAndRegisterBot(ServeStation station, int orderAmount)
+        {
+            var bot = CreateCustomerBot(orderAmount);
+            var waypoints = new Transform[0];
+            bot.Initialize(station, orderAmount, waypoints);
+            station.RegisterCustomer(bot);
+            return bot;
         }
 
         private static void SetPrivateField(object target, string fieldName, object value)
@@ -194,6 +477,13 @@ namespace Engineering.Tests
             var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(field, Is.Not.Null, $"Expected {target.GetType().Name} to define '{fieldName}'.");
             field.SetValue(target, value);
+        }
+
+        private static T GetPrivateField<T>(object target, string fieldName)
+        {
+            var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, $"Expected {target.GetType().Name} to define '{fieldName}'.");
+            return (T)field.GetValue(target);
         }
 
         private static void InvokePrivateMethod(object target, string methodName, params object[] arguments)

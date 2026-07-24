@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Managers;
 using Engineering.Scripts.Mono.Player;
+using Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue;
 using UnityEngine;
 
 namespace Engineering.Engineering.Scripts.Mono.Actors.ServeStation
@@ -10,85 +11,76 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.ServeStation
     {
         [SerializeField] private SServeStation sServeStation;
         [SerializeField] private ServePlate servePlate;
-        [SerializeField] private Transform pizzaStackAnchor;
-        [SerializeField] private GameObject pizzaVisualPrefab;
-        [SerializeField, Min(0.01f)] private float pizzaStackSpacing = 0.14f;
         [SerializeField] private SVoidEventChannel pizzaServedEvent;
+        [SerializeField] private Transform[] queueSlots;
 
-        private readonly List<GameObject> _pizzaVisuals = new List<GameObject>();
-        private float _pizzaHalfHeight;
-        private int _servedPizzaCount;
+        private readonly List<CustomerBot> _customers = new List<CustomerBot>();
 
-        public int ServedPizzaCount => _servedPizzaCount;
+        public int CustomerCount => _customers.Count;
+        public int QueueCapacity => sServeStation != null ? sServeStation.maxQueueCustomers : 0;
 
-        private void OnEnable()
+        public bool RegisterCustomer(CustomerBot customer)
         {
-            PositionStackAnchor();
-            CreateVisualPool();
+            if (customer == null || sServeStation == null)
+                return false;
+
+            if (_customers.Count >= sServeStation.maxQueueCustomers)
+                return false;
+
+            var slotIndex = _customers.Count;
+            if (slotIndex >= queueSlots.Length || queueSlots[slotIndex] == null)
+                return false;
+
+            _customers.Add(customer);
+            customer.AssignQueueSlot(queueSlots[slotIndex]);
+            return true;
         }
 
-        public int TryServeAll(PlayerPizzaInventory playerPizzaInventory)
+        public int TryServeFrontCustomer(PlayerPizzaInventory playerPizzaInventory)
         {
             if (playerPizzaInventory == null || sServeStation == null)
                 return 0;
 
-            var remainingStationCapacity = sServeStation.maxPizzas - _servedPizzaCount;
-            if (remainingStationCapacity <= 0)
+            if (_customers.Count == 0)
                 return 0;
 
-            var servedAmount = playerPizzaInventory.TryRemove(remainingStationCapacity);
-            if (servedAmount <= 0)
+            var frontCustomer = _customers[0];
+            if (!frontCustomer.HasReachedAssignedSlot)
                 return 0;
 
-            _servedPizzaCount += servedAmount;
-            PositionStackAnchor();
-            RefreshVisuals();
+            var playerPizzaCount = playerPizzaInventory.Count;
+            if (playerPizzaCount <= 0)
+                return 0;
 
-            var moneyEarned = servedAmount * sServeStation.pricePerPizza;
+            var transferAmount = Mathf.Min(playerPizzaCount, frontCustomer.RemainingPizzaCount);
+            if (transferAmount <= 0)
+                return 0;
+
+            var removedAmount = playerPizzaInventory.TryRemove(transferAmount);
+            if (removedAmount <= 0)
+                return 0;
+
+            frontCustomer.ReceivePizzas(removedAmount);
+
+            var moneyEarned = removedAmount * sServeStation.pricePerPizza;
             if (EconomyManager.Instance != null)
                 EconomyManager.Instance.AwardMoney(moneyEarned);
 
             pizzaServedEvent?.Raise();
-            return servedAmount;
-        }
 
-        private void CreateVisualPool()
-        {
-            if (_pizzaVisuals.Count > 0 || sServeStation == null || pizzaVisualPrefab == null || pizzaStackAnchor == null)
-                return;
-
-            for (var index = 0; index < sServeStation.maxPizzas; index++)
+            if (frontCustomer.RemainingPizzaCount <= 0)
             {
-                var pizzaVisual = Instantiate(pizzaVisualPrefab, pizzaStackAnchor);
-                if (index == 0)
-                    _pizzaHalfHeight = GetPizzaHalfHeight(pizzaVisual);
+                _customers.RemoveAt(0);
+                Destroy(frontCustomer.gameObject);
 
-                pizzaVisual.transform.localPosition = Vector3.up * (_pizzaHalfHeight + index * pizzaStackSpacing);
-                pizzaVisual.transform.localRotation = Quaternion.identity;
-                pizzaVisual.SetActive(false);
-                _pizzaVisuals.Add(pizzaVisual);
+                for (var i = 0; i < _customers.Count; i++)
+                {
+                    if (i < queueSlots.Length && queueSlots[i] != null)
+                        _customers[i].AssignQueueSlot(queueSlots[i]);
+                }
             }
-        }
 
-        private void RefreshVisuals()
-        {
-            for (var index = 0; index < _pizzaVisuals.Count; index++)
-                _pizzaVisuals[index].SetActive(index < _servedPizzaCount);
-        }
-
-        private void PositionStackAnchor()
-        {
-            if (pizzaStackAnchor == null || servePlate == null)
-                return;
-
-            pizzaStackAnchor.position = servePlate.PizzaStackBasePosition;
-            pizzaStackAnchor.rotation = Quaternion.identity;
-        }
-
-        private float GetPizzaHalfHeight(GameObject pizzaVisual)
-        {
-            var pizzaRenderer = pizzaVisual.GetComponentInChildren<Renderer>();
-            return pizzaRenderer != null ? pizzaRenderer.bounds.extents.y : pizzaStackSpacing * 0.5f;
+            return removedAmount;
         }
     }
 }

@@ -9,7 +9,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 - **Engine:** Unity 6.3 (`6000.3.20f1`), Universal Render Pipeline (URP).
 - **Game:** `My Pizza Shop`, an early-stage casual/mobile-oriented 3D game.
 - **Gameplay code:** `Assets/Engineering/`.
-- **Current gameplay slice:** player movement and wallet, Input System event relay, timed payments, purchasable trigger areas, autonomous pizza production, player pizza stacks, pizza serving station with money reward, trash station with DoTween animation, and ScriptableObject event channels for gameplay feedback.
+- **Current gameplay slice:** player movement and wallet, Input System event relay, timed payments, purchasable trigger areas, autonomous pizza production, player pizza stacks, pizza serving station with customer queue and money reward, trash station with DoTween animation, customer bot NavMesh movement, timed customer spawner, and ScriptableObject event channels for gameplay feedback.
 - **Primary authored scene on disk:** `Assets/Scenes/MainScene.unity`.
 
 ## Start Here
@@ -28,16 +28,17 @@ This file is the fast entry point for AI agents and contributors. Read it before
 | `Assets/Engineering/Scripts/Mono/Player/` | Player movement, wallet, and trigger helpers. |
 | `Assets/Engineering/Scripts/Mono/Areas/BuyingArea.cs` | Trigger-driven unlock/purchase zone. |
 | `Assets/Engineering/Scripts/Mono/Actors/GrillStation/` | Autonomous pizza production station and its player-collection trigger. |
-| `Assets/Engineering/Scripts/Mono/Actors/ServeStation/` | Player-to-station pizza deposit; awards money per pizza, raises `PizzaServed` event. |
+| `Assets/Engineering/Scripts/Mono/Actors/ServeStation/` | Player-to-station pizza deposit via customer queue; awards money per pizza, raises `PizzaServed` event. `ServeStation` manages an ordered `List<CustomerBot>`, registers new customers with queue-slot assignment, and serves only the front customer. |
 | `Assets/Engineering/Scripts/Mono/Actors/TrashStation/` | Trash disposal station; removes all pizzas from player with DoTween fly-and-shrink animation, raises `PizzaTrashed` event. |
+| `Assets/Engineering/Scripts/Mono/Actors/CustomerQueue/` | `CustomerBot` — NavMeshAgent-driven bot with approach-waypoint traversal and queue-slot movement. `CustomerSpawner` — configurable timed coroutine spawning customers with random orders. |
 | `Assets/Engineering/Scripts/Mono/Player/PlayerPizzaInventory.cs` | Player pizza capacity, count (`TryAdd`/`TryRemove`), and overhead visual stack. |
 | `Assets/Engineering/ScriptableObjects/SEconomy.cs` | Economy tuning asset definition. |
 | `Assets/Engineering/ScriptableObjects/SGrillStation.cs` | Pizza production-rate and station-capacity tuning asset definition. |
-| `Assets/Engineering/ScriptableObjects/SServeStation.cs` | Pizza serving-station capacity and price-per-pizza tuning asset definition. |
+| `Assets/Engineering/ScriptableObjects/SServeStation.cs` | Pizza serving-station tuning: min/max pizzas per order, max queue customers (1–10), customer spawn interval, and price-per-pizza. `maxPizzas` was renamed to `maxPizzasPerOrder` with `[FormerlySerializedAs]` for asset data preservation. |
 | `Assets/Engineering/ScriptableObjects/STrashStation.cs` | Trash station animation tuning asset definition. |
 | `Assets/Engineering/ScriptableObjects/SVoidEventChannel.cs` | Decoupled, parameterless gameplay-event channel. |
 | `Assets/Engineering/ScriptableObjects/SIntEventChannel.cs` | Decoupled integer-value event channel used by the pizza inventory UI. |
-| `Assets/Engineering/Prefabs/PizzaVisual.prefab` | Placeholder pizza visual used by the oven, player stacks, and serving station. |
+| `Assets/Engineering/Prefabs/PizzaVisual.prefab` | Placeholder pizza visual used by the oven and player stacks. |
 | `Assets/Engineering/Prefabs/ServingStation.prefab` | Serving-station prefab — `ServeStation` on root, `ServePlate` on `triggerArea`. |
 | `Assets/Engineering/Prefabs/TrashStation.prefab` | Trash-station prefab — `TrashStation` on root, `TrashPlate` on `triggerArea`, `TrashTarget` child. |
 | `Assets/Scenes/` | Authored scenes. |
@@ -64,8 +65,8 @@ This file is the fast entry point for AI agents and contributors. Read it before
 - `EconomyManager` raises `GroundMoneyCollected` after a successful ground-money transaction and `BuyingAreaPurchased` after an area is purchased. `SoundManager` listens to these channels and owns clip selection/playback.
 - `GrillStation` owns ready-pizza state and production; `GrillPlate` only forwards player trigger collection. `PlayerPizzaInventory.TryAdd` enforces player capacity and returns the accepted amount.
 - `GrillStation` positions its ready-pizza stack from `GrillPlate.PizzaStackBasePosition`, which uses the plate collider's `bounds.max.y`; do not replace this with a hard-coded pivot offset.
-- `ServeStation` receives pizzas from the player via `PlayerPizzaInventory.TryRemove`, awards money through `EconomyManager.AwardMoney`, and raises `PizzaServed` event for SFX.
-- `ServePlate` lives on `triggerArea` and uses its trigger `BoxCollider` for player detection; the plate object has a separate non-trigger `BoxCollider` for `PizzaStackBasePosition`. The pizza stack anchor position comes from the plate collider's `bounds.max.y`.
+- `ServeStation` manages an ordered customer queue via `List<CustomerBot>`. `RegisterCustomer` reserves a slot immediately upon spawn. `TryServeFrontCustomer` transfers `min(playerPizzaCount, frontCustomerRemainingOrder)` pizzas from the player to the front customer, awards money for delivered pizzas, and raises `PizzaServed` once. A completed front customer is removed and destroyed, and every remaining customer is reassigned to the preceding queue slot via `AssignQueueSlot`. The old `TryServeAll`, `ServedPizzaCount`, `pizzaStackAnchor`, `pizzaVisualPrefab`, pizza visual pool, and station-held pizza count were removed.
+- `ServePlate` lives on `triggerArea` and uses its trigger `BoxCollider` for player detection; the plate object has a separate non-trigger `BoxCollider` for `PizzaStackBasePosition`. The pizza stack anchor position comes from the plate collider's `bounds.max.y`. Calls `TryServeFrontCustomer` instead of the removed `TryServeAll`.
 - `TrashStation` removes all pizzas from the player via `PlayerPizzaInventory.TryRemove`, spawns temp visuals at the player's pizza stack world positions, animates them to `TrashTarget` with DoTween (`DOMove` + `DOScale(0)`), then destroys them. Raises `PizzaTrashed` event for SFX. `TrashPlate` on `triggerArea` forwards player detection to the station.
 - Do not rename Input action maps/actions, tags, or serialized fields without updating their scene/prefab and code consumers.
 

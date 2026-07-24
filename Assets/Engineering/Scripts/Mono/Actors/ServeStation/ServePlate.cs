@@ -41,7 +41,7 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.ServeStation
             if (!other.CompareTag("Player") || serveStation == null)
                 return;
 
-            serveStation.TryServeAll(other.GetComponentInParent<PlayerPizzaInventory>());
+            serveStation.TryServeFrontCustomer(other.GetComponentInParent<PlayerPizzaInventory>());
         }
     }
 }
