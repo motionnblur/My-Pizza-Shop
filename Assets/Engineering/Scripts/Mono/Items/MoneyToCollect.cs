@@ -1,7 +1,7 @@
 ﻿using Engineering.Scripts.Mono.Managers;
 using UnityEngine;
 
-namespace Engineering.Engineering.Scripts.Mono.Items
+namespace Engineering.Scripts.Mono.Items
 {
     public class MoneyToCollect : MonoBehaviour
     {
@@ -14,7 +14,8 @@ namespace Engineering.Engineering.Scripts.Mono.Items
                 return;
 
             _isCollected = true;
-            EconomyManager.Instance.CollectMoneyFromGround(this, moneyToCollect);
+            if (EconomyManager.Instance != null)
+                EconomyManager.Instance.CollectMoneyFromGround(this, moneyToCollect);
         }
 
         public void Destroy()

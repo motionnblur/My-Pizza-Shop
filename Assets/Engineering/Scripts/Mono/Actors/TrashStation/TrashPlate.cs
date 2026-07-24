@@ -1,7 +1,7 @@
 using Engineering.Scripts.Mono.Player;
 using UnityEngine;
 
-namespace Engineering.Engineering.Scripts.Mono.Actors.TrashStation
+namespace Engineering.Scripts.Mono.Actors.TrashStation
 {
     public class TrashPlate : MonoBehaviour
     {

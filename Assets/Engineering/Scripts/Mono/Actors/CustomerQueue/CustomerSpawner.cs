@@ -1,9 +1,9 @@
 using System.Collections;
 using Engineering.ScriptableObjects;
-using ServeStationType = Engineering.Engineering.Scripts.Mono.Actors.ServeStation.ServeStation;
+using ServeStationType = Engineering.Scripts.Mono.Actors.ServeStation.ServeStation;
 using UnityEngine;
 
-namespace Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue
+namespace Engineering.Scripts.Mono.Actors.CustomerQueue
 {
     public class CustomerSpawner : MonoBehaviour
     {

@@ -46,13 +46,13 @@ namespace Engineering.Scripts.Mono.Managers
 
         public void PlaySFX(AudioClip clip)
         {
-            if (clip != null)
+            if (clip != null && sfxSource != null)
                 sfxSource.PlayOneShot(clip);
         }
 
         public void PlayMusic(AudioClip clip, bool loop = true)
         {
-            if (clip == null) return;
+            if (clip == null || musicSource == null) return;
             musicSource.clip = clip;
             musicSource.loop = loop;
             musicSource.Play();
@@ -60,17 +60,20 @@ namespace Engineering.Scripts.Mono.Managers
 
         public void StopMusic()
         {
-            musicSource.Stop();
+            if (musicSource != null)
+                musicSource.Stop();
         }
 
         public void SetSFXVolume(float volume)
         {
-            sfxSource.volume = Mathf.Clamp01(volume);
+            if (sfxSource != null)
+                sfxSource.volume = Mathf.Clamp01(volume);
         }
 
         public void SetMusicVolume(float volume)
         {
-            musicSource.volume = Mathf.Clamp01(volume);
+            if (musicSource != null)
+                musicSource.volume = Mathf.Clamp01(volume);
         }
 
         private void OnGroundMoneyCollected()

@@ -42,7 +42,8 @@ namespace Engineering.Scripts.Mono.Managers
 
         public void UpdateMoneyText(int money)
         {
-            moneyText.text = money.ToString();
+            if (moneyText != null)
+                moneyText.text = money.ToString();
         }
 
         private void UpdatePizzaText(int pizzaCount)

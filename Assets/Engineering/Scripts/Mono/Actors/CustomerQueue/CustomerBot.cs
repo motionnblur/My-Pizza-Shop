@@ -1,8 +1,8 @@
-using ServeStationType = Engineering.Engineering.Scripts.Mono.Actors.ServeStation.ServeStation;
+using ServeStationType = Engineering.Scripts.Mono.Actors.ServeStation.ServeStation;
 using UnityEngine;
 using UnityEngine.AI;
 
-namespace Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue
+namespace Engineering.Scripts.Mono.Actors.CustomerQueue
 {
     [RequireComponent(typeof(NavMeshAgent))]
     public class CustomerBot : MonoBehaviour

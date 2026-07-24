@@ -68,6 +68,13 @@ namespace Engineering.Tests
             Object.DestroyImmediate(textObject);
         }
 
+        [UnityTest]
+        public IEnumerator UpdateMoneyText_SafeWhenMoneyTextNull()
+        {
+            Assert.DoesNotThrow(() => _uiManager.UpdateMoneyText(42));
+            yield return null;
+        }
+
         private static void InvokeAwake(UIManager target)
         {
             var method = typeof(UIManager).GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic);

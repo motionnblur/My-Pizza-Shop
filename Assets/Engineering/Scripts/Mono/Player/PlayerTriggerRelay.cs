@@ -9,12 +9,14 @@ namespace Engineering.Scripts.Mono.Player
 
         private void OnTriggerEnter(Collider other)
         {
-            playerTrigger.HandleTriggerEnter(other);
+            if (playerTrigger != null)
+                playerTrigger.HandleTriggerEnter(other);
         }
 
         private void OnTriggerExit(Collider other)
         {
-            playerTrigger.HandleTriggerExit(other);
+            if (playerTrigger != null)
+                playerTrigger.HandleTriggerExit(other);
         }
     }
 }

@@ -15,7 +15,7 @@ namespace Engineering.Scripts.Mono.Areas
         {
             if (isPurchased) return;
             
-            if (other.gameObject.tag.Equals("Player"))
+            if (other.CompareTag("Player") && EconomyManager.Instance != null)
             {
                 EconomyManager.Instance.ProcessPayment(this);
             }
@@ -27,7 +27,7 @@ namespace Engineering.Scripts.Mono.Areas
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.gameObject.tag.Equals("Player"))
+            if (other.CompareTag("Player") && EconomyManager.Instance != null)
             {
                 EconomyManager.Instance.CancelPayment();
             }
@@ -39,7 +39,8 @@ namespace Engineering.Scripts.Mono.Areas
             if (_totalPricePlayerGive >= _unlockPrice)
             {
                 isPurchased = true;
-                EconomyManager.Instance.PlayerBuyBuyingArea(this);
+                if (EconomyManager.Instance != null)
+                    EconomyManager.Instance.PlayerBuyBuyingArea(this);
             }
         }
     }

@@ -1,8 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
-using Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue;
-using Engineering.Engineering.Scripts.Mono.Actors.ServeStation;
+using Engineering.Scripts.Mono.Actors.CustomerQueue;
+using Engineering.Scripts.Mono.Actors.ServeStation;
 using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Managers;
 using Engineering.Scripts.Mono.Player;
@@ -759,6 +759,63 @@ namespace Engineering.Tests
             Assert.That(remainingSlot, Is.EqualTo(queueSlots[0]));
             Assert.That(remainingAgent.isStopped, Is.False);
             Assert.That(secondCustomer.RemainingPizzaCount, Is.EqualTo(3));
+        }
+
+        [UnityTest]
+        public IEnumerator PlateTrigger_IgnoresNonPlayerColliders()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+
+            var plateTriggerObj = new GameObject("PlateTrigger");
+            plateTriggerObj.transform.SetParent(_serveStationObject.transform);
+            var plateTrigger = plateTriggerObj.AddComponent<PlateTrigger>();
+            SetPrivateField(plateTrigger, "serveStation", serveStation);
+
+            var nonPlayer = new GameObject("NonPlayer");
+            var nonPlayerCollider = nonPlayer.AddComponent<CapsuleCollider>();
+            InvokePrivateMethod(plateTrigger, "OnTriggerEnter", nonPlayerCollider);
+            Object.Destroy(nonPlayer);
+            yield return null;
+
+            Assert.That(_playerInventory.Count, Is.EqualTo(3));
+            Assert.That(serveStation.StoredPizzaCount, Is.EqualTo(0));
+        }
+
+        [UnityTest]
+        public IEnumerator PlateTrigger_SafeWhenServeStationNull()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
+            yield return null;
+
+            var plateTriggerObj = new GameObject("PlateTrigger");
+            plateTriggerObj.transform.SetParent(_serveStationObject.transform);
+            var plateTrigger = plateTriggerObj.AddComponent<PlateTrigger>();
+
+            var playerCollider = _playerObject.AddComponent<CapsuleCollider>();
+            InvokePrivateMethod(plateTrigger, "OnTriggerEnter", playerCollider);
+            yield return null;
+
+            Assert.That(_playerInventory.Count, Is.EqualTo(3));
+        }
+
+        [UnityTest]
+        public IEnumerator ServeTrigger_SafeWhenServeStationNull()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
+            yield return null;
+
+            var serveTriggerObj = new GameObject("ServeTrigger");
+            serveTriggerObj.transform.SetParent(_serveStationObject.transform);
+            serveTriggerObj.AddComponent<ServeTrigger>();
+
+            var playerCollider = _playerObject.AddComponent<CapsuleCollider>();
+            InvokePrivateMethod(serveTriggerObj.GetComponent<ServeTrigger>(), "OnTriggerEnter", playerCollider);
+            yield return null;
+
+            Assert.That(_playerInventory.Count, Is.EqualTo(3));
         }
 
         private void CreateQueueFixture(

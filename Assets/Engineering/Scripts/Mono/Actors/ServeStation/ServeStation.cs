@@ -2,10 +2,10 @@ using System.Collections.Generic;
 using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Managers;
 using Engineering.Scripts.Mono.Player;
-using Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue;
+using Engineering.Scripts.Mono.Actors.CustomerQueue;
 using UnityEngine;
 
-namespace Engineering.Engineering.Scripts.Mono.Actors.ServeStation
+namespace Engineering.Scripts.Mono.Actors.ServeStation
 {
     public class ServeStation : MonoBehaviour
     {
@@ -143,13 +143,6 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.ServeStation
                 _pizzaVisuals[index].transform.rotation = Quaternion.identity;
                 _pizzaVisuals[index].SetActive(index < _storedPizzaCount);
             }
-        }
-        
-        public void TryServePizzas(Collider other)
-        {
-            if (!other.CompareTag("Player"))
-                return;
-            TryServeFrontCustomer();
         }
         
         private Vector3 PizzaStackBasePosition

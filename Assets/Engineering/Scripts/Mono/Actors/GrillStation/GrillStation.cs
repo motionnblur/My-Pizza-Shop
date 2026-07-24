@@ -4,7 +4,7 @@ using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Player;
 using UnityEngine;
 
-namespace Engineering.Engineering.Scripts.Mono.Actors.PizzaMaker
+namespace Engineering.Scripts.Mono.Actors.GrillStation
 {
     public class GrillStation : MonoBehaviour
     {

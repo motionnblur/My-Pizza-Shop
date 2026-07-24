@@ -1,5 +1,5 @@
 ﻿using System.Collections;
-using Engineering.Engineering.Scripts.Mono.Items;
+using Engineering.Scripts.Mono.Items;
 using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Areas;
 using Engineering.Scripts.Mono.Player;
@@ -59,7 +59,7 @@ namespace Engineering.Scripts.Mono.Managers
 
         private IEnumerator DelayedPayment(BuyingArea ba)
         {
-            if (ba == null || _pWallet == null) yield break;
+            if (ba == null || _pWallet == null || sEconomy == null) yield break;
 
             var pay = sEconomy.playerMoneySpendRate;
             var delay = 1f / _sAnimation.moneySpendSpeed;

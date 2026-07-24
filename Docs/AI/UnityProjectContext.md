@@ -77,7 +77,7 @@
 
 ## Coding Conventions
 
-- **Namespace style:** `Engineering.*`, aligned with folder roles.
+- **Namespace style:** `Engineering.*`, aligned with folder roles. All namespaces follow `Engineering.Scripts.Mono.<Folder>` matching directory structure (e.g., `Engineering.Scripts.Mono.Actors.GrillStation`, `Engineering.Scripts.Mono.Items`). No `Engineering.Engineering` duplication; legacy `Actors.PizzaMaker` namespace has been replaced with `Actors.GrillStation`.
 - **Serialized fields:** Mostly `[SerializeField] private`.
 - **Private fields:** Predominantly `_camelCase`; retain nearby-file style where it differs.
 - **Async:** Coroutine-based delayed behavior (`IEnumerator` / `WaitForSeconds`); no async/await found in inspected sources.

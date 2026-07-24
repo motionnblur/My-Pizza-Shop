@@ -1,5 +1,5 @@
 using System.Reflection;
-using Engineering.Engineering.Scripts.Mono.Items;
+using Engineering.Scripts.Mono.Items;
 using Engineering.Scripts.Mono.Managers;
 using Engineering.Scripts.Mono.Player;
 using NUnit.Framework;
@@ -111,6 +111,57 @@ namespace Engineering.Tests
             _playerTrigger.HandleTriggerExit(_otherCollider);
 
             Assert.That(receivedCollider, Is.SameAs(_otherCollider));
+        }
+    }
+
+    public class PlayerTriggerRelayTests
+    {
+        private GameObject _relayObject;
+        private PlayerTriggerRelay _relay;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _relayObject = new GameObject("PlayerTriggerRelayTest");
+            _relay = _relayObject.AddComponent<PlayerTriggerRelay>();
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Object.DestroyImmediate(_relayObject);
+        }
+
+        [Test]
+        public void OnTriggerEnter_SafeWhenPlayerTriggerNull()
+        {
+            var otherObject = new GameObject("OtherCollider");
+            var otherCollider = otherObject.AddComponent<BoxCollider>();
+
+            Assert.DoesNotThrow(() =>
+            {
+                var method = typeof(PlayerTriggerRelay).GetMethod("OnTriggerEnter",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                method.Invoke(_relay, new object[] { otherCollider });
+            });
+
+            Object.DestroyImmediate(otherObject);
+        }
+
+        [Test]
+        public void OnTriggerExit_SafeWhenPlayerTriggerNull()
+        {
+            var otherObject = new GameObject("OtherCollider");
+            var otherCollider = otherObject.AddComponent<BoxCollider>();
+
+            Assert.DoesNotThrow(() =>
+            {
+                var method = typeof(PlayerTriggerRelay).GetMethod("OnTriggerExit",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                method.Invoke(_relay, new object[] { otherCollider });
+            });
+
+            Object.DestroyImmediate(otherObject);
         }
     }
 
