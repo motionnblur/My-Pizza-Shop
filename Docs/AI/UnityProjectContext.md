@@ -51,9 +51,9 @@
 
 ## Scenes And Startup Flow
 
-- **Enabled build scene:** `Assets/Scenes/SampleScene.unity` in `ProjectSettings/EditorBuildSettings.asset`.
-- **Scene asset found on disk:** `Assets/Scenes/MainScene.unity`. The scene contains a baked NavMeshSurface (`Assets/Scenes/MainScene_NavMeshData.asset`) covering SpawnPoint, two approach waypoints, and CustomerSlot_0–9. Floor plane scaled to (1,1,4) so the 10 queue slots (Z=-3.74 to Z=-17.24) rest on walkable ground.
-- **Likely startup scene:** Unknown. The enabled build-scene path appears stale because `SampleScene.unity` was not found.
+- **Enabled build scene:** `Assets/Scenes/MainScene.unity` is the single enabled build scene in `ProjectSettings/EditorBuildSettings.asset`. The stale `SampleScene.unity` entry has been removed.
+- **Scene asset on disk:** `Assets/Scenes/MainScene.unity`. The scene contains a baked NavMeshSurface (`Assets/Scenes/MainScene_NavMeshData.asset`) covering SpawnPoint, two approach waypoints, and CustomerSlot_0–9. Floor plane scaled to (1,1,4) so the 10 queue slots (Z=-3.74 to Z=-17.24) rest on walkable ground.
+- **Startup scene:** `Assets/Scenes/MainScene.unity`.
 - **Scene loading flow:** Unknown; no first-party scene-loading code was found in the inspected scripts.
 
 ## Architecture
@@ -86,11 +86,11 @@
 
 ## Testing And Validation
 
-- **EditMode tests:** 15 tests in `Assets/Engineering/Tests/Editor/`; they cover wallet, trigger relays, movement, ground-money prefab configuration, Event Channel listener registration, pizza inventory capacity (TryAdd/TryRemove), and the plate-collider stack origin.
+- **EditMode tests:** 18 tests in `Assets/Engineering/Tests/Editor/`; they cover wallet, trigger relays, movement, ground-money prefab configuration, Event Channel listener registration, pizza inventory capacity (TryAdd/TryRemove), the plate-collider stack origin, build scene configuration, and SoundManager pizzaServedEvent serialized reference in MainScene.
 - **PlayMode tests:** 58 `[Test]`/`[UnityTest]` declarations in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, pickup collection/UI updates, player-only collection, duplicate-trigger protection, moving-player animation targeting, economy Event Channel publication, pizza production/partial collection, pizza serving with customer queue (front-customer delivery, partial delivery, completed-order removal, slot guard, capacity, money, events, trigger flow, player/non-player tag filtering), customer spawner (order range, capacity enforcement, disabled cleanup), pizza trashing (removal, events, animation, guard conditions, trigger flow), UI singleton behavior, and money-animation pool reuse/cleanup. Test execution remains unrecorded.
 - **CI/build validation:** None found.
 - **Last recorded commands:** EditMode (`-testPlatform EditMode`) 10/10 passed; PlayMode (`-testPlatform PlayMode`) 17/17 passed on 2026-07-23, before the pizza tests were added. The current 14/20 suites have not been recorded as executed.
-- **Recommended minimum validation:** Run both test suites, then manually exercise the scene physical trigger, camera, and input wiring in Play Mode.
+- **Recommended minimum validation:** Run both test suites, then manually exercise the scene physical trigger, camera, and input wiring in Play Mode. After build-scene or SoundManager changes, also run the new `SceneConfigurationTests` EditMode suite.
 
 ## Available Unity Tooling
 
@@ -111,8 +111,8 @@
 
 ## Unknowns And Confidence
 
-- The intended startup scene is **unknown** due to the `SampleScene`/`MainScene` mismatch.
-- `MainScene` assigns `pizzaServedEvent` on `ServingStation`, but its `SoundManager` has no `pizzaServedEvent` reference; the configured serve SFX therefore cannot be received in that scene.
+- The startup scene is `MainScene.unity` as the single enabled build scene.
+- `MainScene` now assigns `pizzaServedEvent` on both `ServingStation` (via prefab reference) and `SoundManager` (scene override); the configured serve SFX is received and played.
 - No Unity MCP provider or Editor-console capability was available to this audit. Full current test execution, Console inspection, and Play Mode verification remain unrecorded.
 - The project is likely Android-focused, based on explicit Android settings, but release targets are not confirmed.
 

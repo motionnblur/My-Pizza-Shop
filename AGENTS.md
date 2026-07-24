@@ -63,7 +63,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 - The Input System action asset must include a `Player` map with `Move`, `Look`, `Attack`, `Interact`, `Previous`, `Next`, and `Sprint` actions.
 - `EconomyManager` requires an assigned `SEconomy` and a scene object tagged `Player` with `PlayerWallet`.
 - `BuyingArea` expects collider trigger callbacks and calls `EconomyManager.Instance`.
-- `EconomyManager` raises `GroundMoneyCollected` after a successful ground-money transaction and `BuyingAreaPurchased` after an area is purchased. `SoundManager` listens to these channels and owns clip selection/playback.
+- `EconomyManager` raises `GroundMoneyCollected` after a successful ground-money transaction and `BuyingAreaPurchased` after an area is purchased. `SoundManager` listens to these channels and owns clip selection/playback. `SoundManager` also subscribes to `PizzaServed` (raised by `ServeStation`) and `PizzaTrashed` (raised by `TrashStation`) via the same `SVoidEventChannel` pattern.
 - `GrillStation` owns ready-pizza state and production; `GrillPlate` only forwards player trigger collection. `PlayerPizzaInventory.TryAdd` enforces player capacity and returns the accepted amount.
 - `GrillStation` positions its ready-pizza stack from `GrillPlate.PizzaStackBasePosition`, which uses the plate collider's `bounds.max.y`; do not replace this with a hard-coded pivot offset.
 - `ServeStation` manages an ordered customer queue via `List<CustomerBot>`. `RegisterCustomer` reserves a slot immediately upon spawn. `TryDepositPizzas` transfers player pizzas into station storage (up to `maxStoredPizzas`), does not award money or raise events. `TryServeFrontCustomer` (no-arg) transfers `min(storedPizzaCount, frontCustomerRemainingOrder)` from station storage to the front customer, awards money for delivered pizzas, raises `PizzaServed` once, and updates the station's pizza visual stack. A completed front customer is removed and destroyed, and every remaining customer is reassigned to the preceding queue slot via `AssignQueueSlot`. The station visual pool is created in `OnEnable` from `pizzaVisualPrefab` and `pizzaStackSpacing`, anchored at the assigned plate collider's top surface.
@@ -71,10 +71,10 @@ This file is the fast entry point for AI agents and contributors. Read it before
 - `TrashStation` removes all pizzas from the player via `PlayerPizzaInventory.TryRemove`, spawns temp visuals at the player's pizza stack world positions, animates them to `TrashTarget` with DoTween (`DOMove` + `DOScale(0)`), then destroys them. Raises `PizzaTrashed` event for SFX. `TrashPlate` on `triggerArea` forwards player detection to the station.
 - Do not rename Input action maps/actions, tags, or serialized fields without updating their scene/prefab and code consumers.
 
-## Scene And Build Caution
+## Scene And Build
 
-- `Assets/Scenes/MainScene.unity` exists, but `ProjectSettings/EditorBuildSettings.asset` currently enables `Assets/Scenes/SampleScene.unity`, which is not present in the repository.
-- Treat the actual startup/build scene as **unverified** until it is checked in Unity's Build Profiles/Build Settings. Do not silently change it during unrelated work.
+- **Startup scene:** `Assets/Scenes/MainScene.unity` is the single enabled build scene.
+- The stale `Assets/Scenes/SampleScene.unity` entry has been removed from `ProjectSettings/EditorBuildSettings.asset`.
 
 ## Packages
 
