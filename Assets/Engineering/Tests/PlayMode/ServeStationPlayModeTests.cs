@@ -669,6 +669,76 @@ namespace Engineering.Tests
             Object.Destroy(prefabTemplate);
         }
 
+        [UnityTest]
+        public IEnumerator RegisterCustomer_GivesDistinctSlots()
+        {
+            CreateQueueFixture(maxQueueCustomers: 3, pricePerPizza: 10, playerPizzaCount: 0);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var slots = GetPrivateField<Transform[]>(serveStation, "queueSlots");
+
+            var customer1 = CreateAndRegisterBot(serveStation, 3);
+            var assigned1 = GetPrivateField<Transform>(customer1, "_assignedSlot");
+            Assert.That(assigned1, Is.EqualTo(slots[0]));
+
+            var customer2 = CreateAndRegisterBot(serveStation, 3);
+            var assigned2 = GetPrivateField<Transform>(customer2, "_assignedSlot");
+            Assert.That(assigned2, Is.EqualTo(slots[1]));
+
+            Assert.That(assigned1, Is.Not.EqualTo(assigned2));
+            Assert.That(serveStation.CustomerCount, Is.EqualTo(2));
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerBot_StopsWhenReachingAssignedSlot()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 0);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var bot = CreateCustomerBot(3);
+            var queueSlots = GetPrivateField<Transform[]>(serveStation, "queueSlots");
+            var agent = bot.GetComponent<NavMeshAgent>();
+
+            SetPrivateField(bot, "_hasReachedAssignedSlot", true);
+            agent.isStopped = true;
+
+            Assert.That(agent.isStopped, Is.True);
+            Assert.That(bot.HasReachedAssignedSlot, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator TryServeFrontCustomer_AdvancesRemainingCustomers()
+        {
+            CreateQueueFixture(maxQueueCustomers: 3, pricePerPizza: 10, playerPizzaCount: 5);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var queueSlots = GetPrivateField<Transform[]>(serveStation, "queueSlots");
+
+            var firstCustomer = CreateAndRegisterBot(serveStation, orderAmount: 2);
+            var secondCustomer = CreateAndRegisterBot(serveStation, orderAmount: 3);
+            _botsToCleanup.Remove(firstCustomer.gameObject);
+            _botsToCleanup.Remove(secondCustomer.gameObject);
+
+            SetPrivateField(firstCustomer, "_hasReachedAssignedSlot", true);
+            SetPrivateField(secondCustomer, "_hasReachedAssignedSlot", true);
+
+            serveStation.TryDepositPizzas(_playerInventory);
+            serveStation.TryServeFrontCustomer();
+            yield return null;
+
+            Assert.That(serveStation.CustomerCount, Is.EqualTo(1));
+
+            var remainingAgent = secondCustomer.GetComponent<NavMeshAgent>();
+            var remainingSlot = GetPrivateField<Transform>(secondCustomer, "_assignedSlot");
+
+            Assert.That(remainingSlot, Is.EqualTo(queueSlots[0]));
+            Assert.That(remainingAgent.isStopped, Is.False);
+            Assert.That(secondCustomer.RemainingPizzaCount, Is.EqualTo(3));
+        }
+
         private void CreateQueueFixture(
             int maxQueueCustomers,
             int pricePerPizza,

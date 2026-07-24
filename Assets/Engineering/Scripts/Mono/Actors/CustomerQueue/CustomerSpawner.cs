@@ -11,6 +11,7 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue
         [SerializeField] private GameObject customerPrefab;
         [SerializeField] private Transform spawnPoint;
         [SerializeField] private Transform[] approachWaypoints;
+        [SerializeField] private Transform queueEntryPoint;
         [SerializeField] private SServeStation sServeStation;
 
         private Coroutine _spawnCoroutine;
@@ -42,8 +43,9 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue
 
                         if (customerBot != null)
                         {
+                            var waypoints = BuildApproachWaypoints();
                             var orderAmount = Random.Range(sServeStation.minPizzasPerOrder, sServeStation.maxPizzasPerOrder + 1);
-                            customerBot.Initialize(station, orderAmount, approachWaypoints);
+                            customerBot.Initialize(station, orderAmount, waypoints);
 
                             if (!station.RegisterCustomer(customerBot))
                                 Destroy(customerObject);
@@ -57,6 +59,20 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue
 
                 yield return new WaitForSeconds(sServeStation != null ? sServeStation.customerSpawnInterval : 2f);
             }
+        }
+
+        private Transform[] BuildApproachWaypoints()
+        {
+            if (queueEntryPoint == null)
+                return approachWaypoints;
+
+            if (approachWaypoints == null || approachWaypoints.Length == 0)
+                return new[] { queueEntryPoint };
+
+            var combined = new Transform[approachWaypoints.Length + 1];
+            System.Array.Copy(approachWaypoints, combined, approachWaypoints.Length);
+            combined[approachWaypoints.Length] = queueEntryPoint;
+            return combined;
         }
     }
 }

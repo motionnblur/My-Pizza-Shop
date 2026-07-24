@@ -43,7 +43,7 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.ServeStation
                 return false;
 
             _customers.Add(customer);
-            customer.AssignQueueSlot(queueSlots[slotIndex]);
+            customer.AssignQueueSlot(queueSlots[slotIndex], slotIndex);
             return true;
         }
 
@@ -109,7 +109,7 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.ServeStation
                     for (var i = 0; i < _customers.Count; i++)
                     {
                         if (i < queueSlots.Length && queueSlots[i] != null)
-                            _customers[i].AssignQueueSlot(queueSlots[i]);
+                            _customers[i].AssignQueueSlot(queueSlots[i], i);
                     }
                 }
             }

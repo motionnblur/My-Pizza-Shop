@@ -12,6 +12,7 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue
         private Transform[] _approachWaypoints;
         private int _currentWaypointIndex;
         private Transform _assignedSlot;
+        private int _queueIndex;
         private bool _hasReachedAssignedSlot;
         private NavMeshAgent _agent;
 
@@ -60,6 +61,7 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue
                     if (!_agent.pathPending && _agent.remainingDistance <= _agent.stoppingDistance)
                     {
                         _hasReachedAssignedSlot = true;
+                        _agent.isStopped = true;
                         _state = BotState.AtSlot;
                         if (_assignedSlot != null)
                             transform.rotation = _assignedSlot.rotation;
@@ -89,10 +91,14 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue
             }
         }
 
-        public void AssignQueueSlot(Transform queueSlot)
+        public void AssignQueueSlot(Transform queueSlot, int queueIndex)
         {
             _assignedSlot = queueSlot;
+            _queueIndex = queueIndex;
             _hasReachedAssignedSlot = false;
+
+            _agent.isStopped = false;
+            _agent.avoidancePriority = queueIndex;
 
             if (_state == BotState.AtSlot || _state == BotState.MovingToSlot)
             {
