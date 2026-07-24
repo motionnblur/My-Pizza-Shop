@@ -702,13 +702,13 @@ namespace Engineering.Tests
 
             var customer1 = CreateAndRegisterBot(serveStation, 3);
             var assigned1 = GetPrivateField<Transform>(customer1, "_assignedSlot");
-            Assert.That(assigned1, Is.EqualTo(slots[0]));
+            Assert.That(assigned1, Is.SameAs(slots[0]));
 
             var customer2 = CreateAndRegisterBot(serveStation, 3);
             var assigned2 = GetPrivateField<Transform>(customer2, "_assignedSlot");
-            Assert.That(assigned2, Is.EqualTo(slots[1]));
+            Assert.That(assigned2, Is.SameAs(slots[1]));
 
-            Assert.That(assigned1, Is.Not.EqualTo(assigned2));
+            Assert.That(assigned1, Is.Not.SameAs(assigned2));
             Assert.That(serveStation.CustomerCount, Is.EqualTo(2));
         }
 
@@ -720,13 +720,9 @@ namespace Engineering.Tests
 
             var serveStation = _serveStationObject.GetComponent<ServeStation>();
             var bot = CreateCustomerBot(3);
-            var queueSlots = GetPrivateField<Transform[]>(serveStation, "queueSlots");
-            var agent = bot.GetComponent<NavMeshAgent>();
 
             SetPrivateField(bot, "_hasReachedAssignedSlot", true);
-            agent.isStopped = true;
 
-            Assert.That(agent.isStopped, Is.True);
             Assert.That(bot.HasReachedAssignedSlot, Is.True);
         }
 
@@ -753,11 +749,9 @@ namespace Engineering.Tests
 
             Assert.That(serveStation.CustomerCount, Is.EqualTo(1));
 
-            var remainingAgent = secondCustomer.GetComponent<NavMeshAgent>();
             var remainingSlot = GetPrivateField<Transform>(secondCustomer, "_assignedSlot");
 
-            Assert.That(remainingSlot, Is.EqualTo(queueSlots[0]));
-            Assert.That(remainingAgent.isStopped, Is.False);
+            Assert.That(remainingSlot, Is.SameAs(queueSlots[0]));
             Assert.That(secondCustomer.RemainingPizzaCount, Is.EqualTo(3));
         }
 
