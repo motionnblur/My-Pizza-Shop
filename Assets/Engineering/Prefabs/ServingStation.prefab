@@ -123,7 +123,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Engineering::Engineering.Engineering.Scripts.Mono.Actors.ServeStation.ServeStation
   sServeStation: {fileID: 11400000, guid: 41fa959125113844b936a8df75a1944e, type: 2}
-  servePlate: {fileID: 0}
   pizzaServedEvent: {fileID: 11400000, guid: 9820046290d0fdb4198c926c8681b513, type: 2}
   queueSlots:
   - {fileID: 4400000000000000001}
@@ -137,6 +136,7 @@ MonoBehaviour:
   - {fileID: 4400000000000000009}
   - {fileID: 4400000000000000010}
   pizzaVisualPrefab: {fileID: 6504674961691310178, guid: 16bdc8937be73d74ba3a701b01cbbf0a, type: 3}
+  plateCollider: {fileID: 1111111111111111401}
   pizzaStackSpacing: 0.14
 --- !u!1 &4100000000000000001
 GameObject:
