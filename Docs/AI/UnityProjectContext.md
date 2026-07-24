@@ -6,7 +6,7 @@
 
 - **Project root:** repository root
 - **Last analyzed:** 2026-07-24
-- **Last analyzed commit:** `c57d53e`
+- **Last analyzed commit:** `7d409cf`
 - **Summary:** Early-stage casual 3D game named *My Pizza Shop*. The current gameplay slice includes movement, wallet and ground-money collection, timed area purchases, autonomous pizza production and collection, player pizza stacks, pizza serving station with customer queue and money reward, trash station with DoTween fly-and-shrink animation, UI counters, pooled DOTween money-transfer effects, customer bot NavMesh movement, timed customer spawner, and ScriptableObject event channels for decoupled gameplay feedback.
 
 ## Confirmed Environment
@@ -22,9 +22,9 @@
 | --- | --- | --- | --- |
 | Rendering | URP 17.3.0 | Confirmed | `Packages/manifest.json`, `ProjectSettings/GraphicsSettings.asset` |
 | Input | Input System 1.19.0; `InputManager` uses an asset-backed `Player` action map | Confirmed | `Packages/manifest.json`, `ProjectSettings/ProjectSettings.asset`, `Assets/Engineering/Scripts/Mono/Managers/InputManager.cs` |
-| Navigation | AI Navigation 2.0.13 is installed and used by `CustomerBot` for NavMesh movement | Confirmed | `Packages/manifest.json`, `CustomerBot.cs` |
+| Navigation | AI Navigation 2.0.13 is installed and used by `CustomerBot` for NavMesh movement; MainScene has a baked NavMeshSurface covering SpawnPoint, 2 waypoints, and 10 queue slots | Confirmed | `Packages/manifest.json`, `CustomerBot.cs`, `Assets/Scenes/MainScene_NavMeshData.asset` |
 | UI | UGUI 2.0.0 is installed; project UI usage not inspected | Confirmed / unknown usage | `Packages/manifest.json` |
-| Tests | Unity Test Framework 1.6.0 is installed; 15 EditMode and 36 PlayMode tests cover core gameplay, UI, economy, money-animation pooling, pizza inventory, grill production, serving station with customer queue, and trash station | Confirmed | `Packages/manifest.json`, `Assets/Engineering/Tests/` |
+| Tests | Unity Test Framework 1.6.0 is installed; 15 EditMode and 48 PlayMode tests cover core gameplay, UI, economy, money-animation pooling, pizza inventory, grill production, serving station with customer queue, and trash station | Confirmed | `Packages/manifest.json`, `Assets/Engineering/Tests/` |
 | Tweening | DOTween is included as a vendor plugin and actively used for money-transfer animation | Confirmed | `Assets/Plugins/Demigiant/DOTween/`, `AnimationManager.cs` |
 | Gameplay events | `SVoidEventChannel` decouples parameterless gameplay feedback; `SIntEventChannel` publishes pizza inventory counts to UI | Confirmed | Event-channel sources and assets, `EconomyManager.cs`, `SoundManager.cs`, `PlayerPizzaInventory.cs`, `UIManager.cs` |
 | Other tooling | Timeline, Visual Scripting, Rider and Visual Studio integrations are installed; first-party usage is unverified | Confirmed / unverified usage | `Packages/manifest.json` |
@@ -52,7 +52,7 @@
 ## Scenes And Startup Flow
 
 - **Enabled build scene:** `Assets/Scenes/SampleScene.unity` in `ProjectSettings/EditorBuildSettings.asset`.
-- **Scene asset found on disk:** `Assets/Scenes/MainScene.unity`.
+- **Scene asset found on disk:** `Assets/Scenes/MainScene.unity`. The scene contains a baked NavMeshSurface (`Assets/Scenes/MainScene_NavMeshData.asset`) covering SpawnPoint, two approach waypoints, and CustomerSlot_0–9. Floor plane scaled to (1,1,4) so the 10 queue slots (Z=-3.74 to Z=-17.24) rest on walkable ground.
 - **Likely startup scene:** Unknown. The enabled build-scene path appears stale because `SampleScene.unity` was not found.
 - **Scene loading flow:** Unknown; no first-party scene-loading code was found in the inspected scripts.
 

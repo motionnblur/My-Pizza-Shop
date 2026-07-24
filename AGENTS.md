@@ -10,7 +10,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 - **Game:** `My Pizza Shop`, an early-stage casual/mobile-oriented 3D game.
 - **Gameplay code:** `Assets/Engineering/`.
 - **Current gameplay slice:** player movement and wallet, Input System event relay, timed payments, purchasable trigger areas, autonomous pizza production, player pizza stacks, pizza serving station with customer queue and money reward, trash station with DoTween animation, customer bot NavMesh movement, timed customer spawner, and ScriptableObject event channels for gameplay feedback.
-- **Primary authored scene on disk:** `Assets/Scenes/MainScene.unity`.
+- **Primary authored scene on disk:** `Assets/Scenes/MainScene.unity`. The scene's NavMeshSurface is baked and covers SpawnPoint, 2 approach waypoints, and CustomerSlot_0–9. Baked NavMesh data is stored in `Assets/Scenes/MainScene_NavMeshData.asset`.
 
 ## Start Here
 
