@@ -28,7 +28,13 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue
 
         private void Update()
         {
-            if (_station == null || _agent.pathPending)
+            if (_station == null || _agent == null)
+                return;
+
+            if (!_agent.isOnNavMesh)
+                return;
+
+            if (_agent.pathPending)
                 return;
 
             switch (_state)
@@ -39,13 +45,13 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue
                         _currentWaypointIndex++;
                         if (_currentWaypointIndex < _approachWaypoints.Length)
                         {
-                            _agent.SetDestination(_approachWaypoints[_currentWaypointIndex].position);
+                            TrySetDestination(_approachWaypoints[_currentWaypointIndex].position);
                         }
                         else
                         {
                             _state = BotState.MovingToSlot;
                             if (_assignedSlot != null)
-                                _agent.SetDestination(_assignedSlot.position);
+                                TrySetDestination(_assignedSlot.position);
                         }
                     }
                     break;
@@ -73,13 +79,13 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue
             if (_approachWaypoints != null && _approachWaypoints.Length > 0 && _approachWaypoints[0] != null)
             {
                 _state = BotState.Approaching;
-                _agent.SetDestination(_approachWaypoints[0].position);
+                TrySetDestination(_approachWaypoints[0].position);
             }
             else
             {
                 _state = BotState.MovingToSlot;
                 if (_assignedSlot != null)
-                    _agent.SetDestination(_assignedSlot.position);
+                    TrySetDestination(_assignedSlot.position);
             }
         }
 
@@ -92,7 +98,7 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue
             {
                 _state = BotState.MovingToSlot;
                 if (_assignedSlot != null)
-                    _agent.SetDestination(_assignedSlot.position);
+                    TrySetDestination(_assignedSlot.position);
             }
         }
 
@@ -100,6 +106,15 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue
         {
             if (amount <= 0) return;
             _remainingPizzaCount = Mathf.Max(0, _remainingPizzaCount - amount);
+        }
+
+        private void TrySetDestination(Vector3 destination)
+        {
+            if (_agent == null) return;
+            if (!_agent.isActiveAndEnabled) return;
+            if (!_agent.isOnNavMesh) return;
+
+            _agent.SetDestination(destination);
         }
     }
 }

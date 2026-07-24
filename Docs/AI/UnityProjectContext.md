@@ -39,7 +39,7 @@
 | `Assets/Engineering/Scripts/Mono/Actors/CustomerQueue/` | Customer bot NavMesh movement and timed customer spawner | Confirmed | `CustomerBot.cs`, `CustomerSpawner.cs` |
 | `Assets/Engineering/Scripts/Mono/Actors/TrashStation/` | Player-to-station pizza disposal with DoTween animation | Confirmed | `TrashStation.cs`, `TrashPlate.cs` |
 | `Assets/Engineering/ScriptableObjects/` | First-party ScriptableObject definitions for economy and animation tuning | Confirmed | `SEconomy.cs`, `SAnimation.cs` |
-| `Assets/Engineering/Prefabs/` | Player, purchase-area, animated-money, ground-money, pizza-maker, serving-station, and placeholder-pizza prefabs | Confirmed | Prefab inventory and serialized script-reference inspection |
+| `Assets/Engineering/Prefabs/` | Player, purchase-area, animated-money, ground-money, pizza-maker, serving-station, customer-bot, trash-station, and placeholder-pizza prefabs | Confirmed | Prefab inventory and serialized script-reference inspection |
 | `Assets/Scenes/` | Authored scene assets; contains `MainScene.unity` | Confirmed | File inventory |
 | `Assets/Settings/` | Project visual/render-pipeline configuration assets | Likely | Folder name plus URP project configuration |
 | `Assets/Art/` | Art assets | Likely | Folder name; contents not inspected |

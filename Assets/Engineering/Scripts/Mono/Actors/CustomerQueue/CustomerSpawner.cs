@@ -33,7 +33,7 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue
         {
             while (enabled)
             {
-                if (station != null && sServeStation != null && customerPrefab != null)
+                if (station != null && sServeStation != null && customerPrefab != null && spawnPoint != null)
                 {
                     if (station.CustomerCount < sServeStation.maxQueueCustomers)
                     {

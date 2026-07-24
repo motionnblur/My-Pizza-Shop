@@ -39,7 +39,8 @@ This file is the fast entry point for AI agents and contributors. Read it before
 | `Assets/Engineering/ScriptableObjects/SVoidEventChannel.cs` | Decoupled, parameterless gameplay-event channel. |
 | `Assets/Engineering/ScriptableObjects/SIntEventChannel.cs` | Decoupled integer-value event channel used by the pizza inventory UI. |
 | `Assets/Engineering/Prefabs/PizzaVisual.prefab` | Placeholder pizza visual used by the oven and player stacks. |
-| `Assets/Engineering/Prefabs/ServingStation.prefab` | Serving-station prefab — `ServeStation` on root, `ServePlate` on `triggerArea`. |
+| `Assets/Engineering/Prefabs/CustomerBot.prefab` | Customer-bot prefab — capsule visual, NavMeshAgent, CapsuleCollider, CustomerBot component. |
+| `Assets/Engineering/Prefabs/ServingStation.prefab` | Serving-station prefab — `ServeStation` on root, `ServePlate` on `triggerArea`, `CustomerQueue` child with 10 `CustomerSlot_0–9` queue-slot transforms. |
 | `Assets/Engineering/Prefabs/TrashStation.prefab` | Trash-station prefab — `TrashStation` on root, `TrashPlate` on `triggerArea`, `TrashTarget` child. |
 | `Assets/Scenes/` | Authored scenes. |
 | `Assets/Settings/` | Render-pipeline assets and project visual settings. |

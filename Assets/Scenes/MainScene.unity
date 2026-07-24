@@ -1403,10 +1403,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 1111111111111111101, guid: fa7b1ce1aaa50494d8832ce015e049ac, type: 3}
-      propertyPath: pizzaVisualPrefab
-      value: 
-      objectReference: {fileID: 6504674961691310178, guid: 16bdc8937be73d74ba3a701b01cbbf0a, type: 3}
     - target: {fileID: 2350328394199862730, guid: fa7b1ce1aaa50494d8832ce015e049ac, type: 3}
       propertyPath: m_LocalPosition.x
       value: -3.04

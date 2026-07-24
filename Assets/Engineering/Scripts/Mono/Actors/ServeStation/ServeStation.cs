@@ -28,7 +28,7 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.ServeStation
                 return false;
 
             var slotIndex = _customers.Count;
-            if (slotIndex >= queueSlots.Length || queueSlots[slotIndex] == null)
+            if (queueSlots == null || slotIndex >= queueSlots.Length || queueSlots[slotIndex] == null)
                 return false;
 
             _customers.Add(customer);
@@ -73,10 +73,13 @@ namespace Engineering.Engineering.Scripts.Mono.Actors.ServeStation
                 _customers.RemoveAt(0);
                 Destroy(frontCustomer.gameObject);
 
-                for (var i = 0; i < _customers.Count; i++)
+                if (queueSlots != null)
                 {
-                    if (i < queueSlots.Length && queueSlots[i] != null)
-                        _customers[i].AssignQueueSlot(queueSlots[i]);
+                    for (var i = 0; i < _customers.Count; i++)
+                    {
+                        if (i < queueSlots.Length && queueSlots[i] != null)
+                            _customers[i].AssignQueueSlot(queueSlots[i]);
+                    }
                 }
             }
 

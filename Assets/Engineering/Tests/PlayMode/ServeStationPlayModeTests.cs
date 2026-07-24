@@ -52,6 +52,77 @@ namespace Engineering.Tests
         }
 
         [UnityTest]
+        public IEnumerator RegisterCustomer_SafeWhenQueueSlotsNull()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            SetPrivateField(serveStation, "queueSlots", null);
+
+            var customer = CreateCustomerBot(3);
+            var registered = serveStation.RegisterCustomer(customer);
+
+            Assert.That(registered, Is.False);
+            Assert.That(serveStation.CustomerCount, Is.EqualTo(0));
+        }
+
+        [UnityTest]
+        public IEnumerator RegisterCustomer_SafeWhenQueueSlotElementNull()
+        {
+            CreateQueueFixture(maxQueueCustomers: 3, pricePerPizza: 10, playerPizzaCount: 3);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+
+            var slots = new Transform[3];
+            slots[0] = new GameObject("Slot0").transform;
+            slots[1] = null;
+            slots[2] = new GameObject("Slot2").transform;
+            SetPrivateField(serveStation, "queueSlots", slots);
+
+            var customer1 = CreateAndRegisterBot(serveStation, 3);
+
+            var customer2 = CreateCustomerBot(3);
+            customer2.Initialize(serveStation, 3, new Transform[0]);
+            var registered = serveStation.RegisterCustomer(customer2);
+
+            Assert.That(registered, Is.False);
+            Assert.That(serveStation.CustomerCount, Is.EqualTo(1));
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerSpawner_SafeWhenSpawnPointNull()
+        {
+            CreateQueueFixture(maxQueueCustomers: 10, pricePerPizza: 10, playerPizzaCount: 0);
+            _serveSettings.customerSpawnInterval = 0.5f;
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var spawnerObject = new GameObject("Spawner");
+            spawnerObject.SetActive(false);
+            var spawner = spawnerObject.AddComponent<CustomerSpawner>();
+
+            var prefabTemplate = new GameObject("CustomerPrefab");
+            prefabTemplate.SetActive(true);
+            var agent = prefabTemplate.AddComponent<NavMeshAgent>();
+            agent.enabled = false;
+            prefabTemplate.AddComponent<CustomerBot>();
+            SetPrivateField(spawner, "customerPrefab", prefabTemplate);
+            SetPrivateField(spawner, "spawnPoint", null);
+            SetPrivateField(spawner, "station", serveStation);
+            SetPrivateField(spawner, "sServeStation", _serveSettings);
+
+            spawnerObject.SetActive(true);
+            yield return new WaitForSeconds(1.2f);
+
+            Assert.That(serveStation.CustomerCount, Is.EqualTo(0));
+
+            spawnerObject.SetActive(false);
+            Object.Destroy(prefabTemplate);
+        }
+
+        [UnityTest]
         public IEnumerator TryServeFrontCustomer_TransfersPizzasToFrontCustomer()
         {
             CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
@@ -183,6 +254,26 @@ namespace Engineering.Tests
         }
 
         [UnityTest]
+        public IEnumerator RegisterCustomer_TenCustomerCapacity()
+        {
+            CreateQueueFixture(maxQueueCustomers: 10, pricePerPizza: 10, playerPizzaCount: 0);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+
+            for (var i = 0; i < 10; i++)
+            {
+                var customer = CreateCustomerBot(3);
+                Assert.That(serveStation.RegisterCustomer(customer), Is.True, $"Customer {i} should register.");
+            }
+
+            Assert.That(serveStation.CustomerCount, Is.EqualTo(10));
+
+            var extraCustomer = CreateCustomerBot(3);
+            Assert.That(serveStation.RegisterCustomer(extraCustomer), Is.False);
+        }
+
+        [UnityTest]
         public IEnumerator RegisterCustomer_AcceptsAfterFrontCompletes()
         {
             CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 5);
@@ -297,23 +388,26 @@ namespace Engineering.Tests
 
             var serveStation = _serveStationObject.GetComponent<ServeStation>();
             var spawnerObject = new GameObject("Spawner");
+            spawnerObject.SetActive(false);
             var spawner = spawnerObject.AddComponent<CustomerSpawner>();
-            SetPrivateField(spawner, "station", serveStation);
-            SetPrivateField(spawner, "sServeStation", _serveSettings);
 
             var prefabTemplate = new GameObject("CustomerPrefab");
-            prefabTemplate.SetActive(false);
-            prefabTemplate.AddComponent<NavMeshAgent>();
+            prefabTemplate.SetActive(true);
+            var agent = prefabTemplate.AddComponent<NavMeshAgent>();
+            agent.enabled = false;
             prefabTemplate.AddComponent<CustomerBot>();
             SetPrivateField(spawner, "customerPrefab", prefabTemplate);
 
             var spawnPoint = new GameObject("SpawnPoint").transform;
             SetPrivateField(spawner, "spawnPoint", spawnPoint);
+            SetPrivateField(spawner, "station", serveStation);
+            SetPrivateField(spawner, "sServeStation", _serveSettings);
 
             spawnerObject.SetActive(true);
             yield return new WaitForSeconds(1.2f);
 
             var customers = GetPrivateField<List<CustomerBot>>(serveStation, "_customers");
+            Assert.That(customers.Count, Is.GreaterThan(0));
             foreach (var bot in customers)
             {
                 Assert.That(bot.RemainingPizzaCount, Is.InRange(1, 5));
@@ -334,22 +428,25 @@ namespace Engineering.Tests
 
             var serveStation = _serveStationObject.GetComponent<ServeStation>();
             var spawnerObject = new GameObject("Spawner");
+            spawnerObject.SetActive(false);
             var spawner = spawnerObject.AddComponent<CustomerSpawner>();
-            SetPrivateField(spawner, "station", serveStation);
-            SetPrivateField(spawner, "sServeStation", _serveSettings);
 
             var prefabTemplate = new GameObject("CustomerPrefab");
-            prefabTemplate.SetActive(false);
-            prefabTemplate.AddComponent<NavMeshAgent>();
+            prefabTemplate.SetActive(true);
+            var agent = prefabTemplate.AddComponent<NavMeshAgent>();
+            agent.enabled = false;
             prefabTemplate.AddComponent<CustomerBot>();
             SetPrivateField(spawner, "customerPrefab", prefabTemplate);
 
             var spawnPoint = new GameObject("SpawnPoint").transform;
             SetPrivateField(spawner, "spawnPoint", spawnPoint);
+            SetPrivateField(spawner, "station", serveStation);
+            SetPrivateField(spawner, "sServeStation", _serveSettings);
 
             spawnerObject.SetActive(true);
-            yield return new WaitForSeconds(4f);
+            yield return new WaitForSeconds(2.5f);
 
+            Assert.That(serveStation.CustomerCount, Is.GreaterThan(0));
             Assert.That(serveStation.CustomerCount, Is.LessThanOrEqualTo(3));
 
             spawnerObject.SetActive(false);
@@ -367,18 +464,20 @@ namespace Engineering.Tests
 
             var serveStation = _serveStationObject.GetComponent<ServeStation>();
             var spawnerObject = new GameObject("Spawner");
+            spawnerObject.SetActive(false);
             var spawner = spawnerObject.AddComponent<CustomerSpawner>();
-            SetPrivateField(spawner, "station", serveStation);
-            SetPrivateField(spawner, "sServeStation", _serveSettings);
 
             var prefabTemplate = new GameObject("CustomerPrefab");
-            prefabTemplate.SetActive(false);
-            prefabTemplate.AddComponent<NavMeshAgent>();
+            prefabTemplate.SetActive(true);
+            var agent = prefabTemplate.AddComponent<NavMeshAgent>();
+            agent.enabled = false;
             prefabTemplate.AddComponent<CustomerBot>();
             SetPrivateField(spawner, "customerPrefab", prefabTemplate);
 
             var spawnPoint = new GameObject("SpawnPoint").transform;
             SetPrivateField(spawner, "spawnPoint", spawnPoint);
+            SetPrivateField(spawner, "station", serveStation);
+            SetPrivateField(spawner, "sServeStation", _serveSettings);
 
             spawnerObject.SetActive(true);
             yield return new WaitForSeconds(1.2f);
