@@ -2046,7 +2046,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 205678402b96f664795ce235249a0e75, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Engineering::Engineering.Engineering.Scripts.Mono.Actors.CustomerQueue.CustomerSpawner
-  station: {fileID: 1111111111111111101}
+  station: {fileID: 1111111111111111101, guid: fa7b1ce1aaa50494d8832ce015e049ac, type: 3}
   customerPrefab: {fileID: 1650000000000000001, guid: a44e3adc3ac34f4db951f61f7fc7a347, type: 3}
   spawnPoint: {fileID: 8880000000000003001}
   approachWaypoints:
