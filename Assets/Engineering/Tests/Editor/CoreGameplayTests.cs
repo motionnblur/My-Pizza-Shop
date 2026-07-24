@@ -123,6 +123,7 @@ namespace Engineering.Tests
         public void SetUp()
         {
             _relayObject = new GameObject("PlayerTriggerRelayTest");
+            _relayObject.AddComponent<BoxCollider>();
             _relay = _relayObject.AddComponent<PlayerTriggerRelay>();
         }
 

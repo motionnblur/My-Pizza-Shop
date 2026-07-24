@@ -97,8 +97,11 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
             _queueIndex = queueIndex;
             _hasReachedAssignedSlot = false;
 
-            _agent.isStopped = false;
-            _agent.avoidancePriority = queueIndex;
+            if (_agent != null && _agent.isOnNavMesh)
+            {
+                _agent.isStopped = false;
+                _agent.avoidancePriority = queueIndex;
+            }
 
             if (_state == BotState.AtSlot || _state == BotState.MovingToSlot)
             {
