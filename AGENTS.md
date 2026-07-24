@@ -28,7 +28,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 | `Assets/Engineering/Scripts/Mono/Player/` | Player movement, wallet, and trigger helpers. |
 | `Assets/Engineering/Scripts/Mono/Areas/BuyingArea.cs` | Trigger-driven unlock/purchase zone. |
 | `Assets/Engineering/Scripts/Mono/Actors/GrillStation/` | Autonomous pizza production station and its player-collection trigger. |
-| `Assets/Engineering/Scripts/Mono/Actors/ServeStation/` | Player deposits pizzas into station storage (visual stack); station storage is sold to the front customer; money awarded per pizza served; raises `PizzaServed` event. |
+| `Assets/Engineering/Scripts/Mono/Actors/ServeStation/` | Player deposits pizzas into station storage through `PlateTrigger`; `ServeTrigger` sells storage to the front customer; money is awarded per pizza served and `PizzaServed` is raised. |
 | `Assets/Engineering/Scripts/Mono/Actors/TrashStation/` | Trash disposal station; removes all pizzas from player with DoTween fly-and-shrink animation, raises `PizzaTrashed` event. |
 | `Assets/Engineering/Scripts/Mono/Actors/CustomerQueue/` | `CustomerBot` — NavMeshAgent-driven bot with approach-waypoint traversal and queue-slot movement. `CustomerSpawner` — configurable timed coroutine spawning customers with random orders. |
 | `Assets/Engineering/Scripts/Mono/Player/PlayerPizzaInventory.cs` | Player pizza capacity, count (`TryAdd`/`TryRemove`), and overhead visual stack. |
@@ -40,7 +40,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 | `Assets/Engineering/ScriptableObjects/SIntEventChannel.cs` | Decoupled integer-value event channel used by the pizza inventory UI. |
 | `Assets/Engineering/Prefabs/PizzaVisual.prefab` | Placeholder pizza visual used by the oven and player stacks. |
 | `Assets/Engineering/Prefabs/CustomerBot.prefab` | Customer-bot prefab — capsule visual, NavMeshAgent, CapsuleCollider, CustomerBot component. |
-| `Assets/Engineering/Prefabs/ServingStation.prefab` | Serving-station prefab — `ServeStation` on root, `ServePlate` on `triggerArea`, `CustomerQueue` child with 10 `CustomerSlot_0–9` queue-slot transforms. |
+| `Assets/Engineering/Prefabs/ServingStation.prefab` | Serving-station prefab — `ServeStation` on root, separate `plateTrigger`/`serveTrigger` children, and `CustomerQueue` with 10 `CustomerSlot_0–9` queue-slot transforms. |
 | `Assets/Engineering/Prefabs/TrashStation.prefab` | Trash-station prefab — `TrashStation` on root, `TrashPlate` on `triggerArea`, `TrashTarget` child. |
 | `Assets/Scenes/` | Authored scenes. |
 | `Assets/Settings/` | Render-pipeline assets and project visual settings. |
@@ -66,8 +66,8 @@ This file is the fast entry point for AI agents and contributors. Read it before
 - `EconomyManager` raises `GroundMoneyCollected` after a successful ground-money transaction and `BuyingAreaPurchased` after an area is purchased. `SoundManager` listens to these channels and owns clip selection/playback.
 - `GrillStation` owns ready-pizza state and production; `GrillPlate` only forwards player trigger collection. `PlayerPizzaInventory.TryAdd` enforces player capacity and returns the accepted amount.
 - `GrillStation` positions its ready-pizza stack from `GrillPlate.PizzaStackBasePosition`, which uses the plate collider's `bounds.max.y`; do not replace this with a hard-coded pivot offset.
-- `ServeStation` manages an ordered customer queue via `List<CustomerBot>`. `RegisterCustomer` reserves a slot immediately upon spawn. `TryDepositPizzas` transfers player pizzas into station storage (up to `maxStoredPizzas`), does not award money or raise events. `TryServeFrontCustomer` (no-arg) transfers `min(storedPizzaCount, frontCustomerRemainingOrder)` from station storage to the front customer, awards money for delivered pizzas, raises `PizzaServed` once, and updates the station's pizza visual stack. A completed front customer is removed and destroyed, and every remaining customer is reassigned to the preceding queue slot via `AssignQueueSlot`. The station visual pool is created in `OnEnable` from `pizzaVisualPrefab` and `pizzaStackSpacing`, anchored at `ServePlate.PizzaStackBasePosition`.
-- `ServePlate` lives on `triggerArea` and uses its trigger `BoxCollider` for player detection; the plate object has a separate non-trigger `BoxCollider` for `PizzaStackBasePosition`. The pizza stack anchor position comes from the plate collider's `bounds.max.y`. The trigger callback calls `TryDepositPizzas` then `TryServeFrontCustomer`.
+- `ServeStation` manages an ordered customer queue via `List<CustomerBot>`. `RegisterCustomer` reserves a slot immediately upon spawn. `TryDepositPizzas` transfers player pizzas into station storage (up to `maxStoredPizzas`), does not award money or raise events. `TryServeFrontCustomer` (no-arg) transfers `min(storedPizzaCount, frontCustomerRemainingOrder)` from station storage to the front customer, awards money for delivered pizzas, raises `PizzaServed` once, and updates the station's pizza visual stack. A completed front customer is removed and destroyed, and every remaining customer is reassigned to the preceding queue slot via `AssignQueueSlot`. The station visual pool is created in `OnEnable` from `pizzaVisualPrefab` and `pizzaStackSpacing`, anchored at the assigned plate collider's top surface.
+- `PlateTrigger` and `ServeTrigger` are separate child trigger relays on the serving-station prefab. `PlateTrigger` deposits pizzas on enter; `ServeTrigger` serves the front customer on enter/stay. The station stack anchor comes from the assigned non-trigger plate collider's `bounds.max.y`.
 - `TrashStation` removes all pizzas from the player via `PlayerPizzaInventory.TryRemove`, spawns temp visuals at the player's pizza stack world positions, animates them to `TrashTarget` with DoTween (`DOMove` + `DOScale(0)`), then destroys them. Raises `PizzaTrashed` event for SFX. `TrashPlate` on `triggerArea` forwards player detection to the station.
 - Do not rename Input action maps/actions, tags, or serialized fields without updating their scene/prefab and code consumers.
 
@@ -83,7 +83,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 
 ## Validation
 
-- The project currently contains 15 EditMode and 36 PlayMode tests. Run the affected suite after gameplay changes; test counts alone do not prove they passed.
+- The project source currently declares 15 EditMode and 58 PlayMode tests. Run the affected suite after gameplay changes; test counts alone do not prove they passed.
 - For script changes, compile in Unity and check Console errors. For gameplay changes, exercise the affected flow in Play Mode when the Editor is available.
 - Do not claim a successful build or scene validation without actually performing it.
 

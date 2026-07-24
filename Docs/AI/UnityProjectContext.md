@@ -5,8 +5,8 @@
 ## Project Summary
 
 - **Project root:** repository root
-- **Last analyzed:** 2026-07-24
-- **Last analyzed commit:** `7d409cf`
+- **Last analyzed:** 2026-07-25
+- **Last analyzed commit:** `1d312e0`
 - **Summary:** Early-stage casual 3D game named *My Pizza Shop*. The current gameplay slice includes movement, wallet and ground-money collection, timed area purchases, autonomous pizza production and collection, player pizza stacks, pizza serving station with customer queue and money reward, trash station with DoTween fly-and-shrink animation, UI counters, pooled DOTween money-transfer effects, customer bot NavMesh movement, timed customer spawner, and ScriptableObject event channels for decoupled gameplay feedback.
 
 ## Confirmed Environment
@@ -24,7 +24,7 @@
 | Input | Input System 1.19.0; `InputManager` uses an asset-backed `Player` action map | Confirmed | `Packages/manifest.json`, `ProjectSettings/ProjectSettings.asset`, `Assets/Engineering/Scripts/Mono/Managers/InputManager.cs` |
 | Navigation | AI Navigation 2.0.13 is installed and used by `CustomerBot` for NavMesh movement; MainScene has a baked NavMeshSurface covering SpawnPoint, 2 waypoints, and 10 queue slots | Confirmed | `Packages/manifest.json`, `CustomerBot.cs`, `Assets/Scenes/MainScene_NavMeshData.asset` |
 | UI | UGUI 2.0.0 is installed; project UI usage not inspected | Confirmed / unknown usage | `Packages/manifest.json` |
-| Tests | Unity Test Framework 1.6.0 is installed; 15 EditMode and 48 PlayMode tests cover core gameplay, UI, economy, money-animation pooling, pizza inventory, grill production, serving station with customer queue, and trash station | Confirmed | `Packages/manifest.json`, `Assets/Engineering/Tests/` |
+| Tests | Unity Test Framework 1.6.0 is installed; source declares 15 EditMode and 58 PlayMode test cases covering core gameplay, UI, economy, money-animation pooling, pizza inventory, grill production, serving station with customer queue, and trash station | Confirmed; execution unverified | `Packages/manifest.json`, `Assets/Engineering/Tests/` |
 | Tweening | DOTween is included as a vendor plugin and actively used for money-transfer animation | Confirmed | `Assets/Plugins/Demigiant/DOTween/`, `AnimationManager.cs` |
 | Gameplay events | `SVoidEventChannel` decouples parameterless gameplay feedback; `SIntEventChannel` publishes pizza inventory counts to UI | Confirmed | Event-channel sources and assets, `EconomyManager.cs`, `SoundManager.cs`, `PlayerPizzaInventory.cs`, `UIManager.cs` |
 | Other tooling | Timeline, Visual Scripting, Rider and Visual Studio integrations are installed; first-party usage is unverified | Confirmed / unverified usage | `Packages/manifest.json` |
@@ -35,7 +35,7 @@
 | --- | --- | --- | --- |
 | `Assets/Engineering/Scripts/Mono/` | First-party runtime MonoBehaviours: managers, player, areas, and collectible items | Confirmed | Folder and source inventory |
 | `Assets/Engineering/Scripts/Mono/Actors/GrillStation/` | Autonomous pizza production and its collection trigger | Confirmed | `GrillStation.cs`, `GrillPlate.cs` |
-| `Assets/Engineering/Scripts/Mono/Actors/ServeStation/` | Player-to-station pizza serving with customer queue and money reward | Confirmed | `ServeStation.cs`, `ServePlate.cs` |
+| `Assets/Engineering/Scripts/Mono/Actors/ServeStation/` | Player-to-station pizza storage/serving with customer queue, money reward, and separate deposit/serve trigger relays | Confirmed | `ServeStation.cs`, `PlateTrigger.cs`, `ServeTrigger.cs` |
 | `Assets/Engineering/Scripts/Mono/Actors/CustomerQueue/` | Customer bot NavMesh movement and timed customer spawner | Confirmed | `CustomerBot.cs`, `CustomerSpawner.cs` |
 | `Assets/Engineering/Scripts/Mono/Actors/TrashStation/` | Player-to-station pizza disposal with DoTween animation | Confirmed | `TrashStation.cs`, `TrashPlate.cs` |
 | `Assets/Engineering/ScriptableObjects/` | First-party ScriptableObject definitions for economy and animation tuning | Confirmed | `SEconomy.cs`, `SAnimation.cs` |
@@ -66,7 +66,7 @@
 | Player movement | Rigidbody velocity set in `FixedUpdate`, camera-relative | Confirmed | `PlayerMovement.cs` |
 | Economy | ScriptableObject-configured payment rate, coroutine-based purchase areas, trigger-based ground-money collection, and pizza-serving money rewards | Confirmed | `SEconomy.cs`, `SAnimation.cs`, `EconomyManager.cs`, `BuyingArea.cs`, `MoneyToCollect.cs`, `ServeStation.cs` |
 | Pizza production | Each `GrillStation` produces independently up to a ScriptableObject-configured capacity; `GrillPlate` collects ready pizzas into the player inventory | Confirmed | `SGrillStation.cs`, `GrillStation.cs`, `GrillPlate.cs`, `PlayerPizzaInventory.cs` |
-| Pizza serving | `ServeStation` manages an ordered `List<CustomerBot>` queue and station pizza storage. `RegisterCustomer` assigns queue-slot transforms immediately. `TryDepositPizzas` transfers player pizzas into station storage (no money, no event). `TryServeFrontCustomer` (no-arg) transfers `min(storedPizzaCount, frontCustomerRemainingOrder)` from station storage, awards money, raises `PizzaServed`, and removes/reassigns slots on completion. Station has a pizza visual pool created in `OnEnable` from `pizzaVisualPrefab` and `pizzaStackSpacing`. | Confirmed | `SServeStation.cs`, `ServeStation.cs`, `ServePlate.cs`, `PlayerPizzaInventory.cs`, `EconomyManager.cs`, `CustomerBot.cs` |
+| Pizza serving | `ServeStation` manages an ordered `List<CustomerBot>` queue and station pizza storage. `RegisterCustomer` assigns queue-slot transforms immediately. `TryDepositPizzas` transfers player pizzas into station storage (no money, no event). `TryServeFrontCustomer` (no-arg) transfers `min(storedPizzaCount, frontCustomerRemainingOrder)` from station storage, awards money, raises `PizzaServed`, and removes/reassigns slots on completion. `PlateTrigger` deposits on enter; `ServeTrigger` serves on enter/stay. Station has a pizza visual pool created in `OnEnable` from `pizzaVisualPrefab` and `pizzaStackSpacing`. | Confirmed | `SServeStation.cs`, `ServeStation.cs`, `PlateTrigger.cs`, `ServeTrigger.cs`, `PlayerPizzaInventory.cs`, `EconomyManager.cs`, `CustomerBot.cs` |
 | Customer queue | `CustomerBot` traverses approach waypoints then moves to its assigned queue slot via `NavMeshAgent`. `CustomerSpawner` runs a timed coroutine, randomizing orders within configured min/max and respecting station capacity. | Confirmed | `CustomerBot.cs`, `CustomerSpawner.cs`, `SServeStation.cs` |
 | Pizza trash | `TrashStation` removes all pizzas from the player, spawns temp visuals at the player's pizza stack world positions, animates them to `TrashTarget` with staggered DoTween (`DOMove` + `DOScale(0)`), then destroys them; raises `PizzaTrashed` event for SFX | Confirmed | `STrashStation.cs`, `TrashStation.cs`, `TrashPlate.cs`, `PlayerPizzaInventory.cs` |
 | Pizza presentation | The player inventory maintains a pooled overhead pizza stack; the oven stack starts at the plate collider's world-space top surface; a typed inventory-count Event Channel updates UI | Confirmed | `GrillStation.cs`, `GrillPlate.cs`, `PlayerPizzaInventory.cs`, `SIntEventChannel.cs`, `UIManager.cs` |
@@ -87,7 +87,7 @@
 ## Testing And Validation
 
 - **EditMode tests:** 15 tests in `Assets/Engineering/Tests/Editor/`; they cover wallet, trigger relays, movement, ground-money prefab configuration, Event Channel listener registration, pizza inventory capacity (TryAdd/TryRemove), and the plate-collider stack origin.
-- **PlayMode tests:** 36 tests in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, pickup collection/UI updates, player-only collection, duplicate-trigger protection, moving-player animation targeting, economy Event Channel publication, pizza production/partial collection, pizza serving with customer queue (front-customer delivery, partial delivery, completed-order removal, slot guard, capacity, money, events, trigger flow, player/non-player tag filtering), customer spawner (order range, capacity enforcement, disabled cleanup), pizza trashing (removal, events, animation, guard conditions, trigger flow), UI singleton behavior, and money-animation pool reuse/cleanup.
+- **PlayMode tests:** 58 `[Test]`/`[UnityTest]` declarations in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, pickup collection/UI updates, player-only collection, duplicate-trigger protection, moving-player animation targeting, economy Event Channel publication, pizza production/partial collection, pizza serving with customer queue (front-customer delivery, partial delivery, completed-order removal, slot guard, capacity, money, events, trigger flow, player/non-player tag filtering), customer spawner (order range, capacity enforcement, disabled cleanup), pizza trashing (removal, events, animation, guard conditions, trigger flow), UI singleton behavior, and money-animation pool reuse/cleanup. Test execution remains unrecorded.
 - **CI/build validation:** None found.
 - **Last recorded commands:** EditMode (`-testPlatform EditMode`) 10/10 passed; PlayMode (`-testPlatform PlayMode`) 17/17 passed on 2026-07-23, before the pizza tests were added. The current 14/20 suites have not been recorded as executed.
 - **Recommended minimum validation:** Run both test suites, then manually exercise the scene physical trigger, camera, and input wiring in Play Mode.
@@ -107,12 +107,13 @@
 - Preserve Input System action names and the `Player` tag unless all consumers and serialized references are migrated deliberately. The `Player` map also currently includes `Crouch` and `Jump`, though no inspected runtime consumer uses them.
 - Verify the Build Settings scene list in Unity before relying on it or changing it.
 - Do not infer that installed packages are actively used without source/asset evidence.
-- `AGENTS.md` describes `EconomyManager` as the sole persistent singleton, but current code also makes `UIManager` and `AnimationManager` persistent singletons; treat the code as authoritative until that guide is reconciled.
+- `EconomyManager`, `UIManager`, `AnimationManager`, and `SoundManager` are scene-authored persistent singletons. Their player/UI dependencies are therefore only resolved safely for the current single-scene setup; additive or replacement scene loading has not been validated.
 
 ## Unknowns And Confidence
 
 - The intended startup scene is **unknown** due to the `SampleScene`/`MainScene` mismatch.
-- Scene hierarchy was not inspected through a Unity MCP connection. Active Editor logs confirmed imports and no new C# compiler errors, but full current test execution and Play Mode verification remain unrecorded.
+- `MainScene` assigns `pizzaServedEvent` on `ServingStation`, but its `SoundManager` has no `pizzaServedEvent` reference; the configured serve SFX therefore cannot be received in that scene.
+- No Unity MCP provider or Editor-console capability was available to this audit. Full current test execution, Console inspection, and Play Mode verification remain unrecorded.
 - The project is likely Android-focused, based on explicit Android settings, but release targets are not confirmed.
 
 ## Source Files Inspected
@@ -144,7 +145,8 @@
 - `Assets/Engineering/Scripts/Mono/Actors/GrillStation/GrillStation.cs`
 - `Assets/Engineering/Scripts/Mono/Actors/GrillStation/GrillPlate.cs`
 - `Assets/Engineering/Scripts/Mono/Actors/ServeStation/ServeStation.cs`
-- `Assets/Engineering/Scripts/Mono/Actors/ServeStation/ServePlate.cs`
+- `Assets/Engineering/Scripts/Mono/Actors/ServeStation/PlateTrigger.cs`
+- `Assets/Engineering/Scripts/Mono/Actors/ServeStation/ServeTrigger.cs`
 - `Assets/Engineering/Scripts/Mono/Actors/CustomerQueue/CustomerBot.cs`
 - `Assets/Engineering/Scripts/Mono/Actors/CustomerQueue/CustomerSpawner.cs`
 - `Assets/Engineering/Scripts/Mono/Actors/TrashStation/TrashStation.cs`
