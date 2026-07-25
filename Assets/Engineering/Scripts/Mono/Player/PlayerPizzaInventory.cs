@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Engineering.ScriptableObjects;
+using Engineering.Scripts.Domain.Inventory;
 using UnityEngine;
 
 namespace Engineering.Scripts.Mono.Player
@@ -13,9 +14,17 @@ namespace Engineering.Scripts.Mono.Player
         [SerializeField] private SIntEventChannel pizzaInventoryChangedEvent;
 
         private readonly List<GameObject> _pizzaVisuals = new List<GameObject>();
-        private int _count;
+        private PizzaInventoryModel _model;
 
-        public int Count => _count;
+        public int Count
+        {
+            get
+            {
+                EnsureModel();
+                return _model.Count;
+            }
+        }
+
         public int Capacity => capacity;
         public Transform PizzaStackAnchor => pizzaStackAnchor;
         public float PizzaStackSpacing => pizzaStackSpacing;
@@ -28,37 +37,34 @@ namespace Engineering.Scripts.Mono.Player
 
         private void Start()
         {
-            pizzaInventoryChangedEvent?.Raise(_count);
+            pizzaInventoryChangedEvent?.Raise(Count);
         }
 
         public int TryAdd(int requestedAmount)
         {
-            if (requestedAmount <= 0)
-                return 0;
-
-            var acceptedAmount = Mathf.Min(requestedAmount, capacity - _count);
-            if (acceptedAmount <= 0)
-                return 0;
-
-            _count += acceptedAmount;
-            RefreshVisuals();
-            pizzaInventoryChangedEvent?.Raise(_count);
-            return acceptedAmount;
+            EnsureModel();
+            return _model.TryAdd(requestedAmount);
         }
 
         public int TryRemove(int requestedAmount)
         {
-            if (requestedAmount <= 0)
-                return 0;
+            EnsureModel();
+            return _model.TryRemove(requestedAmount);
+        }
 
-            var removedAmount = Mathf.Min(requestedAmount, _count);
-            if (removedAmount <= 0)
-                return 0;
+        private void EnsureModel()
+        {
+            if (_model != null)
+                return;
 
-            _count -= removedAmount;
+            _model = new PizzaInventoryModel(capacity);
+            _model.Changed += OnModelChanged;
+        }
+
+        private void OnModelChanged(int count)
+        {
             RefreshVisuals();
-            pizzaInventoryChangedEvent?.Raise(_count);
-            return removedAmount;
+            pizzaInventoryChangedEvent?.Raise(count);
         }
 
         private void CreateVisualPool()
@@ -78,8 +84,10 @@ namespace Engineering.Scripts.Mono.Player
 
         private void RefreshVisuals()
         {
+            var count = _model != null ? _model.Count : 0;
+
             for (var index = 0; index < _pizzaVisuals.Count; index++)
-                _pizzaVisuals[index].SetActive(index < _count);
+                _pizzaVisuals[index].SetActive(index < count);
         }
     }
 }
