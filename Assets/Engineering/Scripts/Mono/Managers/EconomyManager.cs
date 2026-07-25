@@ -16,6 +16,9 @@ namespace Engineering.Scripts.Mono.Managers
 
         public void ProcessPayment(BuyingArea ba)
         {
+            if (ba == null) return;
+            if (currencyService == null || currencyService.Wallet == null) return;
+            if (sEconomy == null) return;
             if (_sAnimation == null || _sAnimation.moneySpendSpeed <= 0) return;
             if (_activePaymentCoroutine != null) return;
             _activePaymentCoroutine = StartCoroutine(DelayedPayment(ba));
@@ -32,9 +35,6 @@ namespace Engineering.Scripts.Mono.Managers
 
         private IEnumerator DelayedPayment(BuyingArea ba)
         {
-            if (ba == null || currencyService == null || currencyService.Wallet == null || sEconomy == null)
-                yield break;
-
             var wallet = currencyService.Wallet;
             var pay = sEconomy.playerMoneySpendRate;
             var delay = 1f / _sAnimation.moneySpendSpeed;

@@ -252,6 +252,15 @@ namespace Engineering.Tests
             yield return null;
 
             Assert.That(_fixture.Wallet.Money, Is.EqualTo(100));
+
+            SetPrivateField(_fixture.EconomyManager, "currencyService", _fixture.CurrencyService);
+            yield return null;
+
+            InvokePrivateMethod(_fixture.BuyingArea, "OnTriggerEnter", _fixture.PlayerCollider);
+            yield return null;
+
+            Assert.That(_fixture.Wallet.Money, Is.LessThan(100),
+                "Payment should proceed after currencyService is restored, proving no permanent lock.");
         }
 
         private static Fixture CreateFixture(
