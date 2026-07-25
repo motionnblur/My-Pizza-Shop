@@ -16,6 +16,12 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
         [SerializeField] private SServeStation sServeStation;
 
         private Coroutine _spawnCoroutine;
+        private Transform[] _cachedApproachWaypoints;
+
+        private void Awake()
+        {
+            _cachedApproachWaypoints = BuildApproachWaypoints();
+        }
 
         private void OnEnable()
         {
@@ -44,7 +50,7 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
 
                         if (customerBot != null)
                         {
-                            var waypoints = BuildApproachWaypoints();
+                            var waypoints = _cachedApproachWaypoints;
                             var orderAmount = Random.Range(sServeStation.minPizzasPerOrder, sServeStation.maxPizzasPerOrder + 1);
                             var orderModel = new CustomerOrderModel(orderAmount);
                             customerBot.Initialize(station, orderModel, waypoints);
