@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Engineering.ScriptableObjects;
+using Engineering.Scripts.Domain.ServeStation;
 using Engineering.Scripts.Mono.Managers;
 using Engineering.Scripts.Mono.Player;
 using Engineering.Scripts.Mono.Actors.CustomerQueue;
@@ -20,11 +21,11 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
 
         private readonly List<CustomerBot> _customers = new List<CustomerBot>();
         private readonly List<GameObject> _pizzaVisuals = new List<GameObject>();
-        private int _storedPizzaCount;
+        private ServeStationModel _model;
 
         public int CustomerCount => _customers.Count;
         public int QueueCapacity => sServeStation != null ? sServeStation.maxQueueCustomers : 0;
-        public int StoredPizzaCount => _storedPizzaCount;
+        public int StoredPizzaCount => _model?.StoredPizzaCount ?? 0;
 
         public void Initialize(CurrencyService currencyService)
         {
@@ -44,8 +45,26 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
 
         private void OnEnable()
         {
+            TryPrepareModel();
             CreateVisualPool();
             RefreshVisuals();
+        }
+
+        private bool TryPrepareModel()
+        {
+            if (sServeStation == null)
+                return false;
+
+            if (_model == null)
+            {
+                _model = new ServeStationModel(sServeStation.maxStoredPizzas, sServeStation.pricePerPizza);
+            }
+            else
+            {
+                _model.UpdateConfiguration(sServeStation.maxStoredPizzas, sServeStation.pricePerPizza);
+            }
+
+            return true;
         }
 
         public bool RegisterCustomer(CustomerBot customer)
@@ -67,30 +86,28 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
 
         public int TryDepositPizzas(PlayerPizzaInventory playerPizzaInventory)
         {
-            if (playerPizzaInventory == null || sServeStation == null)
+            if (playerPizzaInventory == null)
                 return 0;
 
-            var playerCount = playerPizzaInventory.Count;
-            if (playerCount <= 0)
+            if (!TryPrepareModel())
                 return 0;
 
-            var spaceAvailable = sServeStation.maxStoredPizzas - _storedPizzaCount;
-            if (spaceAvailable <= 0)
+            var requestedAmount = _model.CalculateDepositAmount(playerPizzaInventory.Count);
+            if (requestedAmount <= 0)
                 return 0;
 
-            var transferAmount = Mathf.Min(playerCount, spaceAvailable);
-            var removedAmount = playerPizzaInventory.TryRemove(transferAmount);
+            var removedAmount = playerPizzaInventory.TryRemove(requestedAmount);
             if (removedAmount <= 0)
                 return 0;
 
-            _storedPizzaCount += removedAmount;
+            var depositedAmount = _model.Deposit(removedAmount);
             RefreshVisuals();
-            return removedAmount;
+            return depositedAmount;
         }
 
         public int TryServeFrontCustomer()
         {
-            if (sServeStation == null)
+            if (!TryPrepareModel())
                 return 0;
 
             if (_currencyService == null || _currencyService.Wallet == null)
@@ -103,23 +120,18 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             if (!frontCustomer.HasReachedAssignedSlot)
                 return 0;
 
-            if (_storedPizzaCount <= 0)
+            var result = _model.TryServe(frontCustomer.RemainingPizzaCount);
+            if (!result.HasDelivery)
                 return 0;
 
-            var transferAmount = Mathf.Min(_storedPizzaCount, frontCustomer.RemainingPizzaCount);
-            if (transferAmount <= 0)
-                return 0;
-
-            _storedPizzaCount -= transferAmount;
-            frontCustomer.ReceivePizzas(transferAmount);
+            frontCustomer.ReceivePizzas(result.DeliveredPizzaCount);
             RefreshVisuals();
 
-            var moneyEarned = transferAmount * sServeStation.pricePerPizza;
-            _currencyService.Credit(moneyEarned);
+            _currencyService.Credit(result.MoneyEarned);
 
             pizzaServedEvent?.Raise();
 
-            if (frontCustomer.RemainingPizzaCount <= 0)
+            if (result.OrderCompleted)
             {
                 _customers.RemoveAt(0);
                 Destroy(frontCustomer.gameObject);
@@ -134,7 +146,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
                 }
             }
 
-            return transferAmount;
+            return result.DeliveredPizzaCount;
         }
 
         private void CreateVisualPool()
@@ -161,7 +173,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
 
                 _pizzaVisuals[index].transform.position = basePos + Vector3.up * (index * pizzaStackSpacing);
                 _pizzaVisuals[index].transform.rotation = Quaternion.identity;
-                _pizzaVisuals[index].SetActive(index < _storedPizzaCount);
+                _pizzaVisuals[index].SetActive(index < StoredPizzaCount);
             }
         }
         

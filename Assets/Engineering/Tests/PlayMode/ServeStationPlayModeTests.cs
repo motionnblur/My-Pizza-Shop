@@ -837,6 +837,68 @@ namespace Engineering.Tests
             Assert.That(_playerObject.GetComponent<PlayerWallet>().Money, Is.EqualTo(100));
         }
 
+        [UnityTest]
+        public IEnumerator DisableEnable_RetainsStorage()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+
+            var visualPrefab = new GameObject("PizzaVisual");
+            visualPrefab.AddComponent<MeshRenderer>();
+            SetPrivateField(serveStation, "pizzaVisualPrefab", visualPrefab);
+
+            var pizzaVisualsField = typeof(ServeStation).GetField("_pizzaVisuals",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            var pizzaVisuals = (List<GameObject>)pizzaVisualsField.GetValue(serveStation);
+            pizzaVisuals.Clear();
+
+            InvokePrivateMethod(serveStation, "CreateVisualPool");
+            InvokePrivateMethod(serveStation, "RefreshVisuals");
+
+            serveStation.TryDepositPizzas(_playerInventory);
+            var storedBefore = serveStation.StoredPizzaCount;
+            Assert.That(storedBefore, Is.GreaterThan(0));
+
+            pizzaVisuals = (List<GameObject>)pizzaVisualsField.GetValue(serveStation);
+            Assert.That(CountActive(pizzaVisuals), Is.EqualTo(storedBefore));
+
+            _serveStationObject.SetActive(false);
+            yield return null;
+
+            _serveStationObject.SetActive(true);
+            yield return null;
+
+            Assert.That(serveStation.StoredPizzaCount, Is.EqualTo(storedBefore));
+
+            pizzaVisuals = (List<GameObject>)pizzaVisualsField.GetValue(serveStation);
+            Assert.That(CountActive(pizzaVisuals), Is.EqualTo(storedBefore));
+
+            Object.Destroy(visualPrefab);
+        }
+
+        [UnityTest]
+        public IEnumerator RuntimePriceChange_AffectsNextServe()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 5, playerPizzaCount: 5, startMoney: 50);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var customer = CreateAndRegisterBot(serveStation, orderAmount: 5);
+            SetPrivateField(customer, "_hasReachedAssignedSlot", true);
+
+            serveStation.TryDepositPizzas(_playerInventory);
+            Assert.That(serveStation.StoredPizzaCount, Is.EqualTo(5));
+
+            _serveSettings.pricePerPizza = 20;
+
+            var walletBefore = _playerObject.GetComponent<PlayerWallet>().Money;
+            serveStation.TryServeFrontCustomer();
+
+            Assert.That(_playerObject.GetComponent<PlayerWallet>().Money, Is.EqualTo(walletBefore + 100));
+        }
+
         private void CreateQueueFixture(
             int maxQueueCustomers,
             int pricePerPizza,
