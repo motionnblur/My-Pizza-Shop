@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using Engineering.Scripts.Domain.CustomerQueue;
 using Engineering.Scripts.Mono.Actors.CustomerQueue;
 using Engineering.Scripts.Mono.Actors.ServeStation;
 using Engineering.ScriptableObjects;
@@ -89,7 +90,7 @@ namespace Engineering.Tests
             var customer1 = CreateAndRegisterBot(serveStation, 3);
 
             var customer2 = CreateCustomerBot(3);
-            customer2.Initialize(serveStation, 3, new Transform[0]);
+            customer2.Initialize(serveStation, new CustomerOrderModel(3), new Transform[0]);
             var registered = serveStation.RegisterCustomer(customer2);
 
             Assert.That(registered, Is.False);
@@ -364,11 +365,13 @@ namespace Engineering.Tests
             for (var i = 0; i < 3; i++)
             {
                 var customer = CreateCustomerBot(3);
+                customer.Initialize(serveStation, new CustomerOrderModel(3), new Transform[0]);
                 var registered = serveStation.RegisterCustomer(customer);
                 Assert.That(registered, Is.True, $"Customer {i} should register.");
             }
 
             var extraCustomer = CreateCustomerBot(3);
+            extraCustomer.Initialize(serveStation, new CustomerOrderModel(3), new Transform[0]);
             var rejected = serveStation.RegisterCustomer(extraCustomer);
 
             Assert.That(rejected, Is.False);
@@ -386,12 +389,14 @@ namespace Engineering.Tests
             for (var i = 0; i < 10; i++)
             {
                 var customer = CreateCustomerBot(3);
+                customer.Initialize(serveStation, new CustomerOrderModel(3), new Transform[0]);
                 Assert.That(serveStation.RegisterCustomer(customer), Is.True, $"Customer {i} should register.");
             }
 
             Assert.That(serveStation.CustomerCount, Is.EqualTo(10));
 
             var extraCustomer = CreateCustomerBot(3);
+            extraCustomer.Initialize(serveStation, new CustomerOrderModel(3), new Transform[0]);
             Assert.That(serveStation.RegisterCustomer(extraCustomer), Is.False);
         }
 
@@ -975,8 +980,9 @@ namespace Engineering.Tests
         private CustomerBot CreateAndRegisterBot(ServeStation station, int orderAmount)
         {
             var bot = CreateCustomerBot(orderAmount);
+            var orderModel = new CustomerOrderModel(orderAmount);
             var waypoints = new Transform[0];
-            bot.Initialize(station, orderAmount, waypoints);
+            bot.Initialize(station, orderModel, waypoints);
             station.RegisterCustomer(bot);
             return bot;
         }

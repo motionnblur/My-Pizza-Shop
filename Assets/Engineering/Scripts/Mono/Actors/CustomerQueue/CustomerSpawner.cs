@@ -1,5 +1,6 @@
 using System.Collections;
 using Engineering.ScriptableObjects;
+using Engineering.Scripts.Domain.CustomerQueue;
 using ServeStationType = Engineering.Scripts.Mono.Actors.ServeStation.ServeStation;
 using UnityEngine;
 
@@ -45,7 +46,8 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
                         {
                             var waypoints = BuildApproachWaypoints();
                             var orderAmount = Random.Range(sServeStation.minPizzasPerOrder, sServeStation.maxPizzasPerOrder + 1);
-                            customerBot.Initialize(station, orderAmount, waypoints);
+                            var orderModel = new CustomerOrderModel(orderAmount);
+                            customerBot.Initialize(station, orderModel, waypoints);
 
                             if (!station.RegisterCustomer(customerBot))
                                 Destroy(customerObject);

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Engineering.ScriptableObjects;
+using Engineering.Scripts.Domain.CustomerQueue;
 using Engineering.Scripts.Domain.ServeStation;
 using Engineering.Scripts.Mono.Managers;
 using Engineering.Scripts.Mono.Player;
@@ -22,8 +23,9 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
         private readonly List<CustomerBot> _customers = new List<CustomerBot>();
         private readonly List<GameObject> _pizzaVisuals = new List<GameObject>();
         private ServeStationModel _model;
+        private CustomerQueueModel _queueModel;
 
-        public int CustomerCount => _customers.Count;
+        public int CustomerCount => _queueModel?.Count ?? 0;
         public int QueueCapacity => sServeStation != null ? sServeStation.maxQueueCustomers : 0;
         public int StoredPizzaCount => _model?.StoredPizzaCount ?? 0;
 
@@ -64,6 +66,11 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
                 _model.UpdateConfiguration(sServeStation.maxStoredPizzas, sServeStation.pricePerPizza);
             }
 
+            if (_queueModel == null)
+            {
+                _queueModel = new CustomerQueueModel(sServeStation.maxQueueCustomers);
+            }
+
             return true;
         }
 
@@ -72,11 +79,19 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             if (customer == null || sServeStation == null)
                 return false;
 
-            if (_customers.Count >= sServeStation.maxQueueCustomers)
+            if (!TryPrepareModel())
+                return false;
+
+            var orderModel = customer.OrderModel;
+            if (orderModel == null)
                 return false;
 
             var slotIndex = _customers.Count;
             if (queueSlots == null || slotIndex >= queueSlots.Length || queueSlots[slotIndex] == null)
+                return false;
+
+            var enqueueResult = _queueModel.TryEnqueue(orderModel);
+            if (!enqueueResult.Accepted)
                 return false;
 
             _customers.Add(customer);
@@ -113,18 +128,22 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             if (_currencyService == null || _currencyService.Wallet == null)
                 return 0;
 
-            if (_customers.Count == 0)
+            if (_queueModel == null || !_queueModel.HasFront)
                 return 0;
 
             var frontCustomer = _customers[0];
             if (!frontCustomer.HasReachedAssignedSlot)
                 return 0;
 
-            var result = _model.TryServe(frontCustomer.RemainingPizzaCount);
+            var frontOrder = _queueModel.Front;
+            if (frontOrder == null)
+                return 0;
+
+            var result = _model.TryServe(frontOrder.RemainingPizzaCount);
             if (!result.HasDelivery)
                 return 0;
 
-            frontCustomer.ReceivePizzas(result.DeliveredPizzaCount);
+            frontOrder.ReceivePizzas(result.DeliveredPizzaCount);
             RefreshVisuals();
 
             _currencyService.Credit(result.MoneyEarned);
@@ -133,6 +152,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
 
             if (result.OrderCompleted)
             {
+                _queueModel.TryRemoveFront();
                 _customers.RemoveAt(0);
                 Destroy(frontCustomer.gameObject);
 

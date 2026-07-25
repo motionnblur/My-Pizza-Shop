@@ -1,3 +1,4 @@
+using Engineering.Scripts.Domain.CustomerQueue;
 using ServeStationType = Engineering.Scripts.Mono.Actors.ServeStation.ServeStation;
 using UnityEngine;
 using UnityEngine.AI;
@@ -8,7 +9,7 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
     public class CustomerBot : MonoBehaviour
     {
         private ServeStationType _station;
-        private int _remainingPizzaCount;
+        private CustomerOrderModel _orderModel;
         private Transform[] _approachWaypoints;
         private int _currentWaypointIndex;
         private Transform _assignedSlot;
@@ -19,7 +20,8 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
         private enum BotState { Approaching, MovingToSlot, AtSlot }
         private BotState _state;
 
-        public int RemainingPizzaCount => _remainingPizzaCount;
+        public CustomerOrderModel OrderModel => _orderModel;
+        public int RemainingPizzaCount => _orderModel?.RemainingPizzaCount ?? 0;
         public bool HasReachedAssignedSlot => _hasReachedAssignedSlot;
 
         private void Awake()
@@ -70,10 +72,10 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
             }
         }
 
-        public void Initialize(ServeStationType station, int orderAmount, Transform[] approachWaypoints)
+        public void Initialize(ServeStationType station, CustomerOrderModel orderModel, Transform[] approachWaypoints)
         {
             _station = station;
-            _remainingPizzaCount = orderAmount;
+            _orderModel = orderModel ?? throw new System.ArgumentNullException(nameof(orderModel));
             _approachWaypoints = approachWaypoints;
             _currentWaypointIndex = 0;
             _hasReachedAssignedSlot = false;
@@ -113,8 +115,7 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
 
         public void ReceivePizzas(int amount)
         {
-            if (amount <= 0) return;
-            _remainingPizzaCount = Mathf.Max(0, _remainingPizzaCount - amount);
+            _orderModel?.ReceivePizzas(amount);
         }
 
         private void TrySetDestination(Vector3 destination)
