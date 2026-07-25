@@ -1,4 +1,5 @@
-﻿using Engineering.ScriptableObjects;
+﻿using System;
+using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Managers;
 using UnityEngine;
 
@@ -9,20 +10,36 @@ namespace Engineering.Scripts.Mono.Items
         [SerializeField] private int moneyToCollect = 5;
         [SerializeField] private SVoidEventChannel groundMoneyCollectedEvent;
         [SerializeField] private SMoneyAnimationEventChannel moneyAnimationRequested;
-        [SerializeField] private CurrencyService currencyService;
+        private CurrencyService _currencyService;
         private bool _isCollected;
+
+        public void Initialize(CurrencyService currencyService)
+        {
+            if (currencyService == null)
+                throw new ArgumentNullException(nameof(currencyService));
+
+            if (_currencyService != null)
+            {
+                if (_currencyService != currencyService)
+                    throw new InvalidOperationException(
+                        $"{nameof(MoneyToCollect)}: already initialized with a different {nameof(CurrencyService)}.");
+                return;
+            }
+
+            _currencyService = currencyService;
+        }
 
         private void OnTriggerEnter(Collider other)
         {
             if (_isCollected || !other.CompareTag("Player"))
                 return;
 
-            if (currencyService == null || currencyService.Wallet == null)
+            if (_currencyService == null || _currencyService.Wallet == null)
                 return;
 
             _isCollected = true;
 
-            currencyService.Credit(moneyToCollect);
+            _currencyService.Credit(moneyToCollect);
 
             groundMoneyCollectedEvent?.Raise();
 
@@ -31,7 +48,7 @@ namespace Engineering.Scripts.Mono.Items
                 moneyAnimationRequested.Raise(new MoneyAnimationRequest
                 {
                     SourcePosition = transform.position,
-                    DestinationTransform = currencyService.Wallet.MoneyAnimationOrigin
+                    DestinationTransform = _currencyService.Wallet.MoneyAnimationOrigin
                 });
             }
 

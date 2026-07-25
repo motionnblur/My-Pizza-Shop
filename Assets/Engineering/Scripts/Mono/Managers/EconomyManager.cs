@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Areas;
 using UnityEngine;
@@ -11,13 +12,29 @@ namespace Engineering.Scripts.Mono.Managers
         [SerializeField] private SAnimation _sAnimation;
         [SerializeField] private SVoidEventChannel buyingAreaPurchasedEvent;
         [SerializeField] private SMoneyAnimationEventChannel moneyAnimationRequested;
-        [SerializeField] private CurrencyService currencyService;
+        private CurrencyService _currencyService;
         private Coroutine _activePaymentCoroutine;
+
+        public void Initialize(CurrencyService currencyService)
+        {
+            if (currencyService == null)
+                throw new ArgumentNullException(nameof(currencyService));
+
+            if (_currencyService != null)
+            {
+                if (_currencyService != currencyService)
+                    throw new InvalidOperationException(
+                        $"{nameof(EconomyManager)}: already initialized with a different {nameof(CurrencyService)}.");
+                return;
+            }
+
+            _currencyService = currencyService;
+        }
 
         public void ProcessPayment(BuyingArea ba)
         {
             if (ba == null) return;
-            if (currencyService == null || currencyService.Wallet == null) return;
+            if (_currencyService == null || _currencyService.Wallet == null) return;
             if (sEconomy == null) return;
             if (_sAnimation == null || _sAnimation.moneySpendSpeed <= 0) return;
             if (_activePaymentCoroutine != null) return;
@@ -35,7 +52,7 @@ namespace Engineering.Scripts.Mono.Managers
 
         private IEnumerator DelayedPayment(BuyingArea ba)
         {
-            var wallet = currencyService.Wallet;
+            var wallet = _currencyService.Wallet;
             var pay = sEconomy.playerMoneySpendRate;
             var delay = 1f / _sAnimation.moneySpendSpeed;
 
@@ -45,13 +62,13 @@ namespace Engineering.Scripts.Mono.Managers
             {
                 var animationTargetPosition = ba.transform.position;
 
-                if (currencyService.TrySpend(pay))
+                if (_currencyService.TrySpend(pay))
                 {
                     ba.AddPayment(pay);
 
                     yield return new WaitForSeconds(delay);
 
-                    if (currencyService.Wallet == null)
+                    if (_currencyService.Wallet == null)
                         break;
 
                     if (moneyAnimationRequested != null)

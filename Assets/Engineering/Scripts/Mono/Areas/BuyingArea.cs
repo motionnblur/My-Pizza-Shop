@@ -1,24 +1,39 @@
 ﻿using System;
 using Engineering.Scripts.Mono.Managers;
-using Engineering.Scripts.Mono.Player;
 using UnityEngine;
 
 namespace Engineering.Scripts.Mono.Areas
 {
     public class BuyingArea : MonoBehaviour
     {
-        [SerializeField] private EconomyManager economyManager;
+        private EconomyManager _economyManager;
         private int _unlockPrice = 100;
         private int _totalPricePlayerGive = 0;
         private bool isPurchased = false;
+
+        public void Initialize(EconomyManager economyManager)
+        {
+            if (economyManager == null)
+                throw new ArgumentNullException(nameof(economyManager));
+
+            if (_economyManager != null)
+            {
+                if (_economyManager != economyManager)
+                    throw new InvalidOperationException(
+                        $"{nameof(BuyingArea)}: already initialized with a different {nameof(EconomyManager)}.");
+                return;
+            }
+
+            _economyManager = economyManager;
+        }
 
         private void OnTriggerEnter(Collider other)
         {
             if (isPurchased) return;
             
-            if (other.CompareTag("Player") && economyManager != null)
+            if (other.CompareTag("Player") && _economyManager != null)
             {
-                economyManager.ProcessPayment(this);
+                _economyManager.ProcessPayment(this);
             }
         }
 
@@ -28,9 +43,9 @@ namespace Engineering.Scripts.Mono.Areas
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.CompareTag("Player") && economyManager != null)
+            if (other.CompareTag("Player") && _economyManager != null)
             {
-                economyManager.CancelPayment();
+                _economyManager.CancelPayment();
             }
         }
         
@@ -40,8 +55,8 @@ namespace Engineering.Scripts.Mono.Areas
             if (_totalPricePlayerGive >= _unlockPrice)
             {
                 isPurchased = true;
-                if (economyManager != null)
-                    economyManager.PlayerBuyBuyingArea(this);
+                if (_economyManager != null)
+                    _economyManager.PlayerBuyBuyingArea(this);
             }
         }
     }

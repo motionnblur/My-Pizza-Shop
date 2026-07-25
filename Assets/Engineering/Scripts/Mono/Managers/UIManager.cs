@@ -1,3 +1,4 @@
+using System;
 using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Player;
 using UnityEngine;
@@ -10,25 +11,61 @@ namespace Engineering.Scripts.Mono.Managers
         [SerializeField] private Text moneyText;
         [SerializeField] private Text pizzaText;
         [SerializeField] private SIntEventChannel pizzaInventoryChangedEvent;
-        [SerializeField] private PlayerWallet _playerWallet;
+        private PlayerWallet _playerWallet;
+        private bool _isWalletSubscribed;
+
+        public void Initialize(PlayerWallet playerWallet)
+        {
+            if (playerWallet == null)
+                throw new ArgumentNullException(nameof(playerWallet));
+
+            if (_playerWallet != null)
+            {
+                if (_playerWallet != playerWallet)
+                    throw new InvalidOperationException(
+                        $"{nameof(UIManager)}: already initialized with a different {nameof(PlayerWallet)}.");
+                return;
+            }
+
+            _playerWallet = playerWallet;
+
+            if (isActiveAndEnabled)
+            {
+                SubscribeToWallet();
+                UpdateMoneyText(_playerWallet.Money);
+            }
+        }
 
         private void OnEnable()
         {
             pizzaInventoryChangedEvent?.RegisterListener(UpdatePizzaText);
+            SubscribeToWallet();
             if (_playerWallet != null)
-            {
-                _playerWallet.BalanceChanged += OnBalanceChanged;
                 UpdateMoneyText(_playerWallet.Money);
-            }
         }
 
         private void OnDisable()
         {
             pizzaInventoryChangedEvent?.UnregisterListener(UpdatePizzaText);
-            if (_playerWallet != null)
-            {
-                _playerWallet.BalanceChanged -= OnBalanceChanged;
-            }
+            UnsubscribeFromWallet();
+        }
+
+        private void SubscribeToWallet()
+        {
+            if (_playerWallet == null || _isWalletSubscribed)
+                return;
+
+            _playerWallet.BalanceChanged += OnBalanceChanged;
+            _isWalletSubscribed = true;
+        }
+
+        private void UnsubscribeFromWallet()
+        {
+            if (!_isWalletSubscribed || _playerWallet == null)
+                return;
+
+            _playerWallet.BalanceChanged -= OnBalanceChanged;
+            _isWalletSubscribed = false;
         }
 
         private void OnBalanceChanged(int balance)

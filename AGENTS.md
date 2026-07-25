@@ -25,6 +25,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 | --- | --- |
 | `Assets/Engineering/Scripts/Mono/Managers/InputManager.cs` | Wraps the Input System's `Player` action map and publishes input events. |
 | `Assets/Engineering/Scripts/Mono/Managers/EconomyManager.cs` | Plain scene object; transfers wallet money to a purchase area over time. |
+| `Assets/Engineering/Scripts/Mono/Bootstrap/MainSceneInstaller.cs` | Composition root for MainScene; validates and initializes all cross-scene dependencies in `Awake`. |
 | `Assets/Engineering/Scripts/Mono/Player/` | Player movement, wallet, and trigger helpers. |
 | `Assets/Engineering/Scripts/Mono/Areas/BuyingArea.cs` | Trigger-driven unlock/purchase zone. |
 | `Assets/Engineering/Scripts/Mono/Actors/GrillStation/` | Autonomous pizza production station and its player-collection trigger. |
@@ -55,14 +56,15 @@ This file is the fast entry point for AI agents and contributors. Read it before
 - Cross-system gameplay feedback uses `SVoidEventChannel` and `SIntEventChannel` assets. Publishers raise an intent event; consumers subscribe through Inspector-assigned channel references rather than calling each other directly.
 - Pizza inventory count is published through the typed `SIntEventChannel`; UI listens to the channel instead of depending on the player inventory component.
 - There are **no static singletons or DontDestroyOnLoad managers**. All cross-component dependencies use `[SerializeField]` references wired through MainScene. Managers are plain scene objects; they are not singletons.
-- `EconomyManager` has a serialized `CurrencyService` reference instead of a static Instance. `BuyingArea` has a serialized `EconomyManager` reference. `ServeStation` and `MoneyToCollect` have serialized `CurrencyService` references. All are assigned in MainScene as scene-instance overrides on prefab instances.
+- `MainSceneInstaller` is the composition root for `MainScene`. Scene-object dependencies are injected through public `Initialize` methods called during `Awake`. Prefab-local and ScriptableObject references remain Inspector-assigned.
+- `EconomyManager` has a runtime `CurrencyService` reference set via `Initialize`. `BuyingArea` has a runtime `EconomyManager` reference set via `Initialize`. `ServeStation` and `MoneyToCollect` have runtime `CurrencyService` references set via `Initialize`. `PlayerMovement` has a runtime `InputManager` reference set via `Initialize`. `UIManager` has a runtime `PlayerWallet` reference set via `Initialize`.
 - Use physics movement in `FixedUpdate`, as `PlayerMovement` does.
 
 ## Important Contracts
 
 - The Input System action asset must include a `Player` map with `Move`, `Look`, `Attack`, `Interact`, `Previous`, `Next`, and `Sprint` actions.
-- `EconomyManager` requires an assigned `SEconomy` and a serialized `CurrencyService` reference.
-- `BuyingArea` expects collider trigger callbacks and calls its serialized `EconomyManager` reference.
+- `EconomyManager` requires an assigned `SEconomy` and a runtime `CurrencyService` reference via `Initialize`.
+- `BuyingArea` expects collider trigger callbacks and calls its runtime `EconomyManager` reference set via `Initialize`.
 - `EconomyManager` raises `GroundMoneyCollected` after a successful ground-money transaction and `BuyingAreaPurchased` after an area is purchased. `SoundManager` listens to these channels and owns clip selection/playback. `SoundManager` also subscribes to `PizzaServed` (raised by `ServeStation`) and `PizzaTrashed` (raised by `TrashStation`) via the same `SVoidEventChannel` pattern. `EconomyManager` also subscribes to `moneyAnimationRequested` to request money fly animations; `AnimationManager` listens to the same channel.
 - `GrillStation` owns ready-pizza state and production; `GrillPlate` only forwards player trigger collection. `PlayerPizzaInventory.TryAdd` enforces player capacity and returns the accepted amount.
 - `GrillStation` positions its ready-pizza stack from `GrillPlate.PizzaStackBasePosition`, which uses the plate collider's `bounds.max.y`; do not replace this with a hard-coded pivot offset.

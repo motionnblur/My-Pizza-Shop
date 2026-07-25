@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 using Engineering.Scripts.Mono.Managers;
 
@@ -8,7 +9,6 @@ namespace Engineering.Scripts.Mono.Player
     {
         private const string MeshChildName = "Mesh";
 
-        [SerializeField] private InputManager inputManager;
         [SerializeField] private Rigidbody _rb;
         [SerializeField] private float moveSpeed = 5f;
         [SerializeField] private float sprintMultiplier = 1.5f;
@@ -16,28 +16,62 @@ namespace Engineering.Scripts.Mono.Player
         [SerializeField] private Transform cameraTransform;
         [SerializeField] private float meshYawAtStart = 45f;
 
+        private InputManager _inputManager;
+        private bool _isInputSubscribed;
         private Vector2 moveInput;
         private bool isSprinting;
-        
+
+        public void Initialize(InputManager inputManager)
+        {
+            if (inputManager == null)
+                throw new ArgumentNullException(nameof(inputManager));
+
+            if (_inputManager != null)
+            {
+                if (_inputManager != inputManager)
+                    throw new InvalidOperationException(
+                        $"{nameof(PlayerMovement)}: already initialized with a different {nameof(InputManager)}.");
+                return;
+            }
+
+            _inputManager = inputManager;
+
+            if (isActiveAndEnabled)
+                SubscribeToInput();
+        }
 
         private void OnEnable()
         {
-            inputManager.MoveChanged += OnMoveChanged;
-            inputManager.SprintStarted += OnSprintStarted;
-            inputManager.SprintCanceled += OnSprintCanceled;
+            SubscribeToInput();
         }
 
         private void OnDisable()
         {
-            if (inputManager != null)
-            {
-                inputManager.MoveChanged -= OnMoveChanged;
-                inputManager.SprintStarted -= OnSprintStarted;
-                inputManager.SprintCanceled -= OnSprintCanceled;
-            }
-
+            UnsubscribeFromInput();
             moveInput = Vector2.zero;
             isSprinting = false;
+        }
+
+        private void SubscribeToInput()
+        {
+            if (_inputManager == null || _isInputSubscribed)
+                return;
+
+            _inputManager.MoveChanged += OnMoveChanged;
+            _inputManager.SprintStarted += OnSprintStarted;
+            _inputManager.SprintCanceled += OnSprintCanceled;
+            _isInputSubscribed = true;
+        }
+
+        private void UnsubscribeFromInput()
+        {
+            if (!_isInputSubscribed || _inputManager == null)
+                return;
+
+            _inputManager.MoveChanged -= OnMoveChanged;
+            _inputManager.SprintStarted -= OnSprintStarted;
+            _inputManager.SprintCanceled -= OnSprintCanceled;
+            _isInputSubscribed = false;
         }
 
         private void FixedUpdate()

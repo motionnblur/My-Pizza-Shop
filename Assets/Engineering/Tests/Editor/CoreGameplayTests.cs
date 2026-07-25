@@ -187,7 +187,7 @@ namespace Engineering.Tests
             _inputManagerObject = new GameObject("InputManagerTest");
             _inputManagerObject.SetActive(false);
             var inputManager = _inputManagerObject.AddComponent<InputManager>();
-            SetPrivateField(_movement, "inputManager", inputManager);
+            _movement.Initialize(inputManager);
             SetPrivateField(_movement, "_rb", _rigidbody);
             SetPrivateField(_movement, "cameraTransform", _cameraObject.transform);
             _playerObject.SetActive(true);

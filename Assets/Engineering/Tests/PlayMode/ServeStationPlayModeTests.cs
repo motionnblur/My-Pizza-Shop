@@ -821,7 +821,7 @@ namespace Engineering.Tests
         public IEnumerator TryServeFrontCustomer_ReturnsZeroWhenCurrencyServiceMissing()
         {
             CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
-            SetPrivateField(_serveStationObject.GetComponent<ServeStation>(), "currencyService", null);
+            SetPrivateField(_serveStationObject.GetComponent<ServeStation>(), "_currencyService", null);
             yield return null;
 
             var serveStation = _serveStationObject.GetComponent<ServeStation>();
@@ -894,9 +894,9 @@ namespace Engineering.Tests
 
             _currencyServiceObject = new GameObject("ServeCurrencyServiceTest");
             _currencyService = _currencyServiceObject.AddComponent<CurrencyService>();
-            SetPrivateField(_currencyService, "_playerWallet", wallet);
+            _currencyService.Initialize(wallet);
 
-            SetPrivateField(serveStation, "currencyService", _currencyService);
+            serveStation.Initialize(_currencyService);
         }
 
         private CustomerBot CreateCustomerBot(int orderAmount)

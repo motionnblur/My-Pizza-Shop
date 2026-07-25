@@ -1,3 +1,4 @@
+using Engineering.Scripts.Mono.Bootstrap;
 using Engineering.Scripts.Mono.Items;
 using Engineering.Scripts.Mono.Managers;
 using Engineering.Scripts.Mono.Player;
@@ -104,7 +105,7 @@ namespace Engineering.Tests
         }
     }
 
-    public class MainSceneEconomyIntegrationTests
+    public class MainSceneInstallerConfigurationTests
     {
         private Scene _mainScene;
         private Scene _previousActiveScene;
@@ -133,123 +134,120 @@ namespace Engineering.Tests
         }
 
         [Test]
-        public void MainScene_ProductionEconomyWiring_UsesSingleCurrencyServiceAndSharedMoneyAnimationChannel()
+        public void MainScene_ContainsExactlyOneInstaller()
         {
-            var currencyService = GetSingleSceneComponent<CurrencyService>(out var currencyServiceCount);
-            var playerWallet = GetSingleSceneComponent<PlayerWallet>(out var playerWalletCount);
-            var uiManager = GetSingleSceneComponent<UIManager>(out var uiManagerCount);
-            var animationManager = GetSingleSceneComponent<AnimationManager>(out var animationManagerCount);
-            var economyManager = GetSingleSceneComponent<EconomyManager>(out var economyManagerCount);
-
-            Assert.That(currencyServiceCount, Is.EqualTo(1),
-                "Expected exactly one CurrencyService in MainScene.");
-            Assert.That(playerWalletCount, Is.EqualTo(1),
-                "Expected exactly one PlayerWallet in MainScene.");
-            Assert.That(uiManagerCount, Is.EqualTo(1),
-                "Expected exactly one UIManager in MainScene.");
-            Assert.That(animationManagerCount, Is.EqualTo(1),
-                "Expected exactly one AnimationManager in MainScene.");
-            Assert.That(economyManagerCount, Is.EqualTo(1),
-                "Expected exactly one EconomyManager in MainScene.");
-
-            Assert.That(currencyService, Is.Not.Null,
-                "Expected a CurrencyService in MainScene.");
-            Assert.That(playerWallet, Is.Not.Null,
-                "Expected a PlayerWallet in MainScene.");
-            Assert.That(uiManager, Is.Not.Null,
-                "Expected a UIManager in MainScene.");
-            Assert.That(animationManager, Is.Not.Null,
-                "Expected an AnimationManager in MainScene.");
-            Assert.That(economyManager, Is.Not.Null,
-                "Expected an EconomyManager in MainScene.");
-
-            var moneyAnimationRequestedAsset = AssetDatabase.LoadAssetAtPath<SMoneyAnimationEventChannel>(
-                "Assets/Engineering/ScriptableObjects/Events/MoneyAnimationRequested.asset");
-
-            Assert.That(moneyAnimationRequestedAsset, Is.Not.Null,
-                "Expected MoneyAnimationRequested.asset to exist.");
-
-            Assert.That(GetObjectReference(currencyService, "_playerWallet"),
-                Is.SameAs(playerWallet),
-                "CurrencyService must reference the scene PlayerWallet.");
-            Assert.That(GetObjectReference(uiManager, "_playerWallet"),
-                Is.SameAs(playerWallet),
-                "UIManager must reference the scene PlayerWallet.");
-            Assert.That(GetObjectReference(animationManager, "moneyAnimationRequested"),
-                Is.SameAs(moneyAnimationRequestedAsset),
-                "AnimationManager must use MoneyAnimationRequested.asset.");
-            Assert.That(GetObjectReference(economyManager, "moneyAnimationRequested"),
-                Is.SameAs(moneyAnimationRequestedAsset),
-                "EconomyManager must use MoneyAnimationRequested.asset.");
+            var installers = GetAllSceneComponents<MainSceneInstaller>();
+            Assert.That(installers.Length, Is.EqualTo(1),
+                "Expected exactly one MainSceneInstaller in MainScene.");
         }
 
         [Test]
-        public void EconomyManager_ReferencesSceneCurrencyService()
+        public void Installer_HasAllCoreServiceReferencesAssigned()
         {
-            var economyManager = GetSingleSceneComponent<EconomyManager>(out _);
-            var currencyService = GetSingleSceneComponent<CurrencyService>(out _);
+            var installer = GetSingleSceneComponent<MainSceneInstaller>(out _);
+            Assert.That(installer, Is.Not.Null, "Expected a MainSceneInstaller in MainScene.");
 
-            Assert.That(economyManager, Is.Not.Null);
-            Assert.That(currencyService, Is.Not.Null);
+            var so = new SerializedObject(installer);
 
-            var referenced = GetObjectReference(economyManager, "currencyService");
-            Assert.That(referenced, Is.Not.Null,
-                "EconomyManager must have a CurrencyService reference assigned.");
-            Assert.That(referenced, Is.SameAs(currencyService),
-                "EconomyManager must reference the scene CurrencyService.");
+            AssertField(so, "inputManager", "InputManager");
+            AssertField(so, "playerWallet", "PlayerWallet");
+            AssertField(so, "currencyService", "CurrencyService");
+            AssertField(so, "economyManager", "EconomyManager");
+            AssertField(so, "playerMovement", "PlayerMovement");
+            AssertField(so, "uiManager", "UIManager");
         }
 
         [Test]
-        public void AllBuyingAreas_ReferenceSceneEconomyManager()
+        public void Installer_ConsumerArrays_HaveNoNullsOrDuplicates()
         {
-            var economyManager = GetSingleSceneComponent<EconomyManager>(out _);
-            Assert.That(economyManager, Is.Not.Null,
-                "Expected an EconomyManager in MainScene.");
+            var installer = GetSingleSceneComponent<MainSceneInstaller>(out _);
+            Assert.That(installer, Is.Not.Null, "Expected a MainSceneInstaller in MainScene.");
 
-            var allBuyingAreas = GetAllSceneComponents<BuyingArea>();
-            foreach (var area in allBuyingAreas)
+            var so = new SerializedObject(installer);
+
+            AssertConsumerArrayValid(so, "buyingAreas", "BuyingArea");
+            AssertConsumerArrayValid(so, "moneyPickups", "MoneyToCollect");
+            AssertConsumerArrayValid(so, "serveStations", "ServeStation");
+        }
+
+        [Test]
+        public void Installer_ListsEveryBuyingAreaInScene()
+        {
+            var installer = GetSingleSceneComponent<MainSceneInstaller>(out _);
+            var so = new SerializedObject(installer);
+            var arrayProp = so.FindProperty("buyingAreas");
+
+            var sceneBuyingAreas = GetAllSceneComponents<BuyingArea>();
+            Assert.That(arrayProp.arraySize, Is.EqualTo(sceneBuyingAreas.Length),
+                "Installer buyingAreas count must match the scene BuyingArea count.");
+
+            var installerAreas = new System.Collections.Generic.HashSet<BuyingArea>();
+            for (var i = 0; i < arrayProp.arraySize; i++)
             {
-                var referenced = GetObjectReference(area, "economyManager");
-                Assert.That(referenced, Is.Not.Null,
-                    $"BuyingArea '{area.name}' must have an EconomyManager reference assigned.");
-                Assert.That(referenced, Is.SameAs(economyManager),
-                    $"BuyingArea '{area.name}' must reference the scene EconomyManager.");
+                var element = arrayProp.GetArrayElementAtIndex(i).objectReferenceValue as BuyingArea;
+                Assert.That(element, Is.Not.Null, $"buyingAreas[{i}] must not be null.");
+                Assert.That(installerAreas.Add(element), Is.True,
+                    $"buyingAreas[{i}] duplicates an earlier entry.");
+            }
+
+            foreach (var area in sceneBuyingAreas)
+            {
+                Assert.That(installerAreas.Contains(area), Is.True,
+                    $"Scene BuyingArea '{area.name}' must be listed in the installer.");
             }
         }
 
         [Test]
-        public void AllServeStations_ReferenceSceneCurrencyService()
+        public void Installer_ListsEveryMoneyToCollectInScene()
         {
-            var currencyService = GetSingleSceneComponent<CurrencyService>(out _);
-            Assert.That(currencyService, Is.Not.Null,
-                "Expected a CurrencyService in MainScene.");
+            var installer = GetSingleSceneComponent<MainSceneInstaller>(out _);
+            var so = new SerializedObject(installer);
+            var arrayProp = so.FindProperty("moneyPickups");
 
-            var allServeStations = GetAllSceneComponents<ServeStation>();
-            foreach (var station in allServeStations)
+            var scenePickups = GetAllSceneComponents<MoneyToCollect>();
+            Assert.That(arrayProp.arraySize, Is.EqualTo(scenePickups.Length),
+                "Installer moneyPickups count must match the scene MoneyToCollect count.");
+
+            var installerPickups = new System.Collections.Generic.HashSet<MoneyToCollect>();
+            for (var i = 0; i < arrayProp.arraySize; i++)
             {
-                var referenced = GetObjectReference(station, "currencyService");
-                Assert.That(referenced, Is.Not.Null,
-                    $"ServeStation '{station.name}' must have a CurrencyService reference assigned.");
-                Assert.That(referenced, Is.SameAs(currencyService),
-                    $"ServeStation '{station.name}' must reference the scene CurrencyService.");
+                var element = arrayProp.GetArrayElementAtIndex(i).objectReferenceValue as MoneyToCollect;
+                Assert.That(element, Is.Not.Null, $"moneyPickups[{i}] must not be null.");
+                Assert.That(installerPickups.Add(element), Is.True,
+                    $"moneyPickups[{i}] duplicates an earlier entry.");
+            }
+
+            foreach (var pickup in scenePickups)
+            {
+                Assert.That(installerPickups.Contains(pickup), Is.True,
+                    $"Scene MoneyToCollect '{pickup.name}' must be listed in the installer.");
             }
         }
 
         [Test]
-        public void AllMoneyToCollect_ReferenceSceneCurrencyService()
+        public void Installer_ListsEveryServeStationInScene()
         {
-            var currencyService = GetSingleSceneComponent<CurrencyService>(out _);
-            Assert.That(currencyService, Is.Not.Null,
-                "Expected a CurrencyService in MainScene.");
+            var installer = GetSingleSceneComponent<MainSceneInstaller>(out _);
+            var so = new SerializedObject(installer);
+            var arrayProp = so.FindProperty("serveStations");
 
-            var allMoneyToCollect = GetAllSceneComponents<MoneyToCollect>();
-            foreach (var pickup in allMoneyToCollect)
+            var sceneStations = GetAllSceneComponents<ServeStation>();
+            Assert.That(arrayProp.arraySize, Is.EqualTo(sceneStations.Length),
+                "Installer serveStations count must match the scene ServeStation count.");
+
+            var installerStations = new System.Collections.Generic.HashSet<ServeStation>();
+            for (var i = 0; i < arrayProp.arraySize; i++)
             {
-                var referenced = GetObjectReference(pickup, "currencyService");
-                Assert.That(referenced, Is.Not.Null,
-                    $"MoneyToCollect '{pickup.name}' must have a CurrencyService reference assigned.");
-                Assert.That(referenced, Is.SameAs(currencyService),
-                    $"MoneyToCollect '{pickup.name}' must reference the scene CurrencyService.");
+                var element = arrayProp.GetArrayElementAtIndex(i).objectReferenceValue as ServeStation;
+                Assert.That(element, Is.Not.Null, $"serveStations[{i}] must not be null.");
+                Assert.That(installerStations.Add(element), Is.True,
+                    $"serveStations[{i}] duplicates an earlier entry.");
+            }
+
+            foreach (var station in sceneStations)
+            {
+                Assert.That(installerStations.Contains(station), Is.True,
+                    $"Scene ServeStation '{station.name}' must be listed in the installer.");
             }
         }
 
@@ -307,6 +305,33 @@ namespace Engineering.Tests
                 results.AddRange(rootGameObject.GetComponentsInChildren<T>(true));
             }
             return results.ToArray();
+        }
+
+        private static void AssertField(SerializedObject so, string propertyName, string displayName)
+        {
+            var prop = so.FindProperty(propertyName);
+            Assert.That(prop, Is.Not.Null,
+                $"Expected '{propertyName}' serialized property on MainSceneInstaller.");
+            Assert.That(prop.objectReferenceValue, Is.Not.Null,
+                $"MainSceneInstaller '{displayName}' must be assigned.");
+        }
+
+        private static void AssertConsumerArrayValid(SerializedObject so, string arrayPropertyName, string displayName)
+        {
+            var arrayProp = so.FindProperty(arrayPropertyName);
+            Assert.That(arrayProp, Is.Not.Null,
+                $"Expected '{arrayPropertyName}' serialized property on MainSceneInstaller.");
+
+            var seen = new System.Collections.Generic.HashSet<int>();
+            for (var i = 0; i < arrayProp.arraySize; i++)
+            {
+                var element = arrayProp.GetArrayElementAtIndex(i);
+                Assert.That(element.objectReferenceValue, Is.Not.Null,
+                    $"MainSceneInstaller.{arrayPropertyName}[{i}] must not be null.");
+                var id = element.objectReferenceValue.GetInstanceID();
+                Assert.That(seen.Add(id), Is.True,
+                    $"MainSceneInstaller.{arrayPropertyName}[{i}] duplicates an earlier entry.");
+            }
         }
 
         private static Object GetObjectReference(Object target, string propertyPath)

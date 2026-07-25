@@ -102,7 +102,7 @@ namespace Engineering.Tests
             var pickup = pickupObject.AddComponent<MoneyToCollect>();
             pickupObject.AddComponent<BoxCollider>().isTrigger = true;
             SetPrivateField(pickup, "moneyToCollect", 25);
-            SetPrivateField(pickup, "currencyService", _fixture.CurrencyService);
+            pickup.Initialize(_fixture.CurrencyService);
             yield return null;
 
             InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
@@ -123,7 +123,7 @@ namespace Engineering.Tests
             var pickup = pickupObject.AddComponent<MoneyToCollect>();
             pickupObject.AddComponent<BoxCollider>().isTrigger = true;
             SetPrivateField(pickup, "groundMoneyCollectedEvent", _fixture.GroundMoneyCollectedEvent);
-            SetPrivateField(pickup, "currencyService", _fixture.CurrencyService);
+            pickup.Initialize(_fixture.CurrencyService);
             yield return null;
 
             InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
@@ -142,7 +142,7 @@ namespace Engineering.Tests
             pickupObject.AddComponent<BoxCollider>().isTrigger = true;
             SetPrivateField(pickup, "moneyToCollect", 25);
             SetPrivateField(pickup, "moneyAnimationRequested", _fixture.MoneyAnimationRequested);
-            SetPrivateField(pickup, "currencyService", _fixture.CurrencyService);
+            pickup.Initialize(_fixture.CurrencyService);
             yield return null;
 
             InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
@@ -164,7 +164,7 @@ namespace Engineering.Tests
             var pickup = pickupObject.AddComponent<MoneyToCollect>();
             pickupObject.AddComponent<BoxCollider>().isTrigger = true;
             SetPrivateField(pickup, "moneyAnimationRequested", _fixture.MoneyAnimationRequested);
-            SetPrivateField(pickup, "currencyService", _fixture.CurrencyService);
+            pickup.Initialize(_fixture.CurrencyService);
             yield return null;
 
             InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
@@ -185,7 +185,7 @@ namespace Engineering.Tests
             var pickup = pickupObject.AddComponent<MoneyToCollect>();
             pickupObject.AddComponent<BoxCollider>().isTrigger = true;
             SetPrivateField(pickup, "moneyToCollect", 25);
-            SetPrivateField(pickup, "currencyService", _fixture.CurrencyService);
+            pickup.Initialize(_fixture.CurrencyService);
             var nonPlayerObject = new GameObject("NonPlayerCollider");
             var nonPlayerCollider = nonPlayerObject.AddComponent<BoxCollider>();
             yield return null;
@@ -209,7 +209,7 @@ namespace Engineering.Tests
             var pickup = pickupObject.AddComponent<MoneyToCollect>();
             pickupObject.AddComponent<BoxCollider>().isTrigger = true;
             SetPrivateField(pickup, "moneyToCollect", 25);
-            SetPrivateField(pickup, "currencyService", _fixture.CurrencyService);
+            pickup.Initialize(_fixture.CurrencyService);
             yield return null;
 
             InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
@@ -245,7 +245,7 @@ namespace Engineering.Tests
         public IEnumerator EconomyManager_DoesNotStartPaymentWhenCurrencyServiceMissing()
         {
             _fixture = CreateFixture(spendRate: 5, spendSpeed: 1f);
-            SetPrivateField(_fixture.EconomyManager, "currencyService", null);
+            SetPrivateField(_fixture.EconomyManager, "_currencyService", null);
             yield return null;
 
             InvokePrivateMethod(_fixture.BuyingArea, "OnTriggerEnter", _fixture.PlayerCollider);
@@ -253,7 +253,7 @@ namespace Engineering.Tests
 
             Assert.That(_fixture.Wallet.Money, Is.EqualTo(100));
 
-            SetPrivateField(_fixture.EconomyManager, "currencyService", _fixture.CurrencyService);
+            SetPrivateField(_fixture.EconomyManager, "_currencyService", _fixture.CurrencyService);
             yield return null;
 
             InvokePrivateMethod(_fixture.BuyingArea, "OnTriggerEnter", _fixture.PlayerCollider);
@@ -291,7 +291,7 @@ namespace Engineering.Tests
             // CurrencyService: wire wallet explicitly
             var currencyServiceObject = new GameObject("PaymentTestCurrencyService");
             var currencyService = currencyServiceObject.AddComponent<CurrencyService>();
-            SetPrivateField(currencyService, "_playerWallet", wallet);
+            currencyService.Initialize(wallet);
 
             // EconomyManager: wire currencyService explicitly
             var managerObject = new GameObject("PaymentTestEconomyManager");
@@ -300,14 +300,14 @@ namespace Engineering.Tests
             SetPrivateField(economyManager, "_sAnimation", sAnimation);
             SetPrivateField(economyManager, "buyingAreaPurchasedEvent", buyingAreaPurchasedEvent);
             SetPrivateField(economyManager, "moneyAnimationRequested", moneyAnimationRequested);
-            SetPrivateField(economyManager, "currencyService", currencyService);
+            economyManager.Initialize(currencyService);
 
             // UIManager: create inactive to set fields before OnEnable
             var uiManagerObject = new GameObject("PaymentTestUiManager");
             uiManagerObject.SetActive(false);
             var uiManager = uiManagerObject.AddComponent<UIManager>();
             SetPrivateField(uiManager, "moneyText", moneyText);
-            SetPrivateField(uiManager, "_playerWallet", wallet);
+            uiManager.Initialize(wallet);
             uiManagerObject.SetActive(true);
 
             GameObject moneyPrefab = null;
@@ -331,7 +331,7 @@ namespace Engineering.Tests
             var buyingAreaObject = new GameObject("PaymentTestBuyingArea");
             buyingAreaObject.AddComponent<BoxCollider>().isTrigger = true;
             var buyingArea = buyingAreaObject.AddComponent<BuyingArea>();
-            SetPrivateField(buyingArea, "economyManager", economyManager);
+            buyingArea.Initialize(economyManager);
 
             return new Fixture(
                 playerObject,

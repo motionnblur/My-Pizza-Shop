@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Managers;
@@ -15,7 +16,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
         [SerializeField] private GameObject pizzaVisualPrefab;
         [SerializeField] private BoxCollider plateCollider;
         [SerializeField, Min(0.01f)] private float pizzaStackSpacing = 0.14f;
-        [SerializeField] private CurrencyService currencyService;
+        private CurrencyService _currencyService;
 
         private readonly List<CustomerBot> _customers = new List<CustomerBot>();
         private readonly List<GameObject> _pizzaVisuals = new List<GameObject>();
@@ -24,6 +25,22 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
         public int CustomerCount => _customers.Count;
         public int QueueCapacity => sServeStation != null ? sServeStation.maxQueueCustomers : 0;
         public int StoredPizzaCount => _storedPizzaCount;
+
+        public void Initialize(CurrencyService currencyService)
+        {
+            if (currencyService == null)
+                throw new ArgumentNullException(nameof(currencyService));
+
+            if (_currencyService != null)
+            {
+                if (_currencyService != currencyService)
+                    throw new InvalidOperationException(
+                        $"{nameof(ServeStation)}: already initialized with a different {nameof(CurrencyService)}.");
+                return;
+            }
+
+            _currencyService = currencyService;
+        }
 
         private void OnEnable()
         {
@@ -76,7 +93,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             if (sServeStation == null)
                 return 0;
 
-            if (currencyService == null || currencyService.Wallet == null)
+            if (_currencyService == null || _currencyService.Wallet == null)
                 return 0;
 
             if (_customers.Count == 0)
@@ -98,7 +115,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             RefreshVisuals();
 
             var moneyEarned = transferAmount * sServeStation.pricePerPizza;
-            currencyService.Credit(moneyEarned);
+            _currencyService.Credit(moneyEarned);
 
             pizzaServedEvent?.Raise();
 
