@@ -341,6 +341,31 @@ namespace Engineering.Tests
             Object.DestroyImmediate(em1.gameObject);
             Object.DestroyImmediate(em2.gameObject);
         }
+
+        [Test]
+        public void DefaultConfiguration_Creates100MoneyModel()
+        {
+            Assert.That(_area.UnlockPrice, Is.EqualTo(100));
+        }
+
+        [Test]
+        public void ConfiguredPrice_ChangesRequiredPayment()
+        {
+            var go = new GameObject("ConfiguredBuyingArea");
+            go.SetActive(false);
+            var area = go.AddComponent<BuyingArea>();
+
+            var field = typeof(BuyingArea).GetField("_unlockPrice",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null);
+            field.SetValue(area, 200);
+
+            go.SetActive(true);
+
+            Assert.That(area.UnlockPrice, Is.EqualTo(200));
+
+            Object.DestroyImmediate(go);
+        }
     }
 
     public class MoneyToCollectInitializationTests

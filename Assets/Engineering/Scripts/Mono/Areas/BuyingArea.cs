@@ -7,7 +7,9 @@ namespace Engineering.Scripts.Mono.Areas
 {
     public class BuyingArea : MonoBehaviour
     {
-        private const int DefaultUnlockPrice = 100;
+        [Min(1)]
+        [SerializeField]
+        private int _unlockPrice = 100;
 
         private EconomyManager _economyManager;
         private PurchaseProgressModel _purchaseProgressModel;
@@ -41,7 +43,7 @@ namespace Engineering.Scripts.Mono.Areas
         private PurchaseProgressModel GetOrCreateModel()
         {
             if (_purchaseProgressModel == null)
-                _purchaseProgressModel = new PurchaseProgressModel(DefaultUnlockPrice);
+                _purchaseProgressModel = new PurchaseProgressModel(_unlockPrice);
             return _purchaseProgressModel;
         }
 
