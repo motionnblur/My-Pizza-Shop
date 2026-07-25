@@ -234,6 +234,107 @@ namespace Engineering.Tests
         }
 
         [Test]
+        public void CustomerQueueModel_UpdateCapacity_RejectsZero()
+        {
+            var queue = new CustomerQueueModel(5);
+            Assert.Throws<ArgumentOutOfRangeException>(() => queue.UpdateCapacity(0));
+        }
+
+        [Test]
+        public void CustomerQueueModel_UpdateCapacity_RejectsNegative()
+        {
+            var queue = new CustomerQueueModel(5);
+            Assert.Throws<ArgumentOutOfRangeException>(() => queue.UpdateCapacity(-1));
+        }
+
+        [Test]
+        public void CustomerQueueModel_UpdateCapacity_IncreaseAcceptsMore()
+        {
+            var queue = new CustomerQueueModel(2);
+            Assert.That(queue.TryEnqueue(new CustomerOrderModel(3)).Accepted, Is.True);
+            Assert.That(queue.TryEnqueue(new CustomerOrderModel(3)).Accepted, Is.True);
+            Assert.That(queue.TryEnqueue(new CustomerOrderModel(3)).Accepted, Is.False);
+
+            queue.UpdateCapacity(5);
+
+            Assert.That(queue.Capacity, Is.EqualTo(5));
+            Assert.That(queue.IsFull, Is.False);
+            Assert.That(queue.TryEnqueue(new CustomerOrderModel(3)).Accepted, Is.True);
+            Assert.That(queue.TryEnqueue(new CustomerOrderModel(3)).Accepted, Is.True);
+            Assert.That(queue.TryEnqueue(new CustomerOrderModel(3)).Accepted, Is.True);
+        }
+
+        [Test]
+        public void CustomerQueueModel_UpdateCapacity_DecreaseWithExistingOrders_RetainsCustomers()
+        {
+            var queue = new CustomerQueueModel(5);
+            var orderA = new CustomerOrderModel(3);
+            var orderB = new CustomerOrderModel(3);
+            var orderC = new CustomerOrderModel(3);
+            Assert.That(queue.TryEnqueue(orderA).Accepted, Is.True);
+            Assert.That(queue.TryEnqueue(orderB).Accepted, Is.True);
+            Assert.That(queue.TryEnqueue(orderC).Accepted, Is.True);
+
+            queue.UpdateCapacity(2);
+
+            Assert.That(queue.Capacity, Is.EqualTo(2));
+            Assert.That(queue.Count, Is.EqualTo(3));
+            Assert.That(queue.Front, Is.SameAs(orderA));
+            Assert.That(queue.IsFull, Is.True);
+            Assert.That(queue.TryEnqueue(new CustomerOrderModel(3)).Accepted, Is.False);
+        }
+
+        [Test]
+        public void CustomerQueueModel_UpdateCapacity_ShrinkThenRemove_AcceptsNewAfterDropBelow()
+        {
+            var queue = new CustomerQueueModel(5);
+            queue.TryEnqueue(new CustomerOrderModel(3));
+            queue.TryEnqueue(new CustomerOrderModel(3));
+            queue.TryEnqueue(new CustomerOrderModel(3));
+
+            queue.UpdateCapacity(2);
+
+            Assert.That(queue.Count, Is.EqualTo(3));
+            Assert.That(queue.TryEnqueue(new CustomerOrderModel(3)).Accepted, Is.False);
+
+            queue.TryRemoveFront();
+            Assert.That(queue.Count, Is.EqualTo(2));
+            Assert.That(queue.IsFull, Is.True);
+            Assert.That(queue.TryEnqueue(new CustomerOrderModel(3)).Accepted, Is.False);
+
+            queue.TryRemoveFront();
+            Assert.That(queue.Count, Is.EqualTo(1));
+            Assert.That(queue.IsFull, Is.False);
+            Assert.That(queue.TryEnqueue(new CustomerOrderModel(3)).Accepted, Is.True);
+        }
+
+        [Test]
+        public void CustomerQueueModel_UpdateCapacity_PreservesExistingCapacityBehavior()
+        {
+            var queue = new CustomerQueueModel(5);
+            queue.UpdateCapacity(3);
+
+            Assert.That(queue.Capacity, Is.EqualTo(3));
+            Assert.That(queue.TryEnqueue(new CustomerOrderModel(3)).Accepted, Is.True);
+            Assert.That(queue.TryEnqueue(new CustomerOrderModel(3)).Accepted, Is.True);
+            Assert.That(queue.TryEnqueue(new CustomerOrderModel(3)).Accepted, Is.True);
+            Assert.That(queue.TryEnqueue(new CustomerOrderModel(3)).Accepted, Is.False);
+        }
+
+        [Test]
+        public void CustomerQueueModel_UpdateCapacity_SameCapacity_NoBehaviorChange()
+        {
+            var queue = new CustomerQueueModel(3);
+            queue.UpdateCapacity(3);
+
+            Assert.That(queue.Capacity, Is.EqualTo(3));
+            Assert.That(queue.TryEnqueue(new CustomerOrderModel(3)).Accepted, Is.True);
+            Assert.That(queue.TryEnqueue(new CustomerOrderModel(3)).Accepted, Is.True);
+            Assert.That(queue.TryEnqueue(new CustomerOrderModel(3)).Accepted, Is.True);
+            Assert.That(queue.TryEnqueue(new CustomerOrderModel(3)).Accepted, Is.False);
+        }
+
+        [Test]
         public void CustomerQueueModel_DoesNotExposeMutableCollection()
         {
             var queueType = typeof(CustomerQueueModel);

@@ -884,6 +884,46 @@ namespace Engineering.Tests
         }
 
         [UnityTest]
+        public IEnumerator RuntimeMaxQueueCustomersChange_ControlsAcceptReject()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 0);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+
+            for (var i = 0; i < 2; i++)
+            {
+                var customer = CreateCustomerBot(3);
+                customer.Initialize(serveStation, new CustomerOrderModel(3), new Transform[0]);
+                Assert.That(serveStation.RegisterCustomer(customer), Is.True, $"Customer {i} should register.");
+            }
+
+            var rejectCustomer = CreateCustomerBot(3);
+            rejectCustomer.Initialize(serveStation, new CustomerOrderModel(3), new Transform[0]);
+            Assert.That(serveStation.RegisterCustomer(rejectCustomer), Is.False);
+
+            _serveSettings.maxQueueCustomers = 5;
+
+            for (var i = 2; i < 5; i++)
+            {
+                var customer = CreateCustomerBot(3);
+                customer.Initialize(serveStation, new CustomerOrderModel(3), new Transform[0]);
+                Assert.That(serveStation.RegisterCustomer(customer), Is.True, $"Customer {i} should register after capacity increase.");
+            }
+
+            var finalReject = CreateCustomerBot(3);
+            finalReject.Initialize(serveStation, new CustomerOrderModel(3), new Transform[0]);
+            Assert.That(serveStation.RegisterCustomer(finalReject), Is.False);
+
+            _serveSettings.maxQueueCustomers = 3;
+
+            var stillReject = CreateCustomerBot(3);
+            stillReject.Initialize(serveStation, new CustomerOrderModel(3), new Transform[0]);
+            Assert.That(serveStation.RegisterCustomer(stillReject), Is.False);
+            Assert.That(serveStation.CustomerCount, Is.EqualTo(5));
+        }
+
+        [UnityTest]
         public IEnumerator RuntimePriceChange_AffectsNextServe()
         {
             CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 5, playerPizzaCount: 5, startMoney: 50);

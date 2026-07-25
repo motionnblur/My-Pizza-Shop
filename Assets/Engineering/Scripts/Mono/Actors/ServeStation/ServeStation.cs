@@ -70,6 +70,10 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             {
                 _queueModel = new CustomerQueueModel(sServeStation.maxQueueCustomers);
             }
+            else
+            {
+                _queueModel.UpdateCapacity(sServeStation.maxQueueCustomers);
+            }
 
             return true;
         }

@@ -6,7 +6,7 @@ namespace Engineering.Scripts.Domain.CustomerQueue
     public sealed class CustomerQueueModel
     {
         private readonly List<CustomerOrderModel> _orders = new List<CustomerOrderModel>();
-        private readonly int _capacity;
+        private int _capacity;
 
         public int Count => _orders.Count;
         public int Capacity => _capacity;
@@ -15,6 +15,14 @@ namespace Engineering.Scripts.Domain.CustomerQueue
         public CustomerOrderModel Front => HasFront ? _orders[0] : null;
 
         public CustomerQueueModel(int capacity)
+        {
+            if (capacity <= 0)
+                throw new ArgumentOutOfRangeException(nameof(capacity), "Queue capacity must be positive.");
+
+            _capacity = capacity;
+        }
+
+        public void UpdateCapacity(int capacity)
         {
             if (capacity <= 0)
                 throw new ArgumentOutOfRangeException(nameof(capacity), "Queue capacity must be positive.");
