@@ -8,7 +8,6 @@ namespace Engineering.Scripts.Mono.Managers
     public class UIManager : MonoBehaviour
     {
         public static UIManager Instance { get; private set; }
-        [SerializeField] private SEconomy sEconomy;
         [SerializeField] private Text moneyText;
         [SerializeField] private Text pizzaText;
         [SerializeField] private SIntEventChannel pizzaInventoryChangedEvent;
