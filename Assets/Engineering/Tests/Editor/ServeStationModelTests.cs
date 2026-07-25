@@ -209,15 +209,19 @@ namespace Engineering.Tests
         [Test]
         public void ArchitectureGuard_DomainFilesHaveNoUnityEngine()
         {
-            var domainDir = "Assets/Engineering/Scripts/Domain/ServeStation";
-            var files = Directory.GetFiles(domainDir, "*.cs");
-            Assert.That(files.Length, Is.GreaterThanOrEqualTo(2));
+            var domainDir = "Assets/Engineering/Scripts/Domain";
+            var files = Directory.GetFiles(domainDir, "*.cs", SearchOption.AllDirectories);
+            Assert.That(files.Length, Is.GreaterThanOrEqualTo(4));
 
             foreach (var file in files)
             {
                 var text = File.ReadAllText(file);
                 Assert.That(text, Does.Not.Contain("using UnityEngine"),
                     $"{file} must not depend on UnityEngine.");
+                Assert.That(text, Does.Not.Contain("MonoBehaviour"),
+                    $"{file} must not reference MonoBehaviour.");
+                Assert.That(text, Does.Not.Contain("ScriptableObject"),
+                    $"{file} must not reference ScriptableObject.");
             }
         }
     }

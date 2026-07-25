@@ -1,4 +1,5 @@
 ﻿using System;
+using Engineering.Scripts.Domain.Purchase;
 using Engineering.Scripts.Mono.Managers;
 using UnityEngine;
 
@@ -6,10 +7,15 @@ namespace Engineering.Scripts.Mono.Areas
 {
     public class BuyingArea : MonoBehaviour
     {
+        private const int DefaultUnlockPrice = 100;
+
         private EconomyManager _economyManager;
-        private int _unlockPrice = 100;
-        private int _totalPricePlayerGive = 0;
-        private bool isPurchased = false;
+        private PurchaseProgressModel _purchaseProgressModel;
+
+        public int UnlockPrice => GetOrCreateModel().UnlockPrice;
+        public int PaidAmount => GetOrCreateModel().PaidAmount;
+        public int RemainingAmount => GetOrCreateModel().RemainingAmount;
+        public bool IsPurchased => GetOrCreateModel().IsPurchased;
 
         public void Initialize(EconomyManager economyManager)
         {
@@ -27,18 +33,26 @@ namespace Engineering.Scripts.Mono.Areas
             _economyManager = economyManager;
         }
 
+        private void Awake()
+        {
+            GetOrCreateModel();
+        }
+
+        private PurchaseProgressModel GetOrCreateModel()
+        {
+            if (_purchaseProgressModel == null)
+                _purchaseProgressModel = new PurchaseProgressModel(DefaultUnlockPrice);
+            return _purchaseProgressModel;
+        }
+
         private void OnTriggerEnter(Collider other)
         {
-            if (isPurchased) return;
-            
+            if (IsPurchased) return;
+
             if (other.CompareTag("Player") && _economyManager != null)
             {
                 _economyManager.ProcessPayment(this);
             }
-        }
-
-        private void OnTriggerStay(Collider other)
-        {
         }
 
         private void OnTriggerExit(Collider other)
@@ -48,16 +62,12 @@ namespace Engineering.Scripts.Mono.Areas
                 _economyManager.CancelPayment();
             }
         }
-        
+
         public void AddPayment(int amount)
         {
-            _totalPricePlayerGive += amount;
-            if (_totalPricePlayerGive >= _unlockPrice)
-            {
-                isPurchased = true;
-                if (_economyManager != null)
-                    _economyManager.PlayerBuyBuyingArea(this);
-            }
+            var result = GetOrCreateModel().ApplyPayment(amount);
+            if (result.CompletedNow && _economyManager != null)
+                _economyManager.PlayerBuyBuyingArea(this);
         }
     }
 }

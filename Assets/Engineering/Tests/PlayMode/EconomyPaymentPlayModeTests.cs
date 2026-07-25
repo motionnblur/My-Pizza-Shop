@@ -263,6 +263,87 @@ namespace Engineering.Tests
                 "Payment should proceed after currencyService is restored, proving no permanent lock.");
         }
 
+        [UnityTest]
+        public IEnumerator PartialPayment_UpdatesPaidAmountAndRemainingAmount_WithoutDestroyingArea()
+        {
+            _fixture = CreateFixture(spendRate: 5, spendSpeed: 1f);
+            yield return null;
+
+            _fixture.BuyingArea.AddPayment(30);
+            yield return null;
+
+            Assert.That(_fixture.BuyingArea.PaidAmount, Is.EqualTo(30));
+            Assert.That(_fixture.BuyingArea.RemainingAmount, Is.EqualTo(70));
+            Assert.That(_fixture.BuyingArea == null, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator ZeroOrNegativeDirectPayment_DoesNotCompletePurchase()
+        {
+            _fixture = CreateFixture(spendRate: 5, spendSpeed: 1f);
+            yield return null;
+
+            _fixture.BuyingArea.AddPayment(0);
+            yield return null;
+
+            Assert.That(_fixture.BuyingArea.PaidAmount, Is.EqualTo(0));
+            Assert.That(_fixture.BuyingArea.IsPurchased, Is.False);
+            Assert.That(_fixture.BuyingArea == null, Is.False);
+
+            _fixture.BuyingArea.AddPayment(-50);
+            yield return null;
+
+            Assert.That(_fixture.BuyingArea.PaidAmount, Is.EqualTo(0));
+            Assert.That(_fixture.BuyingArea.IsPurchased, Is.False);
+            Assert.That(_fixture.BuyingArea == null, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator DisableAndReEnable_PreservesPartialPurchaseProgress()
+        {
+            _fixture = CreateFixture(spendRate: 5, spendSpeed: 1f);
+            yield return null;
+
+            _fixture.BuyingArea.AddPayment(40);
+            yield return null;
+
+            var paidBefore = _fixture.BuyingArea.PaidAmount;
+            var remainingBefore = _fixture.BuyingArea.RemainingAmount;
+
+            _fixture.BuyingAreaObject.SetActive(false);
+            yield return null;
+
+            _fixture.BuyingAreaObject.SetActive(true);
+            yield return null;
+
+            Assert.That(_fixture.BuyingArea.PaidAmount, Is.EqualTo(paidBefore));
+            Assert.That(_fixture.BuyingArea.RemainingAmount, Is.EqualTo(remainingBefore));
+        }
+
+        [UnityTest]
+        public IEnumerator ReEnteringAfterCancellation_CanResumePayment()
+        {
+            _fixture = CreateFixture(spendRate: 5, spendSpeed: 20f);
+            yield return null;
+
+            InvokePrivateMethod(_fixture.BuyingArea, "OnTriggerEnter", _fixture.PlayerCollider);
+            yield return null;
+
+            var moneyAfterFirst = _fixture.Wallet.Money;
+            Assert.That(moneyAfterFirst, Is.LessThan(100));
+
+            InvokePrivateMethod(_fixture.BuyingArea, "OnTriggerExit", _fixture.PlayerCollider);
+            yield return new WaitForSeconds(0.1f);
+
+            var moneyAfterExit = _fixture.Wallet.Money;
+
+            InvokePrivateMethod(_fixture.BuyingArea, "OnTriggerEnter", _fixture.PlayerCollider);
+            yield return new WaitForSeconds(0.1f);
+
+            Assert.That(_fixture.Wallet.Money, Is.LessThan(moneyAfterExit),
+                "Payment should resume after re-entering the area.");
+        }
+
         private static Fixture CreateFixture(
             int spendRate,
             float spendSpeed,
