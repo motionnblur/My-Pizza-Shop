@@ -35,7 +35,7 @@ namespace Engineering.Tests
         [Test]
         public void Money_CanBeUpdatedForGameplayTransactions()
         {
-            _wallet.Money = 35;
+            SetPrivateField(_wallet, "money", 35);
 
             Assert.That(_wallet.Money, Is.EqualTo(35));
         }

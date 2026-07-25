@@ -18,6 +18,7 @@ namespace Engineering.Tests
         private GameObject _serveStationObject;
         private GameObject _playerObject;
         private GameObject _economyManagerObject;
+        private GameObject _currencyServiceObject;
         private SServeStation _serveSettings;
         private SVoidEventChannel _pizzaServedEvent;
         private PlayerPizzaInventory _playerInventory;
@@ -41,6 +42,9 @@ namespace Engineering.Tests
 
             if (_economyManagerObject != null)
                 Object.Destroy(_economyManagerObject);
+
+            if (_currencyServiceObject != null)
+                Object.Destroy(_currencyServiceObject);
 
             if (_serveSettings != null)
                 Object.Destroy(_serveSettings);
@@ -866,6 +870,9 @@ namespace Engineering.Tests
 
             _economyManagerObject = new GameObject("ServeEconomyManagerTest");
             _economyManagerObject.AddComponent<EconomyManager>();
+
+            _currencyServiceObject = new GameObject("ServeCurrencyServiceTest");
+            _currencyServiceObject.AddComponent<CurrencyService>();
         }
 
         private CustomerBot CreateCustomerBot(int orderAmount)

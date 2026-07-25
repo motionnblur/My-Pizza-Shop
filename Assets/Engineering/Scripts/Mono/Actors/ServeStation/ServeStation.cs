@@ -94,8 +94,8 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             RefreshVisuals();
 
             var moneyEarned = transferAmount * sServeStation.pricePerPizza;
-            if (EconomyManager.Instance != null)
-                EconomyManager.Instance.AwardMoney(moneyEarned);
+            if (CurrencyService.Instance != null)
+                CurrencyService.Instance.Credit(moneyEarned);
 
             pizzaServedEvent?.Raise();
 

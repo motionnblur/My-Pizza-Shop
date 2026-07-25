@@ -1,4 +1,5 @@
-﻿using Engineering.Scripts.Mono.Managers;
+﻿using Engineering.ScriptableObjects;
+using Engineering.Scripts.Mono.Managers;
 using UnityEngine;
 
 namespace Engineering.Scripts.Mono.Items
@@ -6,6 +7,8 @@ namespace Engineering.Scripts.Mono.Items
     public class MoneyToCollect : MonoBehaviour
     {
         [SerializeField] private int moneyToCollect = 5;
+        [SerializeField] private SVoidEventChannel groundMoneyCollectedEvent;
+        [SerializeField] private SMoneyAnimationEventChannel moneyAnimationRequested;
         private bool _isCollected;
 
         private void OnTriggerEnter(Collider other)
@@ -14,12 +17,22 @@ namespace Engineering.Scripts.Mono.Items
                 return;
 
             _isCollected = true;
-            if (EconomyManager.Instance != null)
-                EconomyManager.Instance.CollectMoneyFromGround(this, moneyToCollect);
-        }
 
-        public void Destroy()
-        {
+            if (CurrencyService.Instance != null)
+                CurrencyService.Instance.Credit(moneyToCollect);
+
+            groundMoneyCollectedEvent?.Raise();
+
+            var wallet = CurrencyService.Instance != null ? CurrencyService.Instance.Wallet : null;
+            if (wallet != null && moneyAnimationRequested != null)
+            {
+                moneyAnimationRequested.Raise(new MoneyAnimationRequest
+                {
+                    SourcePosition = transform.position,
+                    DestinationTransform = wallet.MoneyAnimationOrigin
+                });
+            }
+
             Destroy(gameObject);
         }
     }

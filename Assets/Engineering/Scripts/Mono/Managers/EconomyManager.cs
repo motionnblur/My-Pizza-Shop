@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using Engineering.Scripts.Mono.Items;
 using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Areas;
 using Engineering.Scripts.Mono.Player;
@@ -12,8 +11,8 @@ namespace Engineering.Scripts.Mono.Managers
         public static EconomyManager Instance { get; private set; }
         [SerializeField] private SEconomy sEconomy;
         [SerializeField] private SAnimation _sAnimation;
-        [SerializeField] private SVoidEventChannel groundMoneyCollectedEvent;
         [SerializeField] private SVoidEventChannel buyingAreaPurchasedEvent;
+        [SerializeField] private SMoneyAnimationEventChannel moneyAnimationRequested;
         private PlayerWallet _pWallet;
         private Coroutine _activePaymentCoroutine;
 
@@ -32,7 +31,6 @@ namespace Engineering.Scripts.Mono.Managers
         private void Start()
         {
             _pWallet = FindFirstObjectByType<PlayerWallet>();
-            UpdateMoneyText();
         }
 
         private void OnDestroy()
@@ -68,12 +66,10 @@ namespace Engineering.Scripts.Mono.Managers
 
             while (ba != null && _pWallet != null)
             {
-                var afterMoneyInPlayerPocket = _pWallet.Money - pay;
+                var animationTargetPosition = ba.transform.position;
 
-                if (afterMoneyInPlayerPocket >= 0)
+                if (CurrencyService.Instance != null && CurrencyService.Instance.TrySpend(pay))
                 {
-                    var animationTargetPosition = ba.transform.position;
-                    _pWallet.Money = afterMoneyInPlayerPocket;
                     ba.AddPayment(pay);
 
                     yield return new WaitForSeconds(delay);
@@ -81,14 +77,14 @@ namespace Engineering.Scripts.Mono.Managers
                     if (_pWallet == null)
                         break;
 
-                    if (AnimationManager.Instance != null)
+                    if (moneyAnimationRequested != null)
                     {
-                        AnimationManager.Instance.DoMoneyAnimation(
-                            _pWallet.MoneyAnimationOriginPosition,
-                            animationTargetPosition);
+                        moneyAnimationRequested.Raise(new MoneyAnimationRequest
+                        {
+                            SourcePosition = _pWallet.MoneyAnimationOriginPosition,
+                            DestinationPosition = animationTargetPosition
+                        });
                     }
-                    
-                    UpdateMoneyText();
                 }
                 else
                 {
@@ -99,43 +95,11 @@ namespace Engineering.Scripts.Mono.Managers
             _activePaymentCoroutine = null;
         }
 
-        private void UpdateMoneyText()
-        {
-            if (UIManager.Instance != null && _pWallet != null)
-                UIManager.Instance.UpdateMoneyText(_pWallet.Money);
-        }
-
         public void PlayerBuyBuyingArea(BuyingArea ba)
         {
             if (ba == null || ba.gameObject == null) return;
             Destroy(ba.gameObject);
             buyingAreaPurchasedEvent?.Raise();
-        }
-
-        public void AwardMoney(int money)
-        {
-            if (_pWallet == null || money <= 0) return;
-            _pWallet.Money += money;
-            UpdateMoneyText();
-        }
-
-        public void CollectMoneyFromGround(MoneyToCollect mc, int money)
-        {
-            if (mc == null || _pWallet == null) return;
-
-            var animationOriginPosition = mc.transform.position;
-            _pWallet.Money += money;
-            UpdateMoneyText();
-
-            if (AnimationManager.Instance != null)
-            {
-                AnimationManager.Instance.DoMoneyAnimation(
-                    animationOriginPosition,
-                    _pWallet.MoneyAnimationOrigin);
-            }
-
-            groundMoneyCollectedEvent?.Raise();
-            mc.Destroy();
         }
     }
 }

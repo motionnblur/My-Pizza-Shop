@@ -13,6 +13,7 @@ namespace Engineering.Scripts.Mono.Managers
 
         [Header("Money Animation")]
         [SerializeField] private SAnimation _sAnimation;
+        [SerializeField] private SMoneyAnimationEventChannel moneyAnimationRequested;
 
         [Header("Pooling")]
         [SerializeField] private int _initialPoolSize = 8;
@@ -34,6 +35,18 @@ namespace Engineering.Scripts.Mono.Managers
             DontDestroyOnLoad(gameObject);
         }
 
+        private void OnEnable()
+        {
+            if (moneyAnimationRequested != null)
+                moneyAnimationRequested.RegisterListener(OnMoneyAnimationRequested);
+        }
+
+        private void OnDisable()
+        {
+            if (moneyAnimationRequested != null)
+                moneyAnimationRequested.UnregisterListener(OnMoneyAnimationRequested);
+        }
+
         private void OnDestroy()
         {
             if (Instance == this)
@@ -48,6 +61,20 @@ namespace Engineering.Scripts.Mono.Managers
             _activeMoneyObjects.Clear();
             _moneyPool?.Dispose();
             _moneyPool = null;
+        }
+
+        private void OnMoneyAnimationRequested(MoneyAnimationRequest request)
+        {
+            if (request == null) return;
+
+            if (request.HasTransformDestination)
+            {
+                DoMoneyAnimation(request.SourcePosition, request.DestinationTransform);
+            }
+            else
+            {
+                DoMoneyAnimation(request.SourcePosition, request.DestinationPosition);
+            }
         }
 
         private ObjectPool<GameObject> MoneyPool

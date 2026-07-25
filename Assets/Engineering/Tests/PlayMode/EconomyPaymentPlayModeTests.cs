@@ -121,6 +121,7 @@ namespace Engineering.Tests
             var pickupObject = new GameObject("MoneyToCollectEventPickup");
             var pickup = pickupObject.AddComponent<MoneyToCollect>();
             pickupObject.AddComponent<BoxCollider>().isTrigger = true;
+            SetPrivateField(pickup, "groundMoneyCollectedEvent", _fixture.GroundMoneyCollectedEvent);
             yield return null;
 
             InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
@@ -138,6 +139,7 @@ namespace Engineering.Tests
             var pickup = pickupObject.AddComponent<MoneyToCollect>();
             pickupObject.AddComponent<BoxCollider>().isTrigger = true;
             SetPrivateField(pickup, "moneyToCollect", 25);
+            SetPrivateField(pickup, "moneyAnimationRequested", _fixture.MoneyAnimationRequested);
             yield return null;
 
             InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
@@ -158,6 +160,7 @@ namespace Engineering.Tests
             pickupObject.transform.position = new Vector3(5f, 0f, 0f);
             var pickup = pickupObject.AddComponent<MoneyToCollect>();
             pickupObject.AddComponent<BoxCollider>().isTrigger = true;
+            SetPrivateField(pickup, "moneyAnimationRequested", _fixture.MoneyAnimationRequested);
             yield return null;
 
             InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
@@ -226,9 +229,6 @@ namespace Engineering.Tests
 
             var moneyTextObject = new GameObject("PaymentTestMoneyText");
             var moneyText = moneyTextObject.AddComponent<Text>();
-            var uiManagerObject = new GameObject("PaymentTestUiManager");
-            var uiManager = uiManagerObject.AddComponent<UIManager>();
-            SetPrivateField(uiManager, "moneyText", moneyText);
 
             var economy = ScriptableObject.CreateInstance<SEconomy>();
             economy.playerMoneySpendRate = spendRate;
@@ -239,13 +239,26 @@ namespace Engineering.Tests
 
             var groundMoneyCollectedEvent = ScriptableObject.CreateInstance<SVoidEventChannel>();
             var buyingAreaPurchasedEvent = ScriptableObject.CreateInstance<SVoidEventChannel>();
+            var moneyAnimationRequested = ScriptableObject.CreateInstance<SMoneyAnimationEventChannel>();
 
             var managerObject = new GameObject("PaymentTestEconomyManager");
             var economyManager = managerObject.AddComponent<EconomyManager>();
             SetPrivateField(economyManager, "sEconomy", economy);
             SetPrivateField(economyManager, "_sAnimation", sAnimation);
-            SetPrivateField(economyManager, "groundMoneyCollectedEvent", groundMoneyCollectedEvent);
             SetPrivateField(economyManager, "buyingAreaPurchasedEvent", buyingAreaPurchasedEvent);
+            SetPrivateField(economyManager, "moneyAnimationRequested", moneyAnimationRequested);
+
+            // UIManager: create inactive to set fields before OnEnable
+            var uiManagerObject = new GameObject("PaymentTestUiManager");
+            uiManagerObject.SetActive(false);
+            var uiManager = uiManagerObject.AddComponent<UIManager>();
+            SetPrivateField(uiManager, "moneyText", moneyText);
+            SetPrivateField(uiManager, "_playerWallet", wallet);
+            uiManagerObject.SetActive(true);
+
+            // CurrencyService
+            var currencyServiceObject = new GameObject("PaymentTestCurrencyService");
+            currencyServiceObject.AddComponent<CurrencyService>();
 
             GameObject moneyPrefab = null;
             GameObject animationManagerObject = null;
@@ -255,10 +268,13 @@ namespace Engineering.Tests
                 economy.moneyPrefab = moneyPrefab;
 
                 animationManagerObject = new GameObject("PaymentTestAnimationManager");
+                animationManagerObject.SetActive(false);
                 var animationManager = animationManagerObject.AddComponent<AnimationManager>();
                 sAnimation.duration = animationDuration;
                 SetPrivateField(animationManager, "sEconomy", economy);
                 SetPrivateField(animationManager, "_sAnimation", sAnimation);
+                SetPrivateField(animationManager, "moneyAnimationRequested", moneyAnimationRequested);
+                animationManagerObject.SetActive(true);
             }
 
             var buyingAreaObject = new GameObject("PaymentTestBuyingArea");
@@ -280,7 +296,9 @@ namespace Engineering.Tests
                 moneyPrefab,
                 animationManagerObject,
                 groundMoneyCollectedEvent,
-                buyingAreaPurchasedEvent);
+                buyingAreaPurchasedEvent,
+                moneyAnimationRequested,
+                currencyServiceObject);
         }
 
         private static IEnumerator DestroyFixture(Fixture fixture)
@@ -340,6 +358,16 @@ namespace Engineering.Tests
                 UnityEngine.Object.Destroy(fixture.BuyingAreaPurchasedEvent);
             }
 
+            if (fixture.MoneyAnimationRequested != null)
+            {
+                UnityEngine.Object.Destroy(fixture.MoneyAnimationRequested);
+            }
+
+            if (fixture.CurrencyServiceObject != null)
+            {
+                UnityEngine.Object.Destroy(fixture.CurrencyServiceObject);
+            }
+
             yield return null;
         }
 
@@ -397,7 +425,9 @@ namespace Engineering.Tests
                 GameObject moneyPrefab,
                 GameObject animationManagerObject,
                 SVoidEventChannel groundMoneyCollectedEvent,
-                SVoidEventChannel buyingAreaPurchasedEvent)
+                SVoidEventChannel buyingAreaPurchasedEvent,
+                SMoneyAnimationEventChannel moneyAnimationRequested,
+                GameObject currencyServiceObject)
             {
                 PlayerObject = playerObject;
                 Wallet = wallet;
@@ -414,6 +444,8 @@ namespace Engineering.Tests
                 AnimationManagerObject = animationManagerObject;
                 GroundMoneyCollectedEvent = groundMoneyCollectedEvent;
                 BuyingAreaPurchasedEvent = buyingAreaPurchasedEvent;
+                MoneyAnimationRequested = moneyAnimationRequested;
+                CurrencyServiceObject = currencyServiceObject;
             }
 
             public GameObject PlayerObject { get; }
@@ -431,6 +463,8 @@ namespace Engineering.Tests
             public GameObject AnimationManagerObject { get; }
             public SVoidEventChannel GroundMoneyCollectedEvent { get; }
             public SVoidEventChannel BuyingAreaPurchasedEvent { get; }
+            public SMoneyAnimationEventChannel MoneyAnimationRequested { get; }
+            public GameObject CurrencyServiceObject { get; }
         }
     }
 }
