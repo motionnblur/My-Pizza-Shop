@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Engineering.ScriptableObjects;
+using Engineering.Scripts.Domain.GrillStation;
 using Engineering.Scripts.Mono.Player;
 using UnityEngine;
 
@@ -17,12 +18,13 @@ namespace Engineering.Scripts.Mono.Actors.GrillStation
         private readonly List<GameObject> _pizzaVisuals = new List<GameObject>();
         private Coroutine _productionCoroutine;
         private float _pizzaHalfHeight;
-        private int _readyPizzaCount;
+        private GrillStationModel _model;
 
-        public int ReadyPizzaCount => _readyPizzaCount;
+        public int ReadyPizzaCount => _model?.ReadyPizzaCount ?? 0;
 
         private void OnEnable()
         {
+            TryPrepareModel();
             PositionStackAnchor();
             CreateVisualPool();
             _productionCoroutine = StartCoroutine(ProducePizzas());
@@ -39,16 +41,33 @@ namespace Engineering.Scripts.Mono.Actors.GrillStation
 
         public int TryCollectAll(PlayerPizzaInventory playerPizzaInventory)
         {
-            if (playerPizzaInventory == null || _readyPizzaCount <= 0)
+            if (playerPizzaInventory == null || !TryPrepareModel())
                 return 0;
 
-            var collectedAmount = playerPizzaInventory.TryAdd(_readyPizzaCount);
+            var collectedAmount = playerPizzaInventory.TryAdd(_model.ReadyPizzaCount);
             if (collectedAmount <= 0)
                 return 0;
 
-            _readyPizzaCount -= collectedAmount;
+            _model.RemoveReady(collectedAmount);
             RefreshVisuals();
             return collectedAmount;
+        }
+
+        private bool TryPrepareModel()
+        {
+            if (sGrillStation == null)
+                return false;
+
+            if (_model == null)
+            {
+                _model = new GrillStationModel(sGrillStation.maxReadyPizzas);
+            }
+            else
+            {
+                _model.UpdateConfiguration(sGrillStation.maxReadyPizzas);
+            }
+
+            return true;
         }
 
         private IEnumerator ProducePizzas()
@@ -58,17 +77,14 @@ namespace Engineering.Scripts.Mono.Actors.GrillStation
                 yield return new WaitUntil(CanProduce);
                 yield return new WaitForSeconds(sGrillStation.productionInterval);
 
-                if (CanProduce())
-                {
-                    _readyPizzaCount++;
+                if (CanProduce() && _model.TryProduceOne())
                     RefreshVisuals();
-                }
             }
         }
 
         private bool CanProduce()
         {
-            return sGrillStation != null && _readyPizzaCount < sGrillStation.maxReadyPizzas;
+            return TryPrepareModel() && _model.CanProduce;
         }
 
         private void CreateVisualPool()
@@ -94,7 +110,7 @@ namespace Engineering.Scripts.Mono.Actors.GrillStation
             PositionStackAnchor();
 
             for (var index = 0; index < _pizzaVisuals.Count; index++)
-                _pizzaVisuals[index].SetActive(index < _readyPizzaCount);
+                _pizzaVisuals[index].SetActive(index < ReadyPizzaCount);
         }
 
         private void PositionStackAnchor()
