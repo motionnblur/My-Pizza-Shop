@@ -39,7 +39,7 @@ namespace Engineering.Scripts.Domain.CustomerQueue
                 return EnqueueResult.Rejected;
 
             _orders.Enqueue(order);
-            return new EnqueueResult(true, _orders.Count);
+            return new EnqueueResult(true, _orders.Count - 1);
         }
 
         public RemoveFrontResult TryRemoveFront()
