@@ -737,6 +737,34 @@ namespace Engineering.Tests
         }
 
         [UnityTest]
+        public IEnumerator CustomerBot_ApproachStartsAfterRegistration()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 0);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var waypointObject = new GameObject("Waypoint");
+            var waypoints = new[] { waypointObject.transform };
+            var orderModel = new CustomerOrderModel(3);
+            var bot = CreateCustomerBot(3);
+
+            bot.Initialize(serveStation, orderModel, waypoints);
+            var approachStarted = GetPrivateField<bool>(bot, "_approachStarted");
+            Assert.That(approachStarted, Is.False, "Approach must not start before registration.");
+
+            var registered = serveStation.RegisterCustomer(bot);
+            Assert.That(registered, Is.True);
+            approachStarted = GetPrivateField<bool>(bot, "_approachStarted");
+            Assert.That(approachStarted, Is.False, "Approach must not start immediately after registration.");
+
+            bot.BeginApproach();
+            approachStarted = GetPrivateField<bool>(bot, "_approachStarted");
+            Assert.That(approachStarted, Is.True, "Approach must start after BeginApproach is called.");
+
+            Object.Destroy(waypointObject);
+        }
+
+        [UnityTest]
         public IEnumerator TryServeFrontCustomer_AdvancesRemainingCustomers()
         {
             CreateQueueFixture(maxQueueCustomers: 3, pricePerPizza: 10, playerPizzaCount: 5);

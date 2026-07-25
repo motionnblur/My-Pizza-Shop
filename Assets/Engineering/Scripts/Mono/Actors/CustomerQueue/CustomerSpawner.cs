@@ -49,7 +49,9 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
                             var orderModel = new CustomerOrderModel(orderAmount);
                             customerBot.Initialize(station, orderModel, waypoints);
 
-                            if (!station.RegisterCustomer(customerBot))
+                            if (station.RegisterCustomer(customerBot))
+                                customerBot.BeginApproach();
+                            else
                                 Destroy(customerObject);
                         }
                         else

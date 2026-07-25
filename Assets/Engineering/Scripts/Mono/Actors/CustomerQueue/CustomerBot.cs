@@ -17,6 +17,7 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
         private bool _hasReachedAssignedSlot;
         private NavMeshAgent _agent;
 
+        private bool _approachStarted;
         private enum BotState { Approaching, MovingToSlot, AtSlot }
         private BotState _state;
 
@@ -32,6 +33,9 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
         private void Update()
         {
             if (_station == null || _agent == null)
+                return;
+
+            if (!_approachStarted)
                 return;
 
             if (!_agent.isOnNavMesh)
@@ -79,6 +83,12 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
             _approachWaypoints = approachWaypoints;
             _currentWaypointIndex = 0;
             _hasReachedAssignedSlot = false;
+            _approachStarted = false;
+        }
+
+        public void BeginApproach()
+        {
+            _approachStarted = true;
 
             if (_approachWaypoints != null && _approachWaypoints.Length > 0 && _approachWaypoints[0] != null)
             {
