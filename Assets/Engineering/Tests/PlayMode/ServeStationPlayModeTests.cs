@@ -25,7 +25,7 @@ namespace Engineering.Tests
         private SVoidEventChannel _pizzaServedEvent;
         private PlayerPizzaInventory _playerInventory;
         private GameObject _navMeshFloor;
-        private NavMeshData _navMeshData;
+        private NavMeshDataInstance _navMeshDataInstance;
         private readonly List<GameObject> _botsToCleanup = new List<GameObject>();
 
         [UnityTearDown]
@@ -38,11 +38,8 @@ namespace Engineering.Tests
             }
             _botsToCleanup.Clear();
 
-            if (_navMeshData != null)
-            {
-                NavMesh.RemoveNavMeshData(_navMeshData);
-                Object.Destroy(_navMeshData);
-            }
+            if (_navMeshDataInstance.valid)
+                _navMeshDataInstance.Remove();
 
             if (_navMeshFloor != null)
                 Object.Destroy(_navMeshFloor);
@@ -1016,9 +1013,7 @@ namespace Engineering.Tests
                 Quaternion.identity);
 
             if (data != null)
-                NavMesh.AddNavMeshData(data);
-
-            _navMeshData = data;
+                _navMeshDataInstance = NavMesh.AddNavMeshData(data);
         }
 
         private void CreateQueueFixture(
