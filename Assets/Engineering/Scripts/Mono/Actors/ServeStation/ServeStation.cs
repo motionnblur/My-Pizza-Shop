@@ -19,6 +19,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
         [SerializeField] private BoxCollider plateCollider;
         [SerializeField, Min(0.01f)] private float pizzaStackSpacing = 0.14f;
         private CurrencyService _currencyService;
+        private Vector3 _cachedStackBasePosition;
 
         private readonly List<CustomerBot> _customers = new List<CustomerBot>();
         private readonly List<GameObject> _pizzaVisuals = new List<GameObject>();
@@ -48,6 +49,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
         private void OnEnable()
         {
             TryPrepareModel();
+            UpdateStackBasePosition();
             CreateVisualPool();
             RefreshVisuals();
         }
@@ -188,7 +190,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
 
         private void RefreshVisuals()
         {
-            var basePos = PizzaStackBasePosition;
+            var basePos = _cachedStackBasePosition;
 
             for (var index = 0; index < _pizzaVisuals.Count; index++)
             {
@@ -201,15 +203,14 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             }
         }
         
-        private Vector3 PizzaStackBasePosition
+        private void UpdateStackBasePosition()
         {
-            get
+            if (plateCollider == null)
+                _cachedStackBasePosition = transform.position;
+            else
             {
-                if (plateCollider == null)
-                    return transform.position;
-
                 var bounds = plateCollider.bounds;
-                return new Vector3(bounds.center.x, bounds.max.y, bounds.center.z);
+                _cachedStackBasePosition = new Vector3(bounds.center.x, bounds.max.y, bounds.center.z);
             }
         }
     }
