@@ -13,9 +13,16 @@ namespace Engineering.Scripts.Mono.Managers
         [SerializeField] private SAnimation _sAnimation;
         [SerializeField] private SVoidEventChannel buyingAreaPurchasedEvent;
         [SerializeField] private SMoneyAnimationEventChannel moneyAnimationRequested;
+        private WaitForSeconds _paymentDelay;
         private CurrencyService _currencyService;
         private Coroutine _activePaymentCoroutine;
         private PaymentSessionModel _paymentSession;
+
+        private void Awake()
+        {
+            if (_sAnimation != null)
+                _paymentDelay = new WaitForSeconds(1f / _sAnimation.moneySpendSpeed);
+        }
 
         public void Initialize(CurrencyService currencyService)
         {
@@ -61,7 +68,6 @@ namespace Engineering.Scripts.Mono.Managers
         private IEnumerator DelayedPayment(BuyingArea ba)
         {
             var wallet = _currencyService.Wallet;
-            var delay = 1f / _sAnimation.moneySpendSpeed;
 
             yield return new WaitForSeconds(_sAnimation.moneySpendDelay);
 
@@ -76,7 +82,7 @@ namespace Engineering.Scripts.Mono.Managers
                 {
                     ba.AddPayment(pay);
 
-                    yield return new WaitForSeconds(delay);
+                    yield return _paymentDelay ?? new WaitForSeconds(1f / _sAnimation.moneySpendSpeed);
 
                     if (_currencyService.Wallet == null)
                         break;
