@@ -31,6 +31,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 | `Assets/Engineering/Scripts/Mono/Actors/GrillStation/` | Autonomous pizza production station and its player-collection trigger. |
 | `Assets/Engineering/Scripts/Domain/ServeStation/` | Pure C# domain model: `ServeStationModel` (authoritative owner of stored-pizza state and deposit/serve/reward calculations) and `ServeResult` (immutable result struct). No `UnityEngine` dependency. |
 | `Assets/Engineering/Scripts/Domain/Purchase/` | Pure C# domain model: `PurchaseProgressModel` (authoritative owner of unlock price, paid amount, remaining amount, and purchase completion state) and `PurchaseProgressResult` (immutable result struct). No `UnityEngine` dependency. |
+| `Assets/Engineering/Scripts/Domain/Payment/` | Pure C# domain model: `PaymentSessionModel` (authoritative owner of per-tick payment amount and active/cancelled session state). `EconomyManager` delegates to it. No `UnityEngine` dependency. |
 | `Assets/Engineering/Scripts/Domain/GrillStation/` | Pure C# domain model: `GrillStationModel` (authoritative owner of ready-pizza count and production capacity rules). `GrillStation` delegates to it. No `UnityEngine` dependency. |
 | `Assets/Engineering/Scripts/Domain/Economy/` | Pure C# domain model: `WalletModel` (authoritative owner of money balance and spend/credit rules). `PlayerWallet` delegates to it. No `UnityEngine` dependency. |
 | `Assets/Engineering/Scripts/Domain/Inventory/` | Pure C# domain model: `PizzaInventoryModel` (authoritative owner of player pizza count/capacity rules). `PlayerPizzaInventory` delegates to it. No `UnityEngine` dependency. |
@@ -91,7 +92,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 
 ## Validation
 
-- The project source currently declares 109 EditMode and 69 PlayMode tests. Run the affected suite after gameplay changes; test counts alone do not prove they passed.
+- The project source currently declares 149 EditMode and 69 PlayMode tests. Run the affected suite after gameplay changes; test counts alone do not prove they passed.
 - For script changes, compile in Unity and check Console errors. For gameplay changes, exercise the affected flow in Play Mode when the Editor is available.
 - Do not claim a successful build or scene validation without actually performing it.
 

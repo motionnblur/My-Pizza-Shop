@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using Engineering.ScriptableObjects;
+using Engineering.Scripts.Domain.Payment;
 using Engineering.Scripts.Mono.Areas;
 using UnityEngine;
 
@@ -14,6 +15,7 @@ namespace Engineering.Scripts.Mono.Managers
         [SerializeField] private SMoneyAnimationEventChannel moneyAnimationRequested;
         private CurrencyService _currencyService;
         private Coroutine _activePaymentCoroutine;
+        private PaymentSessionModel _paymentSession;
 
         public void Initialize(CurrencyService currencyService)
         {
@@ -36,13 +38,19 @@ namespace Engineering.Scripts.Mono.Managers
             if (ba == null) return;
             if (_currencyService == null || _currencyService.Wallet == null) return;
             if (sEconomy == null) return;
+            if (sEconomy.playerMoneySpendRate <= 0) return;
             if (_sAnimation == null || _sAnimation.moneySpendSpeed <= 0) return;
             if (_activePaymentCoroutine != null) return;
+
+            _paymentSession = new PaymentSessionModel(sEconomy.playerMoneySpendRate);
+            _paymentSession.Begin();
             _activePaymentCoroutine = StartCoroutine(DelayedPayment(ba));
         }
 
         public void CancelPayment()
         {
+            _paymentSession?.Cancel();
+
             if (_activePaymentCoroutine != null)
             {
                 StopCoroutine(_activePaymentCoroutine);
@@ -53,14 +61,16 @@ namespace Engineering.Scripts.Mono.Managers
         private IEnumerator DelayedPayment(BuyingArea ba)
         {
             var wallet = _currencyService.Wallet;
-            var pay = sEconomy.playerMoneySpendRate;
             var delay = 1f / _sAnimation.moneySpendSpeed;
 
             yield return new WaitForSeconds(_sAnimation.moneySpendDelay);
 
-            while (ba != null && wallet != null)
+            while (ba != null && wallet != null && _paymentSession.IsActive)
             {
                 var animationTargetPosition = ba.transform.position;
+                var pay = _paymentSession.GetNextPayment();
+                if (pay <= 0)
+                    break;
 
                 if (_currencyService.TrySpend(pay))
                 {
@@ -86,6 +96,7 @@ namespace Engineering.Scripts.Mono.Managers
                 }
             }
 
+            _paymentSession.Cancel();
             _activePaymentCoroutine = null;
         }
 
