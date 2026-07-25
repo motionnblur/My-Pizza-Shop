@@ -19,6 +19,7 @@ namespace Engineering.Tests
         private GameObject _playerObject;
         private GameObject _economyManagerObject;
         private GameObject _currencyServiceObject;
+        private CurrencyService _currencyService;
         private SServeStation _serveSettings;
         private SVoidEventChannel _pizzaServedEvent;
         private PlayerPizzaInventory _playerInventory;
@@ -816,6 +817,26 @@ namespace Engineering.Tests
             Assert.That(_playerInventory.Count, Is.EqualTo(3));
         }
 
+        [UnityTest]
+        public IEnumerator TryServeFrontCustomer_ReturnsZeroWhenCurrencyServiceMissing()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 3);
+            SetPrivateField(_serveStationObject.GetComponent<ServeStation>(), "currencyService", null);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var customer = CreateAndRegisterBot(serveStation, orderAmount: 5);
+
+            SetPrivateField(customer, "_hasReachedAssignedSlot", true);
+
+            serveStation.TryDepositPizzas(_playerInventory);
+            var result = serveStation.TryServeFrontCustomer();
+
+            Assert.That(result, Is.EqualTo(0));
+            Assert.That(serveStation.StoredPizzaCount, Is.EqualTo(3));
+            Assert.That(_playerObject.GetComponent<PlayerWallet>().Money, Is.EqualTo(100));
+        }
+
         private void CreateQueueFixture(
             int maxQueueCustomers,
             int pricePerPizza,
@@ -872,7 +893,10 @@ namespace Engineering.Tests
             _economyManagerObject.AddComponent<EconomyManager>();
 
             _currencyServiceObject = new GameObject("ServeCurrencyServiceTest");
-            _currencyServiceObject.AddComponent<CurrencyService>();
+            _currencyService = _currencyServiceObject.AddComponent<CurrencyService>();
+            SetPrivateField(_currencyService, "_playerWallet", wallet);
+
+            SetPrivateField(serveStation, "currencyService", _currencyService);
         }
 
         private CustomerBot CreateCustomerBot(int orderAmount)

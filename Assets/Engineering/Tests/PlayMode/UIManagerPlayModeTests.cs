@@ -24,33 +24,6 @@ namespace Engineering.Tests
         public void TearDown()
         {
             Object.DestroyImmediate(_gameObject);
-            typeof(UIManager).GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)
-                ?.SetValue(null, null);
-        }
-
-        [UnityTest]
-        public IEnumerator Awake_SetsStaticInstance()
-        {
-            InvokeAwake(_uiManager);
-            yield return null;
-
-            Assert.That(UIManager.Instance, Is.SameAs(_uiManager));
-        }
-
-        [UnityTest]
-        public IEnumerator Awake_DestroysDuplicateInstance()
-        {
-            InvokeAwake(_uiManager);
-            yield return null;
-
-            var duplicateObject = new GameObject("UIManagerDuplicate");
-            var duplicate = duplicateObject.AddComponent<UIManager>();
-            InvokeAwake(duplicate);
-            yield return null;
-
-            Assert.That(duplicate == null, Is.True);
-
-            Object.DestroyImmediate(duplicateObject);
         }
 
         [UnityTest]
@@ -73,13 +46,6 @@ namespace Engineering.Tests
         {
             Assert.DoesNotThrow(() => _uiManager.UpdateMoneyText(42));
             yield return null;
-        }
-
-        private static void InvokeAwake(UIManager target)
-        {
-            var method = typeof(UIManager).GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.That(method, Is.Not.Null, "Expected UIManager to define 'Awake'.");
-            method.Invoke(target, null);
         }
 
         private static void SetPrivateField(object target, string fieldName, object value)

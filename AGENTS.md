@@ -54,16 +54,16 @@ This file is the fast entry point for AI agents and contributors. Read it before
 - Input is event-driven: subscribe in `OnEnable` and unsubscribe in `OnDisable`. Extend `InputManager` rather than polling duplicate input actions in consumers.
 - Cross-system gameplay feedback uses `SVoidEventChannel` and `SIntEventChannel` assets. Publishers raise an intent event; consumers subscribe through Inspector-assigned channel references rather than calling each other directly.
 - Pizza inventory count is published through the typed `SIntEventChannel`; UI listens to the channel instead of depending on the player inventory component.
-- `EconomyManager` is the primary persistent singleton for money operations. `UIManager`, `AnimationManager`, and `SoundManager` are also `DontDestroyOnLoad` singletons.
-- The player is located by the `Player` tag in `EconomyManager`; retain or deliberately migrate this contract together with scene/prefab changes.
+- There are **no static singletons or DontDestroyOnLoad managers**. All cross-component dependencies use `[SerializeField]` references wired through MainScene. Managers are plain scene objects; they are not singletons.
+- `EconomyManager` has a serialized `CurrencyService` reference instead of a static Instance. `BuyingArea` has a serialized `EconomyManager` reference. `ServeStation` and `MoneyToCollect` have serialized `CurrencyService` references. All are assigned in MainScene as scene-instance overrides on prefab instances.
 - Use physics movement in `FixedUpdate`, as `PlayerMovement` does.
 
 ## Important Contracts
 
 - The Input System action asset must include a `Player` map with `Move`, `Look`, `Attack`, `Interact`, `Previous`, `Next`, and `Sprint` actions.
-- `EconomyManager` requires an assigned `SEconomy` and a scene object tagged `Player` with `PlayerWallet`.
-- `BuyingArea` expects collider trigger callbacks and calls `EconomyManager.Instance`.
-- `EconomyManager` raises `GroundMoneyCollected` after a successful ground-money transaction and `BuyingAreaPurchased` after an area is purchased. `SoundManager` listens to these channels and owns clip selection/playback. `SoundManager` also subscribes to `PizzaServed` (raised by `ServeStation`) and `PizzaTrashed` (raised by `TrashStation`) via the same `SVoidEventChannel` pattern.
+- `EconomyManager` requires an assigned `SEconomy` and a serialized `CurrencyService` reference.
+- `BuyingArea` expects collider trigger callbacks and calls its serialized `EconomyManager` reference.
+- `EconomyManager` raises `GroundMoneyCollected` after a successful ground-money transaction and `BuyingAreaPurchased` after an area is purchased. `SoundManager` listens to these channels and owns clip selection/playback. `SoundManager` also subscribes to `PizzaServed` (raised by `ServeStation`) and `PizzaTrashed` (raised by `TrashStation`) via the same `SVoidEventChannel` pattern. `EconomyManager` also subscribes to `moneyAnimationRequested` to request money fly animations; `AnimationManager` listens to the same channel.
 - `GrillStation` owns ready-pizza state and production; `GrillPlate` only forwards player trigger collection. `PlayerPizzaInventory.TryAdd` enforces player capacity and returns the accepted amount.
 - `GrillStation` positions its ready-pizza stack from `GrillPlate.PizzaStackBasePosition`, which uses the plate collider's `bounds.max.y`; do not replace this with a hard-coded pivot offset.
 - `ServeStation` manages an ordered customer queue via `List<CustomerBot>`. `RegisterCustomer` reserves a slot immediately upon spawn. `TryDepositPizzas` transfers player pizzas into station storage (up to `maxStoredPizzas`), does not award money or raise events. `TryServeFrontCustomer` (no-arg) transfers `min(storedPizzaCount, frontCustomerRemainingOrder)` from station storage to the front customer, awards money for delivered pizzas, raises `PizzaServed` once, and updates the station's pizza visual stack. A completed front customer is removed and destroyed, and every remaining customer is reassigned to the preceding queue slot via `AssignQueueSlot`. The station visual pool is created in `OnEnable` from `pizzaVisualPrefab` and `pizzaStackSpacing`, anchored at the assigned plate collider's top surface.

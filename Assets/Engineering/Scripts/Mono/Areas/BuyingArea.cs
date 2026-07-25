@@ -7,6 +7,7 @@ namespace Engineering.Scripts.Mono.Areas
 {
     public class BuyingArea : MonoBehaviour
     {
+        [SerializeField] private EconomyManager economyManager;
         private int _unlockPrice = 100;
         private int _totalPricePlayerGive = 0;
         private bool isPurchased = false;
@@ -15,9 +16,9 @@ namespace Engineering.Scripts.Mono.Areas
         {
             if (isPurchased) return;
             
-            if (other.CompareTag("Player") && EconomyManager.Instance != null)
+            if (other.CompareTag("Player") && economyManager != null)
             {
-                EconomyManager.Instance.ProcessPayment(this);
+                economyManager.ProcessPayment(this);
             }
         }
 
@@ -27,9 +28,9 @@ namespace Engineering.Scripts.Mono.Areas
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.CompareTag("Player") && EconomyManager.Instance != null)
+            if (other.CompareTag("Player") && economyManager != null)
             {
-                EconomyManager.Instance.CancelPayment();
+                economyManager.CancelPayment();
             }
         }
         
@@ -39,8 +40,8 @@ namespace Engineering.Scripts.Mono.Areas
             if (_totalPricePlayerGive >= _unlockPrice)
             {
                 isPurchased = true;
-                if (EconomyManager.Instance != null)
-                    EconomyManager.Instance.PlayerBuyBuyingArea(this);
+                if (economyManager != null)
+                    economyManager.PlayerBuyBuyingArea(this);
             }
         }
     }

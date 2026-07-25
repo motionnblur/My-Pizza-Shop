@@ -5,8 +5,6 @@ namespace Engineering.Scripts.Mono.Managers
 {
     public class SoundManager : MonoBehaviour
     {
-        public static SoundManager Instance { get; private set; }
-
         [SerializeField] private AudioSource sfxSource;
         [SerializeField] private AudioSource musicSource;
         
@@ -15,18 +13,6 @@ namespace Engineering.Scripts.Mono.Managers
         [SerializeField] private SVoidEventChannel buyingAreaPurchasedEvent;
         [SerializeField] private SVoidEventChannel pizzaServedEvent;
         [SerializeField] private SVoidEventChannel pizzaTrashedEvent;
-
-        private void Awake()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
 
         private void OnEnable()
         {

@@ -9,6 +9,7 @@ namespace Engineering.Scripts.Mono.Items
         [SerializeField] private int moneyToCollect = 5;
         [SerializeField] private SVoidEventChannel groundMoneyCollectedEvent;
         [SerializeField] private SMoneyAnimationEventChannel moneyAnimationRequested;
+        [SerializeField] private CurrencyService currencyService;
         private bool _isCollected;
 
         private void OnTriggerEnter(Collider other)
@@ -16,20 +17,21 @@ namespace Engineering.Scripts.Mono.Items
             if (_isCollected || !other.CompareTag("Player"))
                 return;
 
+            if (currencyService == null || currencyService.Wallet == null)
+                return;
+
             _isCollected = true;
 
-            if (CurrencyService.Instance != null)
-                CurrencyService.Instance.Credit(moneyToCollect);
+            currencyService.Credit(moneyToCollect);
 
             groundMoneyCollectedEvent?.Raise();
 
-            var wallet = CurrencyService.Instance != null ? CurrencyService.Instance.Wallet : null;
-            if (wallet != null && moneyAnimationRequested != null)
+            if (moneyAnimationRequested != null)
             {
                 moneyAnimationRequested.Raise(new MoneyAnimationRequest
                 {
                     SourcePosition = transform.position,
-                    DestinationTransform = wallet.MoneyAnimationOrigin
+                    DestinationTransform = currencyService.Wallet.MoneyAnimationOrigin
                 });
             }
 

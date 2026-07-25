@@ -102,6 +102,7 @@ namespace Engineering.Tests
             var pickup = pickupObject.AddComponent<MoneyToCollect>();
             pickupObject.AddComponent<BoxCollider>().isTrigger = true;
             SetPrivateField(pickup, "moneyToCollect", 25);
+            SetPrivateField(pickup, "currencyService", _fixture.CurrencyService);
             yield return null;
 
             InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
@@ -122,6 +123,7 @@ namespace Engineering.Tests
             var pickup = pickupObject.AddComponent<MoneyToCollect>();
             pickupObject.AddComponent<BoxCollider>().isTrigger = true;
             SetPrivateField(pickup, "groundMoneyCollectedEvent", _fixture.GroundMoneyCollectedEvent);
+            SetPrivateField(pickup, "currencyService", _fixture.CurrencyService);
             yield return null;
 
             InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
@@ -140,6 +142,7 @@ namespace Engineering.Tests
             pickupObject.AddComponent<BoxCollider>().isTrigger = true;
             SetPrivateField(pickup, "moneyToCollect", 25);
             SetPrivateField(pickup, "moneyAnimationRequested", _fixture.MoneyAnimationRequested);
+            SetPrivateField(pickup, "currencyService", _fixture.CurrencyService);
             yield return null;
 
             InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
@@ -161,6 +164,7 @@ namespace Engineering.Tests
             var pickup = pickupObject.AddComponent<MoneyToCollect>();
             pickupObject.AddComponent<BoxCollider>().isTrigger = true;
             SetPrivateField(pickup, "moneyAnimationRequested", _fixture.MoneyAnimationRequested);
+            SetPrivateField(pickup, "currencyService", _fixture.CurrencyService);
             yield return null;
 
             InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
@@ -181,6 +185,7 @@ namespace Engineering.Tests
             var pickup = pickupObject.AddComponent<MoneyToCollect>();
             pickupObject.AddComponent<BoxCollider>().isTrigger = true;
             SetPrivateField(pickup, "moneyToCollect", 25);
+            SetPrivateField(pickup, "currencyService", _fixture.CurrencyService);
             var nonPlayerObject = new GameObject("NonPlayerCollider");
             var nonPlayerCollider = nonPlayerObject.AddComponent<BoxCollider>();
             yield return null;
@@ -204,6 +209,7 @@ namespace Engineering.Tests
             var pickup = pickupObject.AddComponent<MoneyToCollect>();
             pickupObject.AddComponent<BoxCollider>().isTrigger = true;
             SetPrivateField(pickup, "moneyToCollect", 25);
+            SetPrivateField(pickup, "currencyService", _fixture.CurrencyService);
             yield return null;
 
             InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
@@ -214,6 +220,38 @@ namespace Engineering.Tests
 
             yield return null;
             Assert.That(pickup == null, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator MoneyToCollect_DoesNotDestroyItselfWhenCurrencyServiceMissing()
+        {
+            _fixture = CreateFixture(spendRate: 5, spendSpeed: 1f);
+            var pickupObject = new GameObject("MoneyToCollectMissingCurrency");
+            var pickup = pickupObject.AddComponent<MoneyToCollect>();
+            pickupObject.AddComponent<BoxCollider>().isTrigger = true;
+            SetPrivateField(pickup, "moneyToCollect", 25);
+            yield return null;
+
+            InvokePrivateMethod(pickup, "OnTriggerEnter", _fixture.PlayerCollider);
+            yield return null;
+
+            Assert.That(_fixture.Wallet.Money, Is.EqualTo(100));
+            Assert.That(pickup, Is.Not.Null);
+
+            UnityEngine.Object.Destroy(pickupObject);
+        }
+
+        [UnityTest]
+        public IEnumerator EconomyManager_DoesNotStartPaymentWhenCurrencyServiceMissing()
+        {
+            _fixture = CreateFixture(spendRate: 5, spendSpeed: 1f);
+            SetPrivateField(_fixture.EconomyManager, "currencyService", null);
+            yield return null;
+
+            InvokePrivateMethod(_fixture.BuyingArea, "OnTriggerEnter", _fixture.PlayerCollider);
+            yield return null;
+
+            Assert.That(_fixture.Wallet.Money, Is.EqualTo(100));
         }
 
         private static Fixture CreateFixture(
@@ -241,12 +279,19 @@ namespace Engineering.Tests
             var buyingAreaPurchasedEvent = ScriptableObject.CreateInstance<SVoidEventChannel>();
             var moneyAnimationRequested = ScriptableObject.CreateInstance<SMoneyAnimationEventChannel>();
 
+            // CurrencyService: wire wallet explicitly
+            var currencyServiceObject = new GameObject("PaymentTestCurrencyService");
+            var currencyService = currencyServiceObject.AddComponent<CurrencyService>();
+            SetPrivateField(currencyService, "_playerWallet", wallet);
+
+            // EconomyManager: wire currencyService explicitly
             var managerObject = new GameObject("PaymentTestEconomyManager");
             var economyManager = managerObject.AddComponent<EconomyManager>();
             SetPrivateField(economyManager, "sEconomy", economy);
             SetPrivateField(economyManager, "_sAnimation", sAnimation);
             SetPrivateField(economyManager, "buyingAreaPurchasedEvent", buyingAreaPurchasedEvent);
             SetPrivateField(economyManager, "moneyAnimationRequested", moneyAnimationRequested);
+            SetPrivateField(economyManager, "currencyService", currencyService);
 
             // UIManager: create inactive to set fields before OnEnable
             var uiManagerObject = new GameObject("PaymentTestUiManager");
@@ -255,10 +300,6 @@ namespace Engineering.Tests
             SetPrivateField(uiManager, "moneyText", moneyText);
             SetPrivateField(uiManager, "_playerWallet", wallet);
             uiManagerObject.SetActive(true);
-
-            // CurrencyService
-            var currencyServiceObject = new GameObject("PaymentTestCurrencyService");
-            currencyServiceObject.AddComponent<CurrencyService>();
 
             GameObject moneyPrefab = null;
             GameObject animationManagerObject = null;
@@ -277,9 +318,11 @@ namespace Engineering.Tests
                 animationManagerObject.SetActive(true);
             }
 
+            // BuyingArea: wire economyManager explicitly
             var buyingAreaObject = new GameObject("PaymentTestBuyingArea");
             buyingAreaObject.AddComponent<BoxCollider>().isTrigger = true;
             var buyingArea = buyingAreaObject.AddComponent<BuyingArea>();
+            SetPrivateField(buyingArea, "economyManager", economyManager);
 
             return new Fixture(
                 playerObject,
@@ -293,12 +336,14 @@ namespace Engineering.Tests
                 sAnimation,
                 buyingAreaObject,
                 buyingArea,
+                economyManager,
                 moneyPrefab,
                 animationManagerObject,
                 groundMoneyCollectedEvent,
                 buyingAreaPurchasedEvent,
                 moneyAnimationRequested,
-                currencyServiceObject);
+                currencyServiceObject,
+                currencyService);
         }
 
         private static IEnumerator DestroyFixture(Fixture fixture)
@@ -422,12 +467,14 @@ namespace Engineering.Tests
                 SAnimation sAnimation,
                 GameObject buyingAreaObject,
                 BuyingArea buyingArea,
+                EconomyManager economyManager,
                 GameObject moneyPrefab,
                 GameObject animationManagerObject,
                 SVoidEventChannel groundMoneyCollectedEvent,
                 SVoidEventChannel buyingAreaPurchasedEvent,
                 SMoneyAnimationEventChannel moneyAnimationRequested,
-                GameObject currencyServiceObject)
+                GameObject currencyServiceObject,
+                CurrencyService currencyService)
             {
                 PlayerObject = playerObject;
                 Wallet = wallet;
@@ -440,12 +487,14 @@ namespace Engineering.Tests
                 SAnimation = sAnimation;
                 BuyingAreaObject = buyingAreaObject;
                 BuyingArea = buyingArea;
+                EconomyManager = economyManager;
                 MoneyPrefab = moneyPrefab;
                 AnimationManagerObject = animationManagerObject;
                 GroundMoneyCollectedEvent = groundMoneyCollectedEvent;
                 BuyingAreaPurchasedEvent = buyingAreaPurchasedEvent;
                 MoneyAnimationRequested = moneyAnimationRequested;
                 CurrencyServiceObject = currencyServiceObject;
+                CurrencyService = currencyService;
             }
 
             public GameObject PlayerObject { get; }
@@ -459,12 +508,14 @@ namespace Engineering.Tests
             public SAnimation SAnimation { get; }
             public GameObject BuyingAreaObject { get; }
             public BuyingArea BuyingArea { get; }
+            public EconomyManager EconomyManager { get; }
             public GameObject MoneyPrefab { get; }
             public GameObject AnimationManagerObject { get; }
             public SVoidEventChannel GroundMoneyCollectedEvent { get; }
             public SVoidEventChannel BuyingAreaPurchasedEvent { get; }
             public SMoneyAnimationEventChannel MoneyAnimationRequested { get; }
             public GameObject CurrencyServiceObject { get; }
+            public CurrencyService CurrencyService { get; }
         }
     }
 }

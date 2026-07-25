@@ -15,6 +15,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
         [SerializeField] private GameObject pizzaVisualPrefab;
         [SerializeField] private BoxCollider plateCollider;
         [SerializeField, Min(0.01f)] private float pizzaStackSpacing = 0.14f;
+        [SerializeField] private CurrencyService currencyService;
 
         private readonly List<CustomerBot> _customers = new List<CustomerBot>();
         private readonly List<GameObject> _pizzaVisuals = new List<GameObject>();
@@ -75,6 +76,9 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             if (sServeStation == null)
                 return 0;
 
+            if (currencyService == null || currencyService.Wallet == null)
+                return 0;
+
             if (_customers.Count == 0)
                 return 0;
 
@@ -94,8 +98,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             RefreshVisuals();
 
             var moneyEarned = transferAmount * sServeStation.pricePerPizza;
-            if (CurrencyService.Instance != null)
-                CurrencyService.Instance.Credit(moneyEarned);
+            currencyService.Credit(moneyEarned);
 
             pizzaServedEvent?.Raise();
 

@@ -8,7 +8,6 @@ namespace Engineering.Scripts.Mono.Managers
 {
     public class AnimationManager : MonoBehaviour
     {
-        public static AnimationManager Instance { get; private set; }
         [SerializeField] private SEconomy sEconomy;
 
         [Header("Money Animation")]
@@ -22,18 +21,6 @@ namespace Engineering.Scripts.Mono.Managers
         private ObjectPool<GameObject> _moneyPool;
         private HashSet<GameObject> _activeMoneyObjects = new();
         private Vector3 _moneyPrefabScale;
-
-        private void Awake()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
 
         private void OnEnable()
         {
@@ -49,9 +36,6 @@ namespace Engineering.Scripts.Mono.Managers
 
         private void OnDestroy()
         {
-            if (Instance == this)
-                Instance = null;
-
             foreach (var go in new List<GameObject>(_activeMoneyObjects))
             {
                 if (go != null)

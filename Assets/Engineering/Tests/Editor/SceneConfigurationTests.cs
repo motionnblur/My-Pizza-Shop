@@ -1,6 +1,8 @@
 using Engineering.Scripts.Mono.Items;
 using Engineering.Scripts.Mono.Managers;
 using Engineering.Scripts.Mono.Player;
+using Engineering.Scripts.Mono.Actors.ServeStation;
+using Engineering.Scripts.Mono.Areas;
 using Engineering.ScriptableObjects;
 using NUnit.Framework;
 using UnityEditor;
@@ -181,6 +183,103 @@ namespace Engineering.Tests
                 "EconomyManager must use MoneyAnimationRequested.asset.");
         }
 
+        [Test]
+        public void EconomyManager_ReferencesSceneCurrencyService()
+        {
+            var economyManager = GetSingleSceneComponent<EconomyManager>(out _);
+            var currencyService = GetSingleSceneComponent<CurrencyService>(out _);
+
+            Assert.That(economyManager, Is.Not.Null);
+            Assert.That(currencyService, Is.Not.Null);
+
+            var referenced = GetObjectReference(economyManager, "currencyService");
+            Assert.That(referenced, Is.Not.Null,
+                "EconomyManager must have a CurrencyService reference assigned.");
+            Assert.That(referenced, Is.SameAs(currencyService),
+                "EconomyManager must reference the scene CurrencyService.");
+        }
+
+        [Test]
+        public void AllBuyingAreas_ReferenceSceneEconomyManager()
+        {
+            var economyManager = GetSingleSceneComponent<EconomyManager>(out _);
+            Assert.That(economyManager, Is.Not.Null,
+                "Expected an EconomyManager in MainScene.");
+
+            var allBuyingAreas = GetAllSceneComponents<BuyingArea>();
+            foreach (var area in allBuyingAreas)
+            {
+                var referenced = GetObjectReference(area, "economyManager");
+                Assert.That(referenced, Is.Not.Null,
+                    $"BuyingArea '{area.name}' must have an EconomyManager reference assigned.");
+                Assert.That(referenced, Is.SameAs(economyManager),
+                    $"BuyingArea '{area.name}' must reference the scene EconomyManager.");
+            }
+        }
+
+        [Test]
+        public void AllServeStations_ReferenceSceneCurrencyService()
+        {
+            var currencyService = GetSingleSceneComponent<CurrencyService>(out _);
+            Assert.That(currencyService, Is.Not.Null,
+                "Expected a CurrencyService in MainScene.");
+
+            var allServeStations = GetAllSceneComponents<ServeStation>();
+            foreach (var station in allServeStations)
+            {
+                var referenced = GetObjectReference(station, "currencyService");
+                Assert.That(referenced, Is.Not.Null,
+                    $"ServeStation '{station.name}' must have a CurrencyService reference assigned.");
+                Assert.That(referenced, Is.SameAs(currencyService),
+                    $"ServeStation '{station.name}' must reference the scene CurrencyService.");
+            }
+        }
+
+        [Test]
+        public void AllMoneyToCollect_ReferenceSceneCurrencyService()
+        {
+            var currencyService = GetSingleSceneComponent<CurrencyService>(out _);
+            Assert.That(currencyService, Is.Not.Null,
+                "Expected a CurrencyService in MainScene.");
+
+            var allMoneyToCollect = GetAllSceneComponents<MoneyToCollect>();
+            foreach (var pickup in allMoneyToCollect)
+            {
+                var referenced = GetObjectReference(pickup, "currencyService");
+                Assert.That(referenced, Is.Not.Null,
+                    $"MoneyToCollect '{pickup.name}' must have a CurrencyService reference assigned.");
+                Assert.That(referenced, Is.SameAs(currencyService),
+                    $"MoneyToCollect '{pickup.name}' must reference the scene CurrencyService.");
+            }
+        }
+
+        [Test]
+        public void AllRequiredEventChannels_AreAssigned()
+        {
+            var economyManager = GetSingleSceneComponent<EconomyManager>(out _);
+            Assert.That(economyManager, Is.Not.Null);
+            Assert.That(GetObjectReference(economyManager, "buyingAreaPurchasedEvent"), Is.Not.Null,
+                "EconomyManager must have buyingAreaPurchasedEvent assigned.");
+            Assert.That(GetObjectReference(economyManager, "moneyAnimationRequested"), Is.Not.Null,
+                "EconomyManager must have moneyAnimationRequested assigned.");
+
+            var animationManager = GetSingleSceneComponent<AnimationManager>(out _);
+            Assert.That(animationManager, Is.Not.Null);
+            Assert.That(GetObjectReference(animationManager, "moneyAnimationRequested"), Is.Not.Null,
+                "AnimationManager must have moneyAnimationRequested assigned.");
+
+            var soundManager = Object.FindFirstObjectByType<SoundManager>();
+            Assert.That(soundManager, Is.Not.Null);
+            Assert.That(GetObjectReference(soundManager, "groundMoneyCollectedEvent"), Is.Not.Null,
+                "SoundManager must have groundMoneyCollectedEvent assigned.");
+            Assert.That(GetObjectReference(soundManager, "buyingAreaPurchasedEvent"), Is.Not.Null,
+                "SoundManager must have buyingAreaPurchasedEvent assigned.");
+            Assert.That(GetObjectReference(soundManager, "pizzaServedEvent"), Is.Not.Null,
+                "SoundManager must have pizzaServedEvent assigned.");
+            Assert.That(GetObjectReference(soundManager, "pizzaTrashedEvent"), Is.Not.Null,
+                "SoundManager must have pizzaTrashedEvent assigned.");
+        }
+
         private T GetSingleSceneComponent<T>(out int count)
             where T : Component
         {
@@ -197,6 +296,17 @@ namespace Engineering.Tests
             }
 
             return found;
+        }
+
+        private T[] GetAllSceneComponents<T>()
+            where T : Component
+        {
+            var results = new System.Collections.Generic.List<T>();
+            foreach (var rootGameObject in _mainScene.GetRootGameObjects())
+            {
+                results.AddRange(rootGameObject.GetComponentsInChildren<T>(true));
+            }
+            return results.ToArray();
         }
 
         private static Object GetObjectReference(Object target, string propertyPath)

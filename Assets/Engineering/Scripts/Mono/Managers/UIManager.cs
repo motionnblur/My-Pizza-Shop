@@ -7,23 +7,10 @@ namespace Engineering.Scripts.Mono.Managers
 {
     public class UIManager : MonoBehaviour
     {
-        public static UIManager Instance { get; private set; }
         [SerializeField] private Text moneyText;
         [SerializeField] private Text pizzaText;
         [SerializeField] private SIntEventChannel pizzaInventoryChangedEvent;
         [SerializeField] private PlayerWallet _playerWallet;
-
-        private void Awake()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
 
         private void OnEnable()
         {
@@ -42,12 +29,6 @@ namespace Engineering.Scripts.Mono.Managers
             {
                 _playerWallet.BalanceChanged -= OnBalanceChanged;
             }
-        }
-
-        private void OnDestroy()
-        {
-            if (Instance == this)
-                Instance = null;
         }
 
         private void OnBalanceChanged(int balance)
