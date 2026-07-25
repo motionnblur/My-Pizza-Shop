@@ -25,6 +25,7 @@ namespace Engineering.Tests
         private SVoidEventChannel _pizzaServedEvent;
         private PlayerPizzaInventory _playerInventory;
         private GameObject _navMeshFloor;
+        private NavMeshData _navMeshData;
         private readonly List<GameObject> _botsToCleanup = new List<GameObject>();
 
         [UnityTearDown]
@@ -36,6 +37,12 @@ namespace Engineering.Tests
                     Object.Destroy(bot);
             }
             _botsToCleanup.Clear();
+
+            if (_navMeshData != null)
+            {
+                NavMesh.RemoveNavMeshData(_navMeshData);
+                Object.Destroy(_navMeshData);
+            }
 
             if (_navMeshFloor != null)
                 Object.Destroy(_navMeshFloor);
@@ -987,9 +994,31 @@ namespace Engineering.Tests
             plane.transform.SetParent(_navMeshFloor.transform);
             plane.transform.localPosition = Vector3.zero;
             plane.transform.localScale = new Vector3(5f, 1f, 5f);
-            var surface = _navMeshFloor.AddComponent<NavMeshSurface>();
-            surface.collectObjects = CollectObjects.Children;
-            surface.BuildNavMesh();
+
+            var settings = NavMesh.GetSettingsByIndex(0);
+            var bounds = new Bounds(Vector3.zero, new Vector3(100f, 10f, 100f));
+            var sources = new List<NavMeshBuildSource>();
+            var markups = new List<NavMeshBuildMarkup>();
+
+            NavMeshBuilder.CollectSources(
+                bounds,
+                ~0,
+                NavMeshCollectGeometry.RenderMeshes,
+                0,
+                markups,
+                sources);
+
+            var data = NavMeshBuilder.BuildNavMeshData(
+                settings,
+                sources,
+                bounds,
+                Vector3.zero,
+                Quaternion.identity);
+
+            if (data != null)
+                NavMesh.AddNavMeshData(data);
+
+            _navMeshData = data;
         }
 
         private void CreateQueueFixture(
