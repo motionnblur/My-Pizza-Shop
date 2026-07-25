@@ -24,6 +24,7 @@ namespace Engineering.Tests
         private SServeStation _serveSettings;
         private SVoidEventChannel _pizzaServedEvent;
         private PlayerPizzaInventory _playerInventory;
+        private GameObject _navMeshFloor;
         private readonly List<GameObject> _botsToCleanup = new List<GameObject>();
 
         [UnityTearDown]
@@ -35,6 +36,9 @@ namespace Engineering.Tests
                     Object.Destroy(bot);
             }
             _botsToCleanup.Clear();
+
+            if (_navMeshFloor != null)
+                Object.Destroy(_navMeshFloor);
 
             if (_serveStationObject != null)
                 Object.Destroy(_serveStationObject);
@@ -972,6 +976,22 @@ namespace Engineering.Tests
             Assert.That(_playerObject.GetComponent<PlayerWallet>().Money, Is.EqualTo(walletBefore + 100));
         }
 
+        private void EnsureNavMeshExists()
+        {
+            if (_navMeshFloor != null)
+                return;
+
+            _navMeshFloor = new GameObject("NavMeshFloor");
+            _navMeshFloor.transform.position = new Vector3(0f, -0.1f, 0f);
+            var plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            plane.transform.SetParent(_navMeshFloor.transform);
+            plane.transform.localPosition = Vector3.zero;
+            plane.transform.localScale = new Vector3(5f, 1f, 5f);
+            var surface = _navMeshFloor.AddComponent<NavMeshSurface>();
+            surface.collectObjects = CollectObjects.Children;
+            surface.BuildNavMesh();
+        }
+
         private void CreateQueueFixture(
             int maxQueueCustomers,
             int pricePerPizza,
@@ -986,6 +1006,8 @@ namespace Engineering.Tests
             _serveSettings.maxStoredPizzas = 10;
 
             _pizzaServedEvent = ScriptableObject.CreateInstance<SVoidEventChannel>();
+
+            EnsureNavMeshExists();
 
             _serveStationObject = new GameObject("ServeStationTest");
             _serveStationObject.SetActive(false);
