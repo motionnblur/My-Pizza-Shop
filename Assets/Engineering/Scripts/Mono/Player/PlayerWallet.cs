@@ -1,4 +1,5 @@
 ﻿using System;
+using Engineering.Scripts.Domain.Economy;
 using UnityEngine;
 
 namespace Engineering.Scripts.Mono.Player
@@ -8,7 +9,16 @@ namespace Engineering.Scripts.Mono.Player
         [SerializeField] private int money = 100;
         [SerializeField] private Transform moneyAnimationOrigin;
 
-        public int Money => money;
+        private WalletModel _model;
+
+        public int Money
+        {
+            get
+            {
+                EnsureModel();
+                return _model.Money;
+            }
+        }
 
         public event Action<int> BalanceChanged;
 
@@ -20,21 +30,29 @@ namespace Engineering.Scripts.Mono.Player
 
         public bool TrySpend(int amount)
         {
-            if (amount <= 0) return false;
-            if (money < amount) return false;
-
-            money -= amount;
-            BalanceChanged?.Invoke(money);
-            return true;
+            EnsureModel();
+            return _model.TrySpend(amount);
         }
 
         public bool Credit(int amount)
         {
-            if (amount <= 0) return false;
+            EnsureModel();
+            return _model.Credit(amount);
+        }
 
-            money += amount;
-            BalanceChanged?.Invoke(money);
-            return true;
+        private void EnsureModel()
+        {
+            if (_model != null)
+                return;
+
+            _model = new WalletModel(money);
+            _model.BalanceChanged += OnModelBalanceChanged;
+        }
+
+        private void OnModelBalanceChanged(int balance)
+        {
+            money = balance;
+            BalanceChanged?.Invoke(balance);
         }
     }
 }
