@@ -24,7 +24,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 | Path | Responsibility |
 | --- | --- |
 | `Assets/Engineering/Scripts/Mono/Managers/InputManager.cs` | Wraps the Input System's `Player` action map and publishes input events. |
-| `Assets/Engineering/Scripts/Mono/Managers/EconomyManager.cs` | Persistent singleton; transfers wallet money to a purchase area over time. |
+| `Assets/Engineering/Scripts/Mono/Managers/EconomyManager.cs` | Plain scene object; transfers wallet money to a purchase area over time. |
 | `Assets/Engineering/Scripts/Mono/Player/` | Player movement, wallet, and trigger helpers. |
 | `Assets/Engineering/Scripts/Mono/Areas/BuyingArea.cs` | Trigger-driven unlock/purchase zone. |
 | `Assets/Engineering/Scripts/Mono/Actors/GrillStation/` | Autonomous pizza production station and its player-collection trigger. |

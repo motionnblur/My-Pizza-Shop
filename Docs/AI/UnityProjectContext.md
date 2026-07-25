@@ -6,7 +6,7 @@
 
 - **Project root:** repository root
 - **Last analyzed:** 2026-07-25
-- **Last analyzed commit:** `1d312e0`
+- **Last analyzed commit:** `db5d41d`
 - **Summary:** Early-stage casual 3D game named *My Pizza Shop*. The current gameplay slice includes movement, wallet and ground-money collection, timed area purchases, autonomous pizza production and collection, player pizza stacks, pizza serving station with customer queue and money reward, trash station with DoTween fly-and-shrink animation, UI counters, pooled DOTween money-transfer effects, customer bot NavMesh movement, timed customer spawner, and ScriptableObject event channels for decoupled gameplay feedback.
 
 ## Confirmed Environment
@@ -62,7 +62,7 @@
 | --- | --- | --- | --- |
 | Runtime style | MonoBehaviour-centric | Confirmed | First-party gameplay sources |
 | Input flow | Central input adapter publishes C# events to consumers | Confirmed | `InputManager.cs`, `PlayerMovement.cs` |
-| Global state | `EconomyManager`, `UIManager`, `AnimationManager`, and `SoundManager` are `DontDestroyOnLoad` singletons | Confirmed | Manager sources |
+| Global state | Managers (`EconomyManager`, `UIManager`, `AnimationManager`, `SoundManager`, `InputManager`, `CurrencyService`) are plain scene objects wired through serialized references; no `DontDestroyOnLoad` or static singletons | Confirmed | Manager sources |
 | Player movement | Rigidbody velocity set in `FixedUpdate`, camera-relative | Confirmed | `PlayerMovement.cs` |
 | Economy | ScriptableObject-configured payment rate, coroutine-based purchase areas, trigger-based ground-money collection, pizza-serving money rewards, and the scene-authored `CurrencyService` bridge that owns the live `PlayerWallet` reference | Confirmed | `SEconomy.cs`, `SAnimation.cs`, `CurrencyService.cs`, `EconomyManager.cs`, `BuyingArea.cs`, `MoneyToCollect.cs`, `ServeStation.cs` |
 | Pizza production | Each `GrillStation` produces independently up to a ScriptableObject-configured capacity; `GrillPlate` collects ready pizzas into the player inventory | Confirmed | `SGrillStation.cs`, `GrillStation.cs`, `GrillPlate.cs`, `PlayerPizzaInventory.cs` |
@@ -86,11 +86,10 @@
 
 ## Testing And Validation
 
-- **EditMode tests:** 28 tests in `Assets/Engineering/Tests/Editor/`; they cover wallet, trigger relays, movement, ground-money prefab configuration, Event Channel listener registration, pizza inventory capacity (TryAdd/TryRemove), the plate-collider stack origin, build scene configuration, SoundManager pizzaServedEvent serialized reference in MainScene, and production MainScene economy wiring.
-- **PlayMode tests:** 62 `[Test]`/`[UnityTest]` declarations in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, pickup collection/UI updates, player-only collection, duplicate-trigger protection, moving-player animation targeting, economy Event Channel publication, pizza production/partial collection, pizza serving with customer queue (front-customer delivery, partial delivery, completed-order removal, slot guard, capacity, money, events, trigger flow, player/non-player tag filtering), customer spawner (order range, capacity enforcement, disabled cleanup), pizza trashing (removal, events, animation, guard conditions, trigger flow), UI singleton behavior, and money-animation pool reuse/cleanup. Test execution remains unrecorded.
+- **EditMode tests:** 33 `[Test]` declarations in `Assets/Engineering/Tests/Editor/`; they cover wallet, trigger relays, movement, ground-money prefab configuration, Event Channel listener registration, pizza inventory capacity (TryAdd/TryRemove), the plate-collider stack origin, build scene configuration, SoundManager pizzaServedEvent serialized reference in MainScene, and production MainScene economy wiring.
+- **PlayMode tests:** 63 `[UnityTest]` declarations in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, pickup collection/UI updates, player-only collection, duplicate-trigger protection, moving-player animation targeting, economy Event Channel publication, pizza production/partial collection, pizza serving with customer queue (front-customer delivery, partial delivery, completed-order removal, slot guard, capacity, money, events, trigger flow, player/non-player tag filtering), customer spawner (order range, capacity enforcement, disabled cleanup), pizza trashing (removal, events, animation, guard conditions, trigger flow), UI scene-object wiring, and money-animation pool reuse/cleanup. Test execution remains unrecorded.
 - **CI/build validation:** None found.
-- **Last recorded commands:** EditMode (`-testPlatform EditMode`) 28/28 passed; PlayMode (`-testPlatform PlayMode`) 62/62 passed on 2026-07-25. The current suite totals are recorded as executed.
-- **Recommended minimum validation:** Run both test suites, then manually exercise the scene physical trigger, camera, and input wiring in Play Mode. After build-scene or SoundManager changes, also run the new `SceneConfigurationTests` EditMode suite.
+- **Recommended minimum validation:** Run both test suites, then manually exercise the scene physical trigger, camera, and input wiring in Play Mode. After build-scene or SoundManager changes, also run `SceneConfigurationTests` EditMode suite.
 
 ## Available Unity Tooling
 
@@ -107,7 +106,7 @@
 - Preserve Input System action names and the `Player` tag unless all consumers and serialized references are migrated deliberately. The `Player` map also currently includes `Crouch` and `Jump`, though no inspected runtime consumer uses them.
 - Verify the Build Settings scene list in Unity before relying on it or changing it.
 - Do not infer that installed packages are actively used without source/asset evidence.
-- `EconomyManager`, `UIManager`, `AnimationManager`, and `SoundManager` are scene-authored persistent singletons. Their player/UI dependencies are therefore only resolved safely for the current single-scene setup; additive or replacement scene loading has not been validated.
+- All managers are plain scene objects with `[SerializeField]` references wired through MainScene. Additive or replacement scene loading has not been validated.
 
 ## Unknowns And Confidence
 
