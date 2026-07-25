@@ -125,3 +125,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ef8b0a924c4424cb34050638a043287, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Engineering::Engineering.Engineering.Scripts.Mono.Items.MoneyToCollect
+  moneyToCollect: 5
+  groundMoneyCollectedEvent: {fileID: 11400000, guid: 9c5eda88e09543cfb45ac9cc8adf2d37, type: 2}
+  moneyAnimationRequested: {fileID: 11400000, guid: 4f6b9494bcde4aafa1fa307659982d5f, type: 2}

@@ -205,6 +205,7 @@ Transform:
   - {fileID: 510139378}
   - {fileID: 456437130}
   - {fileID: 842339826}
+  - {fileID: 9200000000000000002}
   - {fileID: 225359972}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -391,6 +392,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Engineering::Engineering.Scripts.Mono.Managers.AnimationManager
   sEconomy: {fileID: 11400000, guid: c11de12e6b81dfd4d91ffe391159c899, type: 2}
   _sAnimation: {fileID: 11400000, guid: 517fd9fd3f0d2934b885866674a67f92, type: 2}
+  moneyAnimationRequested: {fileID: 11400000, guid: 4f6b9494bcde4aafa1fa307659982d5f, type: 2}
   _initialPoolSize: 8
   _maxPoolSize: 16
 --- !u!1 &510139377
@@ -439,8 +441,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Engineering.Scripts.Mono.Managers.EconomyManager
   sEconomy: {fileID: 11400000, guid: c11de12e6b81dfd4d91ffe391159c899, type: 2}
   _sAnimation: {fileID: 11400000, guid: 517fd9fd3f0d2934b885866674a67f92, type: 2}
-  groundMoneyCollectedEvent: {fileID: 11400000, guid: 9c5eda88e09543cfb45ac9cc8adf2d37, type: 2}
   buyingAreaPurchasedEvent: {fileID: 11400000, guid: 5667cf0398ec4585a0035a62cb82fd62, type: 2}
+  moneyAnimationRequested: {fileID: 11400000, guid: 4f6b9494bcde4aafa1fa307659982d5f, type: 2}
 --- !u!1001 &524464888
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -665,6 +667,7 @@ MonoBehaviour:
   moneyText: {fileID: 2038879678}
   pizzaText: {fileID: 5000000000000000003}
   pizzaInventoryChangedEvent: {fileID: 11400000, guid: 30702b2334c240009064e7208b905ff8, type: 2}
+  _playerWallet: {fileID: 4679387474481681208}
 --- !u!1 &885361908
 GameObject:
   m_ObjectHideFlags: 0
@@ -1826,6 +1829,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d4b4612156a02f94aa6701a115a1486d, type: 3}
+--- !u!114 &4679387474481681208 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 810272628905234864, guid: d4b4612156a02f94aa6701a115a1486d, type: 3}
+  m_PrefabInstance: {fileID: 4679387474481681207}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d2e39cf8ce34b6394e34bd49bb524f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Engineering.Scripts.Mono.Player.PlayerWallet
 --- !u!1 &5000000000000000001
 GameObject:
   m_ObjectHideFlags: 0
@@ -2109,6 +2123,51 @@ Transform:
   m_Children: []
   m_Father: {fileID: 8880000000000001001}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &9200000000000000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9200000000000000002}
+  - component: {fileID: 9200000000000000003}
+  m_Layer: 0
+  m_Name: CurrencyService
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9200000000000000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9200000000000000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 292602395}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9200000000000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9200000000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c340c35eaa16744886045a2f867031c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Engineering::Engineering.Scripts.Mono.Managers.CurrencyService
+  _playerWallet: {fileID: 4679387474481681208}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

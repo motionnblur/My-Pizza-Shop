@@ -2,6 +2,7 @@ using System.Reflection;
 using Engineering.Scripts.Mono.Items;
 using Engineering.Scripts.Mono.Managers;
 using Engineering.Scripts.Mono.Player;
+using Engineering.ScriptableObjects;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -269,10 +270,33 @@ namespace Engineering.Tests
             Assert.That(trigger, Is.Not.Null);
             Assert.That(trigger.isTrigger, Is.True);
 
+            var groundMoneyCollectedEvent = AssetDatabase.LoadAssetAtPath<SVoidEventChannel>(
+                "Assets/Engineering/ScriptableObjects/Events/GroundMoneyCollected.asset");
+            var moneyAnimationRequested = AssetDatabase.LoadAssetAtPath<SMoneyAnimationEventChannel>(
+                "Assets/Engineering/ScriptableObjects/Events/MoneyAnimationRequested.asset");
+
+            Assert.That(groundMoneyCollectedEvent, Is.Not.Null,
+                "Expected GroundMoneyCollected.asset to exist.");
+            Assert.That(moneyAnimationRequested, Is.Not.Null,
+                "Expected MoneyAnimationRequested.asset to exist.");
+
             var serializedMoney = new SerializedObject(moneyToCollect)
                 .FindProperty("moneyToCollect");
+            var serializedGroundMoneyCollectedEvent = new SerializedObject(moneyToCollect)
+                .FindProperty("groundMoneyCollectedEvent");
+            var serializedMoneyAnimationRequested = new SerializedObject(moneyToCollect)
+                .FindProperty("moneyAnimationRequested");
+
             Assert.That(serializedMoney, Is.Not.Null);
             Assert.That(serializedMoney.intValue, Is.EqualTo(5));
+            Assert.That(serializedGroundMoneyCollectedEvent, Is.Not.Null);
+            Assert.That(serializedGroundMoneyCollectedEvent.objectReferenceValue,
+                Is.SameAs(groundMoneyCollectedEvent),
+                "MoneyToCollect.prefab must reference GroundMoneyCollected.asset.");
+            Assert.That(serializedMoneyAnimationRequested, Is.Not.Null);
+            Assert.That(serializedMoneyAnimationRequested.objectReferenceValue,
+                Is.SameAs(moneyAnimationRequested),
+                "MoneyToCollect.prefab must reference MoneyAnimationRequested.asset.");
         }
     }
 
