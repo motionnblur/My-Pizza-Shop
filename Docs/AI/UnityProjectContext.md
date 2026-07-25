@@ -6,7 +6,7 @@
 
 - **Project root:** repository root
 - **Last analyzed:** 2026-07-25
-- **Last analyzed commit:** `c0c9ee2`
+- **Last analyzed commit:** `8c7165af`
 - **Summary:** Early-stage casual 3D game named *My Pizza Shop*. The current gameplay slice includes movement, wallet and ground-money collection, timed area purchases, autonomous pizza production and collection, player pizza stacks, pizza serving station with customer queue and money reward, trash station with DoTween fly-and-shrink animation, UI counters, pooled DOTween money-transfer effects, customer bot NavMesh movement, timed customer spawner, and ScriptableObject event channels for decoupled gameplay feedback.
 
 ## Confirmed Environment

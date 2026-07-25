@@ -123,11 +123,6 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
             }
         }
 
-        public void ReceivePizzas(int amount)
-        {
-            _orderModel?.ReceivePizzas(amount);
-        }
-
         private void TrySetDestination(Vector3 destination)
         {
             if (_agent == null) return;
