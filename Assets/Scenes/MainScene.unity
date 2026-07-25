@@ -441,6 +441,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Engineering.Scripts.Mono.Managers.EconomyManager
   sEconomy: {fileID: 11400000, guid: c11de12e6b81dfd4d91ffe391159c899, type: 2}
   _sAnimation: {fileID: 11400000, guid: 517fd9fd3f0d2934b885866674a67f92, type: 2}
+  currencyService: {fileID: 9200000000000000003}
   buyingAreaPurchasedEvent: {fileID: 11400000, guid: 5667cf0398ec4585a0035a62cb82fd62, type: 2}
   moneyAnimationRequested: {fileID: 11400000, guid: 4f6b9494bcde4aafa1fa307659982d5f, type: 2}
 --- !u!1001 &524464888
@@ -495,6 +496,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: MoneyToCollect (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 3421642982076873918, guid: d7da000197bfd604fa0c385a5f63a5c8, type: 3}
+      propertyPath: currencyService
+      value: 
+      objectReference: {fileID: 9200000000000000003}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -557,6 +562,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: MoneyToCollect
       objectReference: {fileID: 0}
+    - target: {fileID: 3421642982076873918, guid: d7da000197bfd604fa0c385a5f63a5c8, type: 3}
+      propertyPath: currencyService
+      value: 
+      objectReference: {fileID: 9200000000000000003}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -614,6 +623,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: MoneyToCollect (3)
       objectReference: {fileID: 0}
+    - target: {fileID: 3421642982076873918, guid: d7da000197bfd604fa0c385a5f63a5c8, type: 3}
+      propertyPath: currencyService
+      value: 
+      objectReference: {fileID: 9200000000000000003}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1029,6 +1042,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: MoneyToCollect (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 3421642982076873918, guid: d7da000197bfd604fa0c385a5f63a5c8, type: 3}
+      propertyPath: currencyService
+      value: 
+      objectReference: {fileID: 9200000000000000003}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1461,6 +1478,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: ServingStation
       objectReference: {fileID: 0}
+    - target: {fileID: 1111111111111111101, guid: fa7b1ce1aaa50494d8832ce015e049ac, type: 3}
+      propertyPath: currencyService
+      value: 
+      objectReference: {fileID: 9200000000000000003}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1747,6 +1768,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 818c34bfa63f6d74c9fd385622080aef, type: 2}
+    - target: {fileID: 1092533197837986523, guid: 5a1426061ab15ec42ab2740971a52f06, type: 3}
+      propertyPath: economyManager
+      value: 
+      objectReference: {fileID: 510139379}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
