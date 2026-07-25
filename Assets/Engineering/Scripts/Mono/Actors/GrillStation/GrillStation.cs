@@ -107,8 +107,6 @@ namespace Engineering.Scripts.Mono.Actors.GrillStation
 
         private void RefreshVisuals()
         {
-            PositionStackAnchor();
-
             for (var index = 0; index < _pizzaVisuals.Count; index++)
                 _pizzaVisuals[index].SetActive(index < ReadyPizzaCount);
         }
