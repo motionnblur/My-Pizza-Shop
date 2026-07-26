@@ -97,7 +97,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 
 ## Validation
 
-- The project source currently declares 173 EditMode and 69 PlayMode tests. Run the affected suite after gameplay changes; test counts alone do not prove they passed.
+- The project source currently declares 180 EditMode and 85 PlayMode tests. Run the affected suite after gameplay changes; test counts alone do not prove they passed.
 - For script changes, compile in Unity and check Console errors. For gameplay changes, exercise the affected flow in Play Mode when the Editor is available.
 - Do not claim a successful build or scene validation without actually performing it.
 

@@ -6,7 +6,7 @@
 
 - **Project root:** repository root
 - **Last analyzed:** 2026-07-26
-- **Last analyzed commit:** `cc09384`
+- **Last analyzed commit:** `49a7b5b`
 - **Summary:** Early-stage casual 3D game named *My Pizza Shop*. The current gameplay slice includes movement, wallet and ground-money collection, timed area purchases, autonomous pizza production and collection, player pizza stacks, pizza serving station with customer queue and money reward, trash station with DoTween fly-and-shrink animation, UI counters, pooled DOTween money-transfer effects, customer bot NavMesh movement, timed customer spawner, and ScriptableObject event channels for decoupled gameplay feedback.
 
 ## Confirmed Environment
@@ -24,7 +24,7 @@
 | Input | Input System 1.19.0; `InputManager` uses an asset-backed `Player` action map | Confirmed | `Packages/manifest.json`, `ProjectSettings/ProjectSettings.asset`, `Assets/Engineering/Scripts/Mono/Managers/InputManager.cs` |
 | Navigation | AI Navigation 2.0.13 is installed and used by `CustomerBot` for NavMesh movement; MainScene has a baked NavMeshSurface covering SpawnPoint, 2 waypoints, and 10 queue slots | Confirmed | `Packages/manifest.json`, `CustomerBot.cs`, `Assets/Scenes/MainScene_NavMeshData.asset` |
 | UI | UGUI 2.0.0 is installed; project UI usage not inspected | Confirmed / unknown usage | `Packages/manifest.json` |
-| Tests | Unity Test Framework 1.6.0 is installed; source declares 173 EditMode and 69 PlayMode test cases covering core gameplay, UI, economy, money-animation pooling, pizza inventory, grill production, serving station with customer queue, customer queue domain models, purchase progress domain models, and trash station | Confirmed; declaration counts verified by source analysis | `Packages/manifest.json`, `Assets/Engineering/Tests/` |
+| Tests | Unity Test Framework 1.6.0 is installed; source declares 180 EditMode and 85 PlayMode test cases covering core gameplay, UI, economy, money-animation pooling, pizza inventory, grill production, serving station with customer queue, customer queue domain models, purchase progress domain models, and trash station including pooled visual reuse and cleanup | Confirmed; declaration counts verified by source analysis | `Packages/manifest.json`, `Assets/Engineering/Tests/` |
 | Tweening | DOTween is included as a vendor plugin and actively used for money-transfer animation | Confirmed | `Assets/Plugins/Demigiant/DOTween/`, `AnimationManager.cs` |
 | Gameplay events | `SVoidEventChannel` decouples parameterless gameplay feedback; `SIntEventChannel` publishes pizza inventory counts to UI | Confirmed | Event-channel sources and assets, `EconomyManager.cs`, `SoundManager.cs`, `PlayerPizzaInventory.cs`, `UIManager.cs` |
 | Other tooling | Timeline, Visual Scripting, Rider and Visual Studio integrations are installed; first-party usage is unverified | Confirmed / unverified usage | `Packages/manifest.json` |
@@ -90,8 +90,8 @@
 
 ## Testing And Validation
 
-- **EditMode tests:** 173 `[Test]` declarations in `Assets/Engineering/Tests/Editor/`; they cover wallet, trigger relays, movement, ground-money prefab configuration, Event Channel listener registration, pizza inventory capacity (TryAdd/TryRemove), the plate-collider stack origin, build scene configuration, SoundManager pizzaServedEvent serialized reference in MainScene, production MainScene economy wiring, ServeStationModel deposit/serve/reward/completion calculations, PurchaseProgressModel constructor/payment/completion rules, CustomerQueueModel enqueue/remove-front/capacity rules, CustomerOrderModel receive/completion rules, PizzaInventoryModel domain rules, GrillStationModel domain rules, PaymentSessionModel domain rules, WalletModel domain rules, and an architecture guard verifying every domain `.cs` file has no UnityEngine dependency.
-- **PlayMode tests:** 69 `[UnityTest]` declarations in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, purchase progress persistence, partial payment state, zero/negative payment safety, disable/enable retention, re-entry after cancellation, pickup collection/UI updates, player-only collection, duplicate-trigger protection, moving-player animation targeting, economy Event Channel publication, pizza production/partial collection, pizza serving with customer queue (front-customer delivery, partial delivery, completed-order removal, slot guard, capacity, money, events, trigger flow, player/non-player tag filtering), customer spawner (order range, capacity enforcement, disabled cleanup), pizza trashing (removal, events, animation, guard conditions, trigger flow), UI scene-object wiring, money-animation pool reuse/cleanup, disable/enable storage retention, and runtime price-change integration.
+- **EditMode tests:** 180 `[Test]` declarations in `Assets/Engineering/Tests/Editor/`; they cover wallet, trigger relays, movement, ground-money prefab configuration, Event Channel listener registration, pizza inventory capacity (TryAdd/TryRemove), the plate-collider stack origin, build scene configuration, SoundManager pizzaServedEvent serialized reference in MainScene, production MainScene economy wiring, ServeStationModel deposit/serve/reward/completion calculations, PurchaseProgressModel constructor/payment/completion rules, CustomerQueueModel enqueue/remove-front/capacity rules, CustomerOrderModel receive/completion rules, PizzaInventoryModel domain rules, GrillStationModel domain rules, PaymentSessionModel domain rules, WalletModel domain rules, and an architecture guard verifying every domain `.cs` file has no UnityEngine dependency.
+- **PlayMode tests:** 85 `[UnityTest]` declarations in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, purchase progress persistence, partial payment state, zero/negative payment safety, disable/enable retention, re-entry after cancellation, pickup collection/UI updates, player-only collection, duplicate-trigger protection, moving-player animation targeting, economy Event Channel publication, pizza production/partial collection, pizza serving with customer queue (front-customer delivery, partial delivery, completed-order removal, slot guard, capacity, money, events, trigger flow, player/non-player tag filtering), customer spawner (order range, capacity enforcement, disabled cleanup), pizza trashing (removal, events, animation, guard conditions, trigger flow, pooled visual reuse, release, reset, and destruction cleanup), UI scene-object wiring, money-animation pool reuse/cleanup, disable/enable storage retention, and runtime price-change integration.
 - **CI/build validation:** None found.
 - **Recommended minimum validation:** Run both test suites, then manually exercise the scene physical trigger, camera, and input wiring in Play Mode. After build-scene or SoundManager changes, also run `SceneConfigurationTests` EditMode suite.
 
@@ -150,6 +150,8 @@
 - `Assets/Engineering/Scripts/Mono/Actors/GrillStation/GrillStation.cs`
 - `Assets/Engineering/Scripts/Mono/Actors/GrillStation/GrillPlate.cs`
 - `Assets/Engineering/Scripts/Mono/Actors/ServeStation/ServeStation.cs`
+- `Assets/Engineering/Scripts/Mono/Actors/ServeStation/CustomerQueueController.cs`
+- `Assets/Engineering/Scripts/Mono/Actors/ServeStation/ServeStationVisuals.cs`
 - `Assets/Engineering/Scripts/Mono/Actors/ServeStation/PlateTrigger.cs`
 - `Assets/Engineering/Scripts/Mono/Actors/ServeStation/ServeTrigger.cs`
 - `Assets/Engineering/Scripts/Mono/Actors/CustomerQueue/CustomerBot.cs`
