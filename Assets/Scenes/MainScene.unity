@@ -663,7 +663,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b8a770b490a47299982ed81b8115cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Engineering::Engineering.Scripts.Mono.Managers.UIManager
-  sEconomy: {fileID: 11400000, guid: c11de12e6b81dfd4d91ffe391159c899, type: 2}
   moneyText: {fileID: 2038879678}
   pizzaText: {fileID: 5000000000000000003}
   pizzaInventoryChangedEvent: {fileID: 11400000, guid: 30702b2334c240009064e7208b905ff8, type: 2}
@@ -1922,6 +1921,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1086263101542991050, guid: 6dd0bf8a901452a4ca89f8ac0c544d98, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 67222a43faa539147b2d41078607255b, type: 2}
     - target: {fileID: 1128711473655658581, guid: 6dd0bf8a901452a4ca89f8ac0c544d98, type: 3}
       propertyPath: m_LocalPosition.x
       value: 3.77
@@ -2036,6 +2039,131 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &8880000000000000010 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5069393921449071744, guid: d4b4612156a02f94aa6701a115a1486d, type: 3}
+  m_PrefabInstance: {fileID: 4679387474481681207}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54af30897c084b5dba227d2b716e17e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Engineering.Scripts.Mono.Player.PlayerMovement
+--- !u!114 &8880000000000000020 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1092533197837986523, guid: 5a1426061ab15ec42ab2740971a52f06, type: 3}
+  m_PrefabInstance: {fileID: 3278269290163126015}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 984350a97c264069aeb2088e8e449431, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Engineering.Scripts.Mono.Areas.BuyingArea
+--- !u!114 &8880000000000000031 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3421642982076873918, guid: d7da000197bfd604fa0c385a5f63a5c8, type: 3}
+  m_PrefabInstance: {fileID: 728272956}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ef8b0a924c4424cb34050638a043287, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Engineering::Engineering.Engineering.Scripts.Mono.Items.MoneyToCollect
+--- !u!114 &8880000000000000032 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3421642982076873918, guid: d7da000197bfd604fa0c385a5f63a5c8, type: 3}
+  m_PrefabInstance: {fileID: 1161932564}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ef8b0a924c4424cb34050638a043287, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Engineering::Engineering.Engineering.Scripts.Mono.Items.MoneyToCollect
+--- !u!114 &8880000000000000033 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3421642982076873918, guid: d7da000197bfd604fa0c385a5f63a5c8, type: 3}
+  m_PrefabInstance: {fileID: 524464888}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ef8b0a924c4424cb34050638a043287, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Engineering::Engineering.Engineering.Scripts.Mono.Items.MoneyToCollect
+--- !u!114 &8880000000000000034 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3421642982076873918, guid: d7da000197bfd604fa0c385a5f63a5c8, type: 3}
+  m_PrefabInstance: {fileID: 740892728}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ef8b0a924c4424cb34050638a043287, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Engineering::Engineering.Engineering.Scripts.Mono.Items.MoneyToCollect
+--- !u!1 &8880000000000000040
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8880000000000000041}
+  - component: {fileID: 8880000000000000042}
+  m_Layer: 0
+  m_Name: MainSceneInstaller
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8880000000000000041
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8880000000000000040}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8880000000000000042
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8880000000000000040}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46cf1ecf3408429498e2daa9f9fe5db8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Engineering::Engineering.Scripts.Mono.Bootstrap.MainSceneInstaller
+  inputManager: {fileID: 1251527521}
+  playerWallet: {fileID: 4679387474481681208}
+  currencyService: {fileID: 9200000000000000003}
+  economyManager: {fileID: 510139379}
+  playerMovement: {fileID: 8880000000000000010}
+  uiManager: {fileID: 842339827}
+  buyingAreas:
+  - {fileID: 8880000000000000020}
+  moneyPickups:
+  - {fileID: 8880000000000000031}
+  - {fileID: 8880000000000000032}
+  - {fileID: 8880000000000000033}
+  - {fileID: 8880000000000000034}
+  serveStations:
+  - {fileID: 1715872756}
 --- !u!4 &8880000000000001001
 Transform:
   m_ObjectHideFlags: 0
@@ -2162,131 +2290,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4c340c35eaa16744886045a2f867031c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Engineering::Engineering.Scripts.Mono.Managers.CurrencyService
---- !u!114 &8880000000000000010 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 5069393921449071744, guid: d4b4612156a02f94aa6701a115a1486d, type: 3}
-  m_PrefabInstance: {fileID: 4679387474481681207}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 54af30897c084b5dba227d2b716e17e6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Engineering.Scripts.Mono.Player.PlayerMovement
---- !u!114 &8880000000000000020 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1092533197837986523, guid: 5a1426061ab15ec42ab2740971a52f06, type: 3}
-  m_PrefabInstance: {fileID: 3278269290163126015}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 984350a97c264069aeb2088e8e449431, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Engineering.Scripts.Mono.Areas.BuyingArea
---- !u!114 &8880000000000000031 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3421642982076873918, guid: d7da000197bfd604fa0c385a5f63a5c8, type: 3}
-  m_PrefabInstance: {fileID: 728272956}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1ef8b0a924c4424cb34050638a043287, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Engineering::Engineering.Scripts.Mono.Items.MoneyToCollect
---- !u!114 &8880000000000000032 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3421642982076873918, guid: d7da000197bfd604fa0c385a5f63a5c8, type: 3}
-  m_PrefabInstance: {fileID: 1161932564}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1ef8b0a924c4424cb34050638a043287, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Engineering::Engineering.Scripts.Mono.Items.MoneyToCollect
---- !u!114 &8880000000000000033 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3421642982076873918, guid: d7da000197bfd604fa0c385a5f63a5c8, type: 3}
-  m_PrefabInstance: {fileID: 524464888}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1ef8b0a924c4424cb34050638a043287, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Engineering::Engineering.Scripts.Mono.Items.MoneyToCollect
---- !u!114 &8880000000000000034 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3421642982076873918, guid: d7da000197bfd604fa0c385a5f63a5c8, type: 3}
-  m_PrefabInstance: {fileID: 740892728}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1ef8b0a924c4424cb34050638a043287, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Engineering::Engineering.Scripts.Mono.Items.MoneyToCollect
---- !u!1 &8880000000000000040
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8880000000000000041}
-  - component: {fileID: 8880000000000000042}
-  m_Layer: 0
-  m_Name: MainSceneInstaller
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &8880000000000000041
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8880000000000000040}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8880000000000000042
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8880000000000000040}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 46cf1ecf3408429498e2daa9f9fe5db8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Engineering::Engineering.Scripts.Mono.Bootstrap.MainSceneInstaller
-  inputManager: {fileID: 1251527521}
-  playerWallet: {fileID: 4679387474481681208}
-  currencyService: {fileID: 9200000000000000003}
-  economyManager: {fileID: 510139379}
-  playerMovement: {fileID: 8880000000000000010}
-  uiManager: {fileID: 842339827}
-  buyingAreas:
-  - {fileID: 8880000000000000020}
-  moneyPickups:
-  - {fileID: 8880000000000000031}
-  - {fileID: 8880000000000000032}
-  - {fileID: 8880000000000000033}
-  - {fileID: 8880000000000000034}
-  serveStations:
-  - {fileID: 1715872756}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
