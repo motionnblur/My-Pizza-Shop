@@ -370,6 +370,7 @@ GameObject:
   m_Component:
   - component: {fileID: 848260988751159449}
   - component: {fileID: 2365478901234567890}
+  - component: {fileID: 7365140482991000003}
   m_Layer: 0
   m_Name: Table
   m_TagString: Untagged
@@ -393,6 +394,7 @@ Transform:
   - {fileID: 2725902333753313964}
   - {fileID: 4307386564785861047}
   - {fileID: 8515067295889836373}
+  - {fileID: 7365140482991000002}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4196286989328166734
@@ -979,3 +981,50 @@ MonoBehaviour:
   seatTransforms:
   - {fileID: 3070013467273833305}
   - {fileID: 6766150671347234}
+  wasteVisuals: {fileID: 7365140482991000003}
+--- !u!1 &7365140482991000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7365140482991000002}
+  m_Layer: 0
+  m_Name: LeftoverStackAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7365140482991000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7365140482991000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.535, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 848260988751159449}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7365140482991000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4093011315118491443}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 112086718be60c9408a21e427a9ffa35, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Engineering::Engineering.Scripts.Mono.Actors.Table.TableWasteVisuals
+  leftoverPrefab: {fileID: 7604092308326701355, guid: 6e2d416ff308f2842b40de28763f132c, type: 3}
+  leftoverStackAnchor: {fileID: 7365140482991000002}
+  leftoverStackSpacing: 0.14
