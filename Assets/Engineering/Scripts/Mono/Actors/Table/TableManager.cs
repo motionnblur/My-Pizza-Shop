@@ -33,6 +33,30 @@ namespace Engineering.Scripts.Mono.Actors.Table
             return false;
         }
 
+        public bool TryReserveSeat(int expectedLeftoverCount, out int tableIndex, out int seatIndex)
+        {
+            if (tables != null)
+            {
+                for (var i = 0; i < tables.Length; i++)
+                {
+                    if (tables[i] != null && tables[i].HasAvailableSeat && tables[i].CanAcceptLeftovers(expectedLeftoverCount))
+                    {
+                        var result = tables[i].TryReserveSeat();
+                        if (result.Reserved)
+                        {
+                            tableIndex = i;
+                            seatIndex = result.SeatIndex;
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            tableIndex = -1;
+            seatIndex = -1;
+            return false;
+        }
+
         public void ReleaseSeat(int tableIndex, int seatIndex)
         {
             if (tables == null || tableIndex < 0 || tableIndex >= tables.Length || tables[tableIndex] == null)

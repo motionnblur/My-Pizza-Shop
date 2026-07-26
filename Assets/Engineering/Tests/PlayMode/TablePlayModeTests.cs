@@ -468,6 +468,196 @@ namespace Engineering.Tests
                 "Seat should be released after bot is destroyed during Eating.");
         }
 
+        [UnityTest]
+        public IEnumerator Table_CanAcceptLeftovers_WithinCapacity()
+        {
+            var (table, _) = CreateTableWithManager(2);
+            SetPrivateField(table, "maxLeftovers", 5);
+            yield return null;
+
+            Assert.That(table.CanAcceptLeftovers(3), Is.True);
+            Assert.That(table.CanAcceptLeftovers(5), Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator Table_CanAcceptLeftovers_ExceedsCapacity()
+        {
+            var (table, _) = CreateTableWithManager(2);
+            SetPrivateField(table, "maxLeftovers", 5);
+            table.AddLeftovers(4);
+            yield return null;
+
+            Assert.That(table.CanAcceptLeftovers(2), Is.False);
+            Assert.That(table.CanAcceptLeftovers(1), Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator TableManager_TryReserveSeatWithLeftovers_AcceptsWhenFits()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+            SetPrivateField(table, "maxLeftovers", 10);
+            yield return null;
+
+            Assert.That(manager.TryReserveSeat(3, out var tIdx, out var sIdx), Is.True);
+            Assert.That(tIdx, Is.EqualTo(0));
+            Assert.That(sIdx, Is.EqualTo(0));
+        }
+
+        [UnityTest]
+        public IEnumerator TableManager_TryReserveSeatWithLeftovers_RejectsWhenExceedsCapacity()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+            SetPrivateField(table, "maxLeftovers", 5);
+            yield return null;
+
+            Assert.That(manager.TryReserveSeat(6, out var tIdx, out var sIdx), Is.False);
+            Assert.That(tIdx, Is.EqualTo(-1));
+            Assert.That(sIdx, Is.EqualTo(-1));
+        }
+
+        [UnityTest]
+        public IEnumerator TableManager_TryReserveSeatWithLeftovers_PicksTableWithCapacity()
+        {
+            var table1GO = new GameObject("Table1");
+            var t1Seat = new GameObject("T1Seat");
+            t1Seat.transform.SetParent(table1GO.transform);
+            var table1 = table1GO.AddComponent<Table>();
+            SetPrivateField(table1, "seatTransforms", new[] { t1Seat.transform });
+            SetPrivateField(table1, "maxLeftovers", 2);
+            _toCleanup.Add(table1GO);
+
+            var table2GO = new GameObject("Table2");
+            var t2Seat = new GameObject("T2Seat");
+            t2Seat.transform.SetParent(table2GO.transform);
+            var table2 = table2GO.AddComponent<Table>();
+            SetPrivateField(table2, "seatTransforms", new[] { t2Seat.transform });
+            SetPrivateField(table2, "maxLeftovers", 10);
+            _toCleanup.Add(table2GO);
+
+            var managerGO = new GameObject("Manager");
+            var manager = managerGO.AddComponent<TableManager>();
+            SetPrivateField(manager, "tables", new[] { table1, table2 });
+            _toCleanup.Add(managerGO);
+
+            table1GO.SetActive(true);
+            table2GO.SetActive(true);
+            managerGO.SetActive(true);
+            yield return null;
+
+            table1.AddLeftovers(2);
+
+            Assert.That(manager.TryReserveSeat(3, out var tIdx, out var sIdx), Is.True);
+            Assert.That(tIdx, Is.EqualTo(1), "Should pick table2 since table1 has insufficient capacity.");
+        }
+
+        [UnityTest]
+        public IEnumerator TableManager_TryReserveSeatWithLeftovers_RejectsWhenAllTablesAtCapacity()
+        {
+            var table1GO = new GameObject("Table1");
+            var t1Seat = new GameObject("T1Seat");
+            t1Seat.transform.SetParent(table1GO.transform);
+            var table1 = table1GO.AddComponent<Table>();
+            SetPrivateField(table1, "seatTransforms", new[] { t1Seat.transform });
+            SetPrivateField(table1, "maxLeftovers", 2);
+            _toCleanup.Add(table1GO);
+
+            var table2GO = new GameObject("Table2");
+            var t2Seat = new GameObject("T2Seat");
+            t2Seat.transform.SetParent(table2GO.transform);
+            var table2 = table2GO.AddComponent<Table>();
+            SetPrivateField(table2, "seatTransforms", new[] { t2Seat.transform });
+            SetPrivateField(table2, "maxLeftovers", 3);
+            _toCleanup.Add(table2GO);
+
+            var managerGO = new GameObject("Manager");
+            var manager = managerGO.AddComponent<TableManager>();
+            SetPrivateField(manager, "tables", new[] { table1, table2 });
+            _toCleanup.Add(managerGO);
+
+            table1GO.SetActive(true);
+            table2GO.SetActive(true);
+            managerGO.SetActive(true);
+            yield return null;
+
+            table1.AddLeftovers(2);
+            table2.AddLeftovers(3);
+
+            Assert.That(manager.TryReserveSeat(1, out _, out _), Is.False,
+                "All tables at capacity, no seat should be available.");
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerBot_TransitionToDining_RejectedWhenCapacityExceeded()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+            SetPrivateField(table, "maxLeftovers", 2);
+            yield return null;
+
+            var botObject = new GameObject("CustomerBot");
+            var agent = botObject.AddComponent<NavMeshAgent>();
+            agent.enabled = false;
+            var bot = botObject.AddComponent<CustomerBot>();
+            bot.Initialize(null, new CustomerOrderModel(3), new Transform[0]);
+            bot.SetupDining(manager, new GameObject("Exit").transform, 5f);
+            _botsToCleanup.Add(botObject);
+            yield return null;
+
+            var reserved = bot.TransitionToDining();
+            Assert.That(reserved, Is.False, "Bot with 3 pizzas should be rejected when table max=2.");
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.True,
+                "Seat should still be available since reservation failed.");
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerBot_TransitionToDining_AcceptedWhenCapacityFits()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+            SetPrivateField(table, "maxLeftovers", 10);
+            yield return null;
+
+            var botObject = new GameObject("CustomerBot");
+            var agent = botObject.AddComponent<NavMeshAgent>();
+            agent.enabled = false;
+            var bot = botObject.AddComponent<CustomerBot>();
+            bot.Initialize(null, new CustomerOrderModel(3), new Transform[0]);
+            bot.SetupDining(manager, new GameObject("Exit").transform, 5f);
+            _botsToCleanup.Add(botObject);
+            yield return null;
+
+            var reserved = bot.TransitionToDining();
+            Assert.That(reserved, Is.True, "Bot with 3 pizzas should be accepted when table max=10.");
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.False,
+                "Seat should be occupied after reservation.");
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerBot_Eating_LeftoverCapacityIsRespected()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+            SetPrivateField(table, "maxLeftovers", 2);
+            yield return null;
+
+            var bot = CreateBotWithDining(manager, eatingDuration: 0.1f);
+            yield return null;
+
+            bot.TransitionToDining();
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.False, "Seat should be occupied.");
+
+            SetPrivateField(bot, "_state", 5);
+            SetPrivateField(bot, "_eatingTimer", 0.05f);
+
+            yield return new WaitForSeconds(0.2f);
+
+            var wasteModel = GetPrivateField(table, "_wasteModel");
+            var leftoverCount = (int)GetPrivateField(wasteModel, "_leftoverCount");
+            Assert.That(leftoverCount, Is.EqualTo(1), "One leftover from order of 1.");
+
+            Assert.That(table.CanAcceptLeftovers(2), Is.False,
+                "Table with 1 leftover and max=2 cannot accept 2 more.");
+            Assert.That(table.CanAcceptLeftovers(1), Is.True,
+                "Table with 1 leftover and max=2 can accept 1 more.");
+        }
+
         private (Table table, TableManager manager) CreateTableWithManager(int seatCount)
         {
             var tableGO = new GameObject("TestTable");

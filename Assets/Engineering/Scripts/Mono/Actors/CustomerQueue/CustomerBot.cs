@@ -202,7 +202,8 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
 
         public bool TransitionToDining()
         {
-            if (_tableManager != null && _tableManager.TryReserveSeat(out var tableIdx, out var seatIdx))
+            var expectedLeftovers = _orderModel?.InitialPizzaCount ?? 0;
+            if (_tableManager != null && _tableManager.TryReserveSeat(expectedLeftovers, out var tableIdx, out var seatIdx))
             {
                 var seatTransform = _tableManager.GetSeatTransform(tableIdx, seatIdx);
                 _tableIndex = tableIdx;
@@ -227,7 +228,8 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
             if (_state != BotState.WaitingForTable)
                 return false;
 
-            if (_tableManager != null && _tableManager.TryReserveSeat(out var tableIdx, out var seatIdx))
+            var expectedLeftovers = _orderModel?.InitialPizzaCount ?? 0;
+            if (_tableManager != null && _tableManager.TryReserveSeat(expectedLeftovers, out var tableIdx, out var seatIdx))
             {
                 var seatTransform = _tableManager.GetSeatTransform(tableIdx, seatIdx);
                 _tableIndex = tableIdx;

@@ -7,6 +7,7 @@ namespace Engineering.Scripts.Mono.Actors.Table
     {
         [SerializeField] private Transform[] seatTransforms;
         [SerializeField] private TableWasteVisuals wasteVisuals;
+        [SerializeField] private int maxLeftovers = 10;
 
         private TableModel _model;
         private TableWasteModel _wasteModel;
@@ -20,6 +21,7 @@ namespace Engineering.Scripts.Mono.Actors.Table
                 return _model != null && !_model.IsFull;
             }
         }
+        public int MaxLeftovers => _wasteModel?.MaxLeftovers ?? maxLeftovers;
 
         private void Awake()
         {
@@ -40,13 +42,13 @@ namespace Engineering.Scripts.Mono.Actors.Table
             }
 
             _model = new TableModel(seatTransforms.Length);
-            _wasteModel = new TableWasteModel();
+            _wasteModel = new TableWasteModel(maxLeftovers);
         }
 
         public void Initialize(int seatCapacity)
         {
             _model = new TableModel(seatCapacity);
-            _wasteModel = new TableWasteModel();
+            _wasteModel = new TableWasteModel(maxLeftovers);
         }
 
         private void EnsureModel()
@@ -54,7 +56,7 @@ namespace Engineering.Scripts.Mono.Actors.Table
             if (_model == null && SeatCount > 0)
                 _model = new TableModel(SeatCount);
             if (_wasteModel == null)
-                _wasteModel = new TableWasteModel();
+                _wasteModel = new TableWasteModel(maxLeftovers);
         }
 
         public ReserveSeatResult TryReserveSeat()
@@ -78,6 +80,12 @@ namespace Engineering.Scripts.Mono.Actors.Table
             if (seatTransforms == null || seatIndex < 0 || seatIndex >= seatTransforms.Length)
                 return null;
             return seatTransforms[seatIndex];
+        }
+
+        public bool CanAcceptLeftovers(int amount)
+        {
+            EnsureModel();
+            return _wasteModel != null && _wasteModel.CanAdd(amount);
         }
 
         public AddLeftoversResult AddLeftovers(int pizzaCount)

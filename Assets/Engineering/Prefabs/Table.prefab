@@ -982,6 +982,7 @@ MonoBehaviour:
   - {fileID: 3070013467273833305}
   - {fileID: 6766150671347234}
   wasteVisuals: {fileID: 7365140482991000003}
+  maxLeftovers: 10
 --- !u!1 &7365140482991000001
 GameObject:
   m_ObjectHideFlags: 0
