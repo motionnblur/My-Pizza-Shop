@@ -10,7 +10,14 @@ namespace Engineering.Scripts.Mono.Actors.Table
         private TableModel _model;
 
         public int SeatCount => seatTransforms != null ? seatTransforms.Length : 0;
-        public bool HasAvailableSeat => _model != null && !_model.IsFull;
+        public bool HasAvailableSeat
+        {
+            get
+            {
+                EnsureModel();
+                return _model != null && !_model.IsFull;
+            }
+        }
 
         private void Awake()
         {
@@ -23,8 +30,15 @@ namespace Engineering.Scripts.Mono.Actors.Table
             _model = new TableModel(seatCapacity);
         }
 
+        private void EnsureModel()
+        {
+            if (_model == null && SeatCount > 0)
+                _model = new TableModel(SeatCount);
+        }
+
         public ReserveSeatResult TryReserveSeat()
         {
+            EnsureModel();
             if (_model == null)
                 return ReserveSeatResult.Full;
             return _model.TryReserveSeat();
@@ -32,6 +46,7 @@ namespace Engineering.Scripts.Mono.Actors.Table
 
         public ReleaseSeatResult TryReleaseSeat(int seatIndex)
         {
+            EnsureModel();
             if (_model == null)
                 return ReleaseSeatResult.InvalidIndex;
             return _model.TryReleaseSeat(seatIndex);

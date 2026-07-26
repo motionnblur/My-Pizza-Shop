@@ -4,6 +4,7 @@ using System.Reflection;
 using Engineering.Scripts.Domain.CustomerQueue;
 using Engineering.Scripts.Mono.Actors.CustomerQueue;
 using Engineering.Scripts.Mono.Actors.ServeStation;
+using Engineering.Scripts.Mono.Actors.Table;
 using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Managers;
 using Engineering.Scripts.Mono.Player;
@@ -29,6 +30,9 @@ namespace Engineering.Tests
         private readonly List<GameObject> _botsToCleanup = new List<GameObject>();
         private CustomerQueueController _queueController;
         private ServeStationVisuals _stationVisuals;
+        private GameObject _tableManagerObject;
+        private TableManager _tableManager;
+        private Transform _exitPoint;
 
         [UnityTearDown]
         public IEnumerator TearDown()
@@ -57,6 +61,9 @@ namespace Engineering.Tests
 
             if (_currencyServiceObject != null)
                 Object.Destroy(_currencyServiceObject);
+
+            if (_tableManagerObject != null)
+                Object.Destroy(_tableManagerObject);
 
             if (_serveSettings != null)
                 Object.Destroy(_serveSettings);
@@ -1240,6 +1247,28 @@ namespace Engineering.Tests
             plateCollider.size = new Vector3(2f, 0.5f, 2f);
             SetPrivateField(_stationVisuals, "plateCollider", plateCollider);
 
+            _tableManagerObject = new GameObject("TableManager");
+            _tableManager = _tableManagerObject.AddComponent<TableManager>();
+            var tableObject = new GameObject("Table");
+            tableObject.transform.SetParent(_tableManagerObject.transform);
+            var tableComponent = tableObject.AddComponent<Table>();
+            var seatA = new GameObject("SeatA");
+            seatA.transform.SetParent(tableObject.transform);
+            var seatB = new GameObject("SeatB");
+            seatB.transform.SetParent(tableObject.transform);
+            var seatC = new GameObject("SeatC");
+            seatC.transform.SetParent(tableObject.transform);
+            var seatD = new GameObject("SeatD");
+            seatD.transform.SetParent(tableObject.transform);
+            SetPrivateField(tableComponent, "seatTransforms",
+                new[] { seatA.transform, seatB.transform, seatC.transform, seatD.transform });
+            SetPrivateField(_tableManager, "tables", new[] { tableComponent });
+
+            var exitPointObject = new GameObject("ExitPoint");
+            _exitPoint = exitPointObject.transform;
+
+            SetPrivateField(serveStation, "tableManager", _tableManager);
+
             _serveStationObject.SetActive(true);
 
             _playerObject = new GameObject("ServePlayerTest");
@@ -1280,6 +1309,8 @@ namespace Engineering.Tests
             var orderModel = new CustomerOrderModel(orderAmount);
             var waypoints = new Transform[0];
             bot.Initialize(station, orderModel, waypoints);
+            if (_tableManager != null && _exitPoint != null)
+                bot.SetupDining(_tableManager, _exitPoint, 5f);
             station.TryRegisterCustomer(bot);
             return bot;
         }
