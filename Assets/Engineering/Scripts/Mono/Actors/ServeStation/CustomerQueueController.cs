@@ -58,6 +58,28 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             ReassignSlots();
         }
 
+        public CustomerBot DequeueFrontCustomer()
+        {
+            if (_customers.Count == 0)
+                return null;
+
+            _model.TryRemoveFront();
+            var front = _customers[0];
+            _customers.RemoveAt(0);
+            ReassignSlots();
+            return front;
+        }
+
+        public CustomerBot GetFirstWaitingCustomer()
+        {
+            for (var i = 0; i < _customers.Count; i++)
+            {
+                if (_customers[i].IsWaitingForTable)
+                    return _customers[i];
+            }
+            return null;
+        }
+
         private void ReassignSlots()
         {
             if (queueSlots == null)

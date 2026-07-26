@@ -211,8 +211,8 @@ namespace Engineering.Tests
         {
             var domainDir = "Assets/Engineering/Scripts/Domain";
             var files = Directory.GetFiles(domainDir, "*.cs", SearchOption.AllDirectories);
-            Assert.That(files.Length, Is.GreaterThanOrEqualTo(12),
-                "Expected at least 12 domain source files.");
+            Assert.That(files.Length, Is.GreaterThanOrEqualTo(15),
+                "Expected at least 15 domain source files.");
 
             foreach (var file in files)
             {
@@ -237,6 +237,12 @@ namespace Engineering.Tests
                 "CustomerOrderModel.cs must be included in the domain guard check.");
             Assert.That(files, Has.Some.Contains("CustomerQueueModel"),
                 "CustomerQueueModel.cs must be included in the domain guard check.");
+            Assert.That(files, Has.Some.Contains("TableModel"),
+                "TableModel.cs must be included in the domain guard check.");
+            Assert.That(files, Has.Some.Contains("ReserveSeatResult"),
+                "ReserveSeatResult.cs must be included in the domain guard check.");
+            Assert.That(files, Has.Some.Contains("ReleaseSeatResult"),
+                "ReleaseSeatResult.cs must be included in the domain guard check.");
         }
     }
 }

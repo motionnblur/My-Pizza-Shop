@@ -13,6 +13,7 @@ namespace Engineering.ScriptableObjects
         [Min(0.1f)] public float customerSpawnInterval = 2f;
         [Min(0)] public int pricePerPizza = 10;
         [Min(0)] public int maxStoredPizzas = 10;
+        [Min(0.1f)] public float eatingDuration = 5f;
 
         private void OnValidate()
         {

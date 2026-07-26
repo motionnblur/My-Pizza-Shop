@@ -1,6 +1,7 @@
 using System.Collections;
 using Engineering.ScriptableObjects;
 using Engineering.Scripts.Domain.CustomerQueue;
+using Engineering.Scripts.Mono.Actors.Table;
 using ServeStationType = Engineering.Scripts.Mono.Actors.ServeStation.ServeStation;
 using UnityEngine;
 
@@ -14,6 +15,8 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
         [SerializeField] private Transform[] approachWaypoints;
         [SerializeField] private Transform queueEntryPoint;
         [SerializeField] private SServeStation sServeStation;
+        [SerializeField] private TableManager tableManager;
+        [SerializeField] private Transform exitPoint;
 
         private Coroutine _spawnCoroutine;
         private Transform[] _cachedApproachWaypoints;
@@ -54,6 +57,7 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
                             var orderAmount = Random.Range(sServeStation.minPizzasPerOrder, sServeStation.maxPizzasPerOrder + 1);
                             var orderModel = new CustomerOrderModel(orderAmount);
                             customerBot.Initialize(station, orderModel, waypoints);
+                            customerBot.SetupDining(tableManager, exitPoint, sServeStation.eatingDuration);
 
                             if (station.TryRegisterCustomer(customerBot))
                                 customerBot.BeginApproach();

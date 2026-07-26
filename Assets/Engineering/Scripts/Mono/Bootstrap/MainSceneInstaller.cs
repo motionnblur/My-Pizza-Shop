@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Engineering.Scripts.Mono.Areas;
 using Engineering.Scripts.Mono.Actors.ServeStation;
+using Engineering.Scripts.Mono.Actors.Table;
 using Engineering.Scripts.Mono.Items;
 using Engineering.Scripts.Mono.Managers;
 using Engineering.Scripts.Mono.Player;
@@ -24,6 +25,7 @@ namespace Engineering.Scripts.Mono.Bootstrap
         [SerializeField] private BuyingArea[] buyingAreas;
         [SerializeField] private MoneyToCollect[] moneyPickups;
         [SerializeField] private ServeStation[] serveStations;
+        [SerializeField] private TableManager tableManager;
 
         private void Awake()
         {
@@ -43,6 +45,7 @@ namespace Engineering.Scripts.Mono.Bootstrap
             ValidateConsumerArray(buyingAreas, nameof(buyingAreas));
             ValidateConsumerArray(moneyPickups, nameof(moneyPickups));
             ValidateConsumerArray(serveStations, nameof(serveStations));
+            ValidateCoreReference(tableManager, nameof(tableManager));
         }
 
         private void InitializeComponents()

@@ -4,6 +4,7 @@ using Engineering.Scripts.Domain.ServeStation;
 using Engineering.Scripts.Mono.Managers;
 using Engineering.Scripts.Mono.Player;
 using Engineering.Scripts.Mono.Actors.CustomerQueue;
+using Engineering.Scripts.Mono.Actors.Table;
 using UnityEngine;
 
 namespace Engineering.Scripts.Mono.Actors.ServeStation
@@ -14,6 +15,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
         [SerializeField] private SVoidEventChannel pizzaServedEvent;
         [SerializeField] private CustomerQueueController queueController;
         [SerializeField] private ServeStationVisuals stationVisuals;
+        [SerializeField] private TableManager tableManager;
         private CurrencyService _currencyService;
 
         private ServeStationModel _model;
@@ -55,6 +57,15 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
                 stationVisuals.Initialize(sServeStation.maxStoredPizzas);
                 stationVisuals.Refresh(StoredPizzaCount);
             }
+
+            if (tableManager != null)
+                tableManager.SeatReleased += OnSeatReleased;
+        }
+
+        private void OnDisable()
+        {
+            if (tableManager != null)
+                tableManager.SeatReleased -= OnSeatReleased;
         }
 
         private void TryPrepareModel()
@@ -144,10 +155,28 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
 
             if (result.OrderCompleted)
             {
-                queueController.RemoveFrontCustomer();
+                if (frontCustomer.TransitionToDining())
+                {
+                    queueController.DequeueFrontCustomer();
+                }
             }
 
             return result.DeliveredPizzaCount;
+        }
+
+        private void OnSeatReleased()
+        {
+            if (queueController == null)
+                return;
+
+            var waitingCustomer = queueController.GetFirstWaitingCustomer();
+            if (waitingCustomer == null)
+                return;
+
+            if (waitingCustomer.RetryReserveTable())
+            {
+                queueController.DequeueFrontCustomer();
+            }
         }
     }
 }
