@@ -128,6 +128,7 @@ MonoBehaviour:
   pizzaServedEvent: {fileID: 11400000, guid: 9820046290d0fdb4198c926c8681b513, type: 2}
   queueController: {fileID: 2222222222222222201}
   stationVisuals: {fileID: 2222222222222222202}
+  tableManager: {fileID: 0}
 --- !u!114 &2222222222222222201
 MonoBehaviour:
   m_ObjectHideFlags: 0
