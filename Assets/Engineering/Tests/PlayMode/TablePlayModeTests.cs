@@ -1,8 +1,14 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
+using Engineering.ScriptableObjects;
+using Engineering.Scripts.Domain.CustomerQueue;
 using Engineering.Scripts.Domain.Table;
 using Engineering.Scripts.Mono.Actors.CustomerQueue;
+using Engineering.Scripts.Mono.Actors.ServeStation;
 using Engineering.Scripts.Mono.Actors.Table;
+using Engineering.Scripts.Mono.Managers;
+using Engineering.Scripts.Mono.Player;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.AI;
@@ -12,18 +18,34 @@ namespace Engineering.Tests
 {
     public class TablePlayModeTests
     {
-        private readonly System.Collections.Generic.List<GameObject> _toCleanup =
-            new System.Collections.Generic.List<GameObject>();
+        private readonly List<GameObject> _toCleanup = new List<GameObject>();
+        private readonly List<GameObject> _botsToCleanup = new List<GameObject>();
+        private GameObject _navMeshFloor;
+        private NavMeshDataInstance _navMeshDataInstance;
 
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            foreach (var go in _botsToCleanup)
+            {
+                if (go != null)
+                    Object.Destroy(go);
+            }
+            _botsToCleanup.Clear();
+
             foreach (var go in _toCleanup)
             {
                 if (go != null)
                     Object.Destroy(go);
             }
             _toCleanup.Clear();
+
+            if (_navMeshDataInstance.valid)
+                _navMeshDataInstance.Remove();
+
+            if (_navMeshFloor != null)
+                Object.Destroy(_navMeshFloor);
+
             yield return null;
         }
 
@@ -179,6 +201,320 @@ namespace Engineering.Tests
             Assert.That(table.GetSeatTransform(1), Is.SameAs(seatB.transform));
             Assert.That(table.GetSeatTransform(-1), Is.Null);
             Assert.That(table.GetSeatTransform(2), Is.Null);
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerQueueController_RemoveCustomer_RemovesSpecificWaitingCustomer()
+        {
+            var (queueController, bots) = CreateQueueWithTwoBots();
+            SetPrivateField(bots[0], "_state", (int)3);
+            SetPrivateField(bots[1], "_state", (int)4);
+
+            var waiting = queueController.GetFirstWaitingCustomer();
+            Assert.That(waiting, Is.SameAs(bots[0]), "First bot is waiting (state=WaitingForTable=3).");
+
+            var removed = queueController.RemoveCustomer(waiting);
+            Assert.That(removed, Is.True);
+            Assert.That(queueController.CustomerCount, Is.EqualTo(1));
+            Assert.That(queueController.FrontCustomer, Is.SameAs(bots[1]));
+
+            foreach (var b in bots)
+                _botsToCleanup.Remove(b.gameObject);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerQueueController_RemoveCustomer_RemovesNonFrontWaitingCustomer()
+        {
+            var (queueController, bots) = CreateQueueWithTwoBots();
+            SetPrivateField(bots[0], "_state", (int)5);
+            SetPrivateField(bots[1], "_state", (int)3);
+
+            var waiting = queueController.GetFirstWaitingCustomer();
+            Assert.That(waiting, Is.SameAs(bots[1]), "Second bot is waiting (state=WaitingForTable=3).");
+
+            var removed = queueController.RemoveCustomer(waiting);
+            Assert.That(removed, Is.True);
+            Assert.That(queueController.CustomerCount, Is.EqualTo(1));
+            Assert.That(queueController.FrontCustomer, Is.SameAs(bots[0]));
+
+            foreach (var b in bots)
+                _botsToCleanup.Remove(b.gameObject);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerQueueController_RemoveCustomer_ReturnsFalseForUnknown()
+        {
+            var (queueController, bots) = CreateQueueWithTwoBots();
+            _botsToCleanup.Remove(bots[0].gameObject);
+            _botsToCleanup.Remove(bots[1].gameObject);
+
+            var unknown = new GameObject("Unknown");
+            var unknownBot = unknown.AddComponent<CustomerBot>();
+
+            var removed = queueController.RemoveCustomer(unknownBot);
+            Assert.That(removed, Is.False);
+            Assert.That(queueController.CustomerCount, Is.EqualTo(2));
+
+            Object.Destroy(unknown);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerBot_TransitionToDining_ReservesSeat()
+        {
+            var (table, manager) = CreateTableWithManager(2);
+            var bot = CreateBotWithDining(manager);
+            yield return null;
+
+            var reserved = bot.TransitionToDining();
+            Assert.That(reserved, Is.True);
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerBot_Eating_ReleasesSeatAfterDuration()
+        {
+            var (table, manager) = CreateTableWithManager(2);
+            var bot = CreateBotWithDining(manager, eatingDuration: 0.1f);
+            yield return null;
+
+            bot.TransitionToDining();
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.False);
+
+            yield return new WaitForSeconds(0.3f);
+
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerBot_WaitsWhenAllSeatsOccupied()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+            var bot1 = CreateBotWithDining(manager);
+            var bot2 = CreateBotWithDining(manager);
+            yield return null;
+
+            var reserved1 = bot1.TransitionToDining();
+            Assert.That(reserved1, Is.True);
+
+            var reserved2 = bot2.TransitionToDining();
+            Assert.That(reserved2, Is.False);
+            Assert.That(bot2.IsWaitingForTable, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator TwoCustomers_OccupyTwoDistinctSeats()
+        {
+            var (table, manager) = CreateTableWithManager(2);
+            var bot1 = CreateBotWithDining(manager);
+            var bot2 = CreateBotWithDining(manager);
+            yield return null;
+
+            Assert.That(bot1.TransitionToDining(), Is.True);
+            Assert.That(bot2.TransitionToDining(), Is.True);
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.False,
+                "Both seats should be occupied.");
+        }
+
+        [UnityTest]
+        public IEnumerator WaitingCustomer_MovesToAvailableSeat()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+            var bot1 = CreateBotWithDining(manager, eatingDuration: 0.1f);
+            var bot2 = CreateBotWithDining(manager);
+            yield return null;
+
+            Assert.That(bot1.TransitionToDining(), Is.True);
+            Assert.That(bot2.TransitionToDining(), Is.False);
+            Assert.That(bot2.IsWaitingForTable, Is.True);
+
+            var eventRaised = false;
+            manager.SeatReleased += () => eventRaised = true;
+
+            var seatReleased = false;
+            manager.SeatReleased += () => seatReleased = true;
+
+            yield return new WaitForSeconds(0.3f);
+
+            Assert.That(eventRaised, Is.True, "SeatReleased should have been raised.");
+            Assert.That(bot2.RetryReserveTable(), Is.True,
+                "Waiting customer should move to the freed seat.");
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerBot_DestroysAtExitPoint()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+            EnsureNavMeshExists();
+            var exitPoint = new GameObject("Exit").transform;
+            exitPoint.position = new Vector3(0f, 0f, 10f);
+
+            var bot = CreateBotWithDining(manager, eatingDuration: 0.05f, exitPoint: exitPoint);
+            yield return null;
+
+            bot.TransitionToDining();
+            yield return new WaitForSeconds(0.2f);
+
+            Assert.That(bot == null || bot.gameObject == null, Is.True,
+                "Customer should be destroyed after eating and reaching exit.");
+        }
+
+        [UnityTest]
+        public IEnumerator DisableEnable_DoesNotLeakSeatReleasedSubscription()
+        {
+            var (table, manager) = CreateTableWithManager(2);
+
+            var serveStationObject = new GameObject("ServeStation");
+            serveStationObject.SetActive(false);
+            var serveStation = serveStationObject.AddComponent<ServeStation>();
+            var serveSettings = ScriptableObject.CreateInstance<SServeStation>();
+            serveSettings.maxQueueCustomers = 5;
+            serveSettings.maxStoredPizzas = 10;
+            serveSettings.pricePerPizza = 10;
+            SetPrivateField(serveStation, "sServeStation", serveSettings);
+            SetPrivateField(serveStation, "tableManager", manager);
+
+            var currencyServiceObject = new GameObject("CurrencyService");
+            var currencyService = currencyServiceObject.AddComponent<CurrencyService>();
+            var wallet = new GameObject("Wallet").AddComponent<PlayerWallet>();
+            SetPrivateField(wallet, "money", 100);
+            currencyService.Initialize(wallet);
+            serveStation.Initialize(currencyService);
+
+            serveStationObject.SetActive(true);
+            yield return null;
+
+            serveStationObject.SetActive(false);
+            serveStationObject.SetActive(true);
+            yield return null;
+
+            var bot1 = CreateBotWithDining(manager, eatingDuration: 0.05f);
+            bot1.TransitionToDining();
+            yield return new WaitForSeconds(0.2f);
+
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.True,
+                "Seat should be released and available after disable/enable.");
+
+            Object.Destroy(serveStationObject);
+            Object.Destroy(currencyServiceObject);
+            Object.Destroy(wallet);
+            Object.Destroy(serveSettings);
+        }
+
+        private (Table table, TableManager manager) CreateTableWithManager(int seatCount)
+        {
+            var tableGO = new GameObject("TestTable");
+            var table = tableGO.AddComponent<Table>();
+            var seats = new Transform[seatCount];
+            for (var i = 0; i < seatCount; i++)
+            {
+                var seat = new GameObject($"Seat{i}");
+                seat.transform.SetParent(tableGO.transform);
+                seats[i] = seat.transform;
+            }
+            SetPrivateField(table, "seatTransforms", seats);
+            _toCleanup.Add(tableGO);
+
+            var managerGO = new GameObject("TestTableManager");
+            var manager = managerGO.AddComponent<TableManager>();
+            SetPrivateField(manager, "tables", new[] { table });
+            _toCleanup.Add(managerGO);
+
+            tableGO.SetActive(true);
+            managerGO.SetActive(true);
+
+            return (table, manager);
+        }
+
+        private CustomerBot CreateBotWithDining(TableManager manager, float eatingDuration = 5f,
+            Transform exitPoint = null)
+        {
+            var botObject = new GameObject("CustomerBot");
+            var agent = botObject.AddComponent<NavMeshAgent>();
+            agent.enabled = false;
+            var bot = botObject.AddComponent<CustomerBot>();
+            bot.Initialize(null, new CustomerOrderModel(1), new Transform[0]);
+            bot.SetupDining(manager, exitPoint ?? new GameObject("Exit").transform, eatingDuration);
+            _botsToCleanup.Add(botObject);
+            return bot;
+        }
+
+        private (CustomerQueueController queueController, CustomerBot[] bots) CreateQueueWithTwoBots()
+        {
+            var queueObject = new GameObject("QueueController");
+            var queueController = queueObject.AddComponent<CustomerQueueController>();
+            var queueSlots = new Transform[2];
+            for (var i = 0; i < 2; i++)
+            {
+                queueSlots[i] = new GameObject($"Slot{i}").transform;
+                queueSlots[i].SetParent(queueObject.transform);
+            }
+            SetPrivateField(queueController, "queueSlots", queueSlots);
+            _toCleanup.Add(queueObject);
+
+            var serveSettings = ScriptableObject.CreateInstance<SServeStation>();
+            serveSettings.maxQueueCustomers = 2;
+            queueController.Initialize(2);
+
+            var serveStationGO = new GameObject("ServeStation");
+            serveStationGO.SetActive(false);
+            var serveStation = serveStationGO.AddComponent<ServeStation>();
+            SetPrivateField(serveStation, "sServeStation", serveSettings);
+            serveStationGO.SetActive(true);
+            _toCleanup.Add(serveStationGO);
+
+            var bots = new CustomerBot[2];
+            for (var i = 0; i < 2; i++)
+            {
+                var botObject = new GameObject($"Bot{i}");
+                _botsToCleanup.Add(botObject);
+                var agent = botObject.AddComponent<NavMeshAgent>();
+                agent.enabled = false;
+                var bot = botObject.AddComponent<CustomerBot>();
+                bot.Initialize(serveStation, new CustomerOrderModel(3), new Transform[0]);
+                queueController.TryRegister(bot);
+                bots[i] = bot;
+            }
+
+            return (queueController, bots);
+        }
+
+        private void EnsureNavMeshExists()
+        {
+            if (_navMeshFloor != null)
+                return;
+
+            _navMeshFloor = new GameObject("NavMeshFloor");
+            _navMeshFloor.transform.position = new Vector3(0f, -0.1f, 0f);
+            var plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            plane.transform.SetParent(_navMeshFloor.transform);
+            plane.transform.localPosition = Vector3.zero;
+            plane.transform.localScale = new Vector3(5f, 1f, 5f);
+
+            var settings = NavMesh.GetSettingsByIndex(0);
+            var bounds = new Bounds(Vector3.zero, new Vector3(100f, 10f, 100f));
+            var sources = new List<NavMeshBuildSource>();
+            var markups = new List<NavMeshBuildMarkup>();
+
+            NavMeshBuilder.CollectSources(
+                bounds,
+                ~0,
+                NavMeshCollectGeometry.RenderMeshes,
+                0,
+                markups,
+                sources);
+
+            var data = NavMeshBuilder.BuildNavMeshData(
+                settings,
+                sources,
+                bounds,
+                Vector3.zero,
+                Quaternion.identity);
+
+            if (data != null)
+                _navMeshDataInstance = NavMesh.AddNavMeshData(data);
         }
 
         private static void SetPrivateField(object target, string fieldName, object value)

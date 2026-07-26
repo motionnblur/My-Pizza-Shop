@@ -1420,7 +1420,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3729f229260c4b548bee99bc976859f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Engineering::Engineering.Scripts.Mono.Actors.Table.Table
-  seatTransforms: []
 --- !u!1001 &1859611840
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1772,7 +1771,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3729f229260c4b548bee99bc976859f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Engineering::Engineering.Scripts.Mono.Actors.Table.Table
-  seatTransforms: []
 --- !u!1001 &2053251940
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -21,8 +21,23 @@ namespace Engineering.Scripts.Mono.Actors.Table
 
         private void Awake()
         {
-            if (seatTransforms != null && seatTransforms.Length > 0)
-                _model = new TableModel(seatTransforms.Length);
+            if (seatTransforms == null || seatTransforms.Length == 0)
+            {
+                Debug.LogWarning($"Table '{name}' has no seat transforms assigned. " +
+                    "Assign seat/pivot child transforms to the seatTransforms array in the Inspector.", this);
+                return;
+            }
+
+            for (var i = 0; i < seatTransforms.Length; i++)
+            {
+                if (seatTransforms[i] == null)
+                {
+                    Debug.LogWarning($"Table '{name}' has a null entry at seatTransforms[{i}]. " +
+                        "This seat will be inaccessible.", this);
+                }
+            }
+
+            _model = new TableModel(seatTransforms.Length);
         }
 
         public void Initialize(int seatCapacity)

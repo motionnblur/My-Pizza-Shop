@@ -175,7 +175,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
 
             if (waitingCustomer.RetryReserveTable())
             {
-                queueController.DequeueFrontCustomer();
+                queueController.RemoveCustomer(waitingCustomer);
             }
         }
     }

@@ -70,6 +70,25 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             return front;
         }
 
+        public bool RemoveCustomer(CustomerBot customer)
+        {
+            if (customer == null || _customers.Count == 0)
+                return false;
+
+            var index = _customers.IndexOf(customer);
+            if (index < 0)
+                return false;
+
+            if (index == 0)
+                _model.TryRemoveFront();
+            else
+                _model.RemoveAt(index);
+
+            _customers.RemoveAt(index);
+            ReassignSlots();
+            return true;
+        }
+
         public CustomerBot GetFirstWaitingCustomer()
         {
             for (var i = 0; i < _customers.Count; i++)
