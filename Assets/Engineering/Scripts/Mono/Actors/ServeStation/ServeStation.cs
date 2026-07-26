@@ -112,6 +112,9 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             if (_model == null)
                 return 0;
 
+            if (sServeStation != null)
+                _model.UpdateConfiguration(sServeStation.maxStoredPizzas, sServeStation.pricePerPizza);
+
             if (_currencyService == null || _currencyService.Wallet == null)
                 return 0;
 
