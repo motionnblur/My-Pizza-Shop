@@ -98,6 +98,8 @@ namespace Engineering.Tests
 
             Assert.That(manager.TryReserveSeat(out var tIdx3, out var sIdx3), Is.True);
 
+            Assert.That(manager.TryReserveSeat(out var tIdx4, out var sIdx4), Is.True);
+
             Assert.That(manager.TryReserveSeat(out _, out _), Is.False,
                 "All 4 seats across 2 tables should be occupied.");
         }

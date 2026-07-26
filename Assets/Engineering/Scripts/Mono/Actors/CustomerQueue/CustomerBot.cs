@@ -172,7 +172,8 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
                 _assignedSeatTransform = seatTransform;
                 _state = BotState.MovingToTable;
                 _hasReachedAssignedSlot = false;
-                _agent.isStopped = false;
+                if (_agent != null && _agent.isActiveAndEnabled && _agent.isOnNavMesh)
+                    _agent.isStopped = false;
                 TrySetDestination(seatTransform.position);
                 return true;
             }
@@ -194,7 +195,8 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
                 _assignedSeatTransform = seatTransform;
                 _state = BotState.MovingToTable;
                 _hasReachedAssignedSlot = false;
-                _agent.isStopped = false;
+                if (_agent != null && _agent.isActiveAndEnabled && _agent.isOnNavMesh)
+                    _agent.isStopped = false;
                 TrySetDestination(seatTransform.position);
                 return true;
             }
