@@ -29,6 +29,8 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
         private Transform _exitPoint;
         private float _eatingDuration;
         private float _eatingTimer;
+        private float _pathTimeout;
+        private const float MovingToTableTimeout = 10f;
 
         public CustomerOrderModel OrderModel => _orderModel;
         public int RemainingPizzaCount => _orderModel?.RemainingPizzaCount ?? 0;
@@ -40,17 +42,32 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
             _agent = GetComponent<NavMeshAgent>();
         }
 
+        private void OnDestroy()
+        {
+            if (_tableManager != null && _state is BotState.MovingToTable or BotState.Eating)
+            {
+                _tableManager.ReleaseSeat(_tableIndex, _seatIndex);
+            }
+        }
+
+        private bool IsAgentReady => _agent != null && _agent.isActiveAndEnabled && _agent.isOnNavMesh;
+
         private void Update()
         {
-            if (_station == null || _agent == null) return;
-            if (!_approachStarted) return;
-            if (!_agent.isOnNavMesh) return;
-            if (_agent.pathPending) return;
+            if (_agent == null) return;
+
+            if (_state == BotState.MovingToTable)
+                ProcessPathTimeout();
+
+            if (_state < BotState.WaitingForTable && !_approachStarted) return;
+            var needNavMesh = _state is BotState.Approaching or BotState.MovingToSlot or BotState.MovingToTable;
+            if (needNavMesh && (!_agent.isActiveAndEnabled || !_agent.isOnNavMesh)) return;
 
             switch (_state)
             {
                 case BotState.Approaching:
-                    if (!_agent.pathPending && _agent.remainingDistance <= _agent.stoppingDistance)
+                    if (!IsAgentReady || _agent.pathPending) break;
+                    if (_agent.remainingDistance <= _agent.stoppingDistance)
                     {
                         _currentWaypointIndex++;
                         if (_currentWaypointIndex < _approachWaypoints.Length)
@@ -65,7 +82,8 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
                     break;
 
                 case BotState.MovingToSlot:
-                    if (!_agent.pathPending && _agent.remainingDistance <= _agent.stoppingDistance)
+                    if (!IsAgentReady || _agent.pathPending) break;
+                    if (_agent.remainingDistance <= _agent.stoppingDistance)
                     {
                         _hasReachedAssignedSlot = true;
                         _agent.isStopped = true;
@@ -79,11 +97,21 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
                     break;
 
                 case BotState.MovingToTable:
-                    if (!_agent.pathPending && _agent.remainingDistance <= _agent.stoppingDistance)
+                    if (_assignedSeatTransform == null)
+                    {
+                        Debug.LogWarning($"CustomerBot '{name}': no seat transform assigned. Releasing seat.", this);
+                        _tableManager?.ReleaseSeat(_tableIndex, _seatIndex);
+                        _state = BotState.Leaving;
+                        break;
+                    }
+                    if (!IsAgentReady || _agent.pathPending) break;
+                    if (_agent.remainingDistance <= _agent.stoppingDistance)
                     {
                         _state = BotState.Eating;
                         _eatingTimer = _eatingDuration;
-                        _agent.isStopped = true;
+                        _pathTimeout = 0f;
+                        if (IsAgentReady)
+                            _agent.isStopped = true;
                         if (_assignedSeatTransform != null)
                             transform.rotation = _assignedSeatTransform.rotation;
                     }
@@ -96,14 +124,21 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
                         if (_tableManager != null)
                             _tableManager.ReleaseSeat(_tableIndex, _seatIndex);
                         _state = BotState.Leaving;
-                        _agent.isStopped = false;
-                        if (_exitPoint != null)
+                        if (IsAgentReady)
+                        {
+                            _agent.isStopped = false;
                             TrySetDestination(_exitPoint.position);
+                        }
                     }
                     break;
 
                 case BotState.Leaving:
-                    if (!_agent.pathPending && _agent.remainingDistance <= _agent.stoppingDistance)
+                    if (_exitPoint == null || !IsAgentReady)
+                    {
+                        Destroy(gameObject);
+                        break;
+                    }
+                    if (_agent.remainingDistance <= _agent.stoppingDistance)
                     {
                         Destroy(gameObject);
                     }
@@ -149,7 +184,7 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
             _assignedSlot = queueSlot;
             _queueIndex = queueIndex;
             _hasReachedAssignedSlot = false;
-            if (_agent != null && _agent.isOnNavMesh)
+            if (IsAgentReady)
             {
                 _agent.isStopped = false;
                 _agent.avoidancePriority = queueIndex;
@@ -171,10 +206,12 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
                 _seatIndex = seatIdx;
                 _assignedSeatTransform = seatTransform;
                 _state = BotState.MovingToTable;
+                _pathTimeout = 0f;
                 _hasReachedAssignedSlot = false;
                 if (_agent != null && _agent.isActiveAndEnabled && _agent.isOnNavMesh)
                     _agent.isStopped = false;
-                TrySetDestination(seatTransform.position);
+                if (seatTransform != null)
+                    TrySetDestination(seatTransform.position);
                 return true;
             }
 
@@ -194,14 +231,35 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
                 _seatIndex = seatIdx;
                 _assignedSeatTransform = seatTransform;
                 _state = BotState.MovingToTable;
+                _pathTimeout = 0f;
                 _hasReachedAssignedSlot = false;
                 if (_agent != null && _agent.isActiveAndEnabled && _agent.isOnNavMesh)
                     _agent.isStopped = false;
-                TrySetDestination(seatTransform.position);
+                if (seatTransform != null)
+                    TrySetDestination(seatTransform.position);
                 return true;
             }
 
             return false;
+        }
+
+        private void ProcessPathTimeout()
+        {
+            _pathTimeout += Time.deltaTime;
+            if (_pathTimeout >= MovingToTableTimeout)
+            {
+                Debug.LogWarning($"CustomerBot '{name}': could not reach seat within {MovingToTableTimeout}s. Releasing seat.", this);
+                if (_tableManager != null)
+                    _tableManager.ReleaseSeat(_tableIndex, _seatIndex);
+                _state = BotState.Leaving;
+                _pathTimeout = 0f;
+                if (_agent != null)
+                {
+                    _agent.isStopped = false;
+                    if (_agent.isOnNavMesh && _exitPoint != null)
+                        TrySetDestination(_exitPoint.position);
+                }
+            }
         }
 
         private void TrySetDestination(Vector3 destination)

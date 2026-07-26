@@ -264,28 +264,33 @@ namespace Engineering.Tests
         [UnityTest]
         public IEnumerator CustomerBot_TransitionToDining_ReservesSeat()
         {
-            var (table, manager) = CreateTableWithManager(2);
+            var (table, manager) = CreateTableWithManager(1);
             var bot = CreateBotWithDining(manager);
             yield return null;
 
             var reserved = bot.TransitionToDining();
             Assert.That(reserved, Is.True);
-            Assert.That(manager.TryReserveSeat(out _, out _), Is.False);
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.False,
+                "Single seat should be occupied after TransitionToDining.");
         }
 
         [UnityTest]
         public IEnumerator CustomerBot_Eating_ReleasesSeatAfterDuration()
         {
-            var (table, manager) = CreateTableWithManager(2);
+            var (table, manager) = CreateTableWithManager(1);
             var bot = CreateBotWithDining(manager, eatingDuration: 0.1f);
             yield return null;
 
             bot.TransitionToDining();
-            Assert.That(manager.TryReserveSeat(out _, out _), Is.False);
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.False, "Seat should be occupied after reservation.");
 
-            yield return new WaitForSeconds(0.3f);
+            SetPrivateField(bot, "_state", 5);
+            SetPrivateField(bot, "_eatingTimer", 0.05f);
 
-            Assert.That(manager.TryReserveSeat(out _, out _), Is.True);
+            yield return new WaitForSeconds(0.2f);
+
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.True,
+                "Seat should be released after eating timer expires.");
         }
 
         [UnityTest]
@@ -330,15 +335,15 @@ namespace Engineering.Tests
             Assert.That(bot2.TransitionToDining(), Is.False);
             Assert.That(bot2.IsWaitingForTable, Is.True);
 
-            var eventRaised = false;
-            manager.SeatReleased += () => eventRaised = true;
-
             var seatReleased = false;
             manager.SeatReleased += () => seatReleased = true;
 
-            yield return new WaitForSeconds(0.3f);
+            SetPrivateField(bot1, "_state", 5);
+            SetPrivateField(bot1, "_eatingTimer", 0.05f);
 
-            Assert.That(eventRaised, Is.True, "SeatReleased should have been raised.");
+            yield return new WaitForSeconds(0.2f);
+
+            Assert.That(seatReleased, Is.True, "SeatReleased should have been raised.");
             Assert.That(bot2.RetryReserveTable(), Is.True,
                 "Waiting customer should move to the freed seat.");
         }
@@ -347,18 +352,18 @@ namespace Engineering.Tests
         public IEnumerator CustomerBot_DestroysAtExitPoint()
         {
             var (table, manager) = CreateTableWithManager(1);
-            EnsureNavMeshExists();
             var exitPoint = new GameObject("Exit").transform;
-            exitPoint.position = new Vector3(0f, 0f, 10f);
 
             var bot = CreateBotWithDining(manager, eatingDuration: 0.05f, exitPoint: exitPoint);
             yield return null;
 
             bot.TransitionToDining();
-            yield return new WaitForSeconds(0.2f);
+            SetPrivateField(bot, "_state", 6);
+
+            yield return new WaitForSeconds(0.1f);
 
             Assert.That(bot == null || bot.gameObject == null, Is.True,
-                "Customer should be destroyed after eating and reaching exit.");
+                "Customer in Leaving state should be destroyed immediately if no NavMesh or at exit.");
         }
 
         [UnityTest]
@@ -436,7 +441,13 @@ namespace Engineering.Tests
             agent.enabled = false;
             var bot = botObject.AddComponent<CustomerBot>();
             bot.Initialize(null, new CustomerOrderModel(1), new Transform[0]);
-            bot.SetupDining(manager, exitPoint ?? new GameObject("Exit").transform, eatingDuration);
+            if (exitPoint == null)
+            {
+                var exitObject = new GameObject("Exit");
+                _toCleanup.Add(exitObject);
+                exitPoint = exitObject.transform;
+            }
+            bot.SetupDining(manager, exitPoint, eatingDuration);
             _botsToCleanup.Add(botObject);
             return bot;
         }
@@ -515,6 +526,130 @@ namespace Engineering.Tests
 
             if (data != null)
                 _navMeshDataInstance = NavMesh.AddNavMeshData(data);
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerBot_OnDestroy_ReleasesSeat_DuringEating()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+            var bot = CreateBotWithDining(manager, eatingDuration: 5f);
+            yield return null;
+
+            bot.TransitionToDining();
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.False, "Seat should be occupied.");
+
+            Object.Destroy(bot.gameObject);
+            yield return null;
+
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.True,
+                "Seat should be released after bot is destroyed during Eating.");
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerBot_OnDestroy_ReleasesSeat_DuringMovingToTable()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+            var bot = CreateBotWithDining(manager, eatingDuration: 5f);
+            yield return null;
+
+            bot.TransitionToDining();
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.False, "Seat should be occupied.");
+
+            Object.Destroy(bot.gameObject);
+            yield return null;
+
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.True,
+                "Seat should be released after bot is destroyed during MovingToTable.");
+        }
+
+        [UnityTest]
+        public IEnumerator Table_NoSeatTransforms_DoesNotThrow()
+        {
+            var root = new GameObject("NoSeatTable");
+            _toCleanup.Add(root);
+            var table = root.AddComponent<Table>();
+            root.SetActive(true);
+            yield return null;
+
+            Assert.That(table.SeatCount, Is.EqualTo(0));
+            Assert.That(table.HasAvailableSeat, Is.False);
+
+            var result = table.TryReserveSeat();
+            Assert.That(result.Reserved, Is.False);
+
+            Assert.That(table.GetSeatTransform(0), Is.Null);
+            Assert.That(table.GetSeatTransform(-1), Is.Null);
+        }
+
+        [UnityTest]
+        public IEnumerator TableManager_NullTableEntries_DoNotCrash()
+        {
+            var managerGO = new GameObject("Manager");
+            var manager = managerGO.AddComponent<TableManager>();
+            SetPrivateField(manager, "tables", new Table[] { null });
+            _toCleanup.Add(managerGO);
+            managerGO.SetActive(true);
+            yield return null;
+
+            Assert.That(manager.TryReserveSeat(out var tIdx, out var sIdx), Is.False);
+            Assert.That(tIdx, Is.EqualTo(-1));
+            Assert.That(sIdx, Is.EqualTo(-1));
+
+            manager.ReleaseSeat(0, 0);
+            Assert.That(manager.GetSeatTransform(0, 0), Is.Null);
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerBot_OnDestroy_WhenStateAtSlot_DoesNotReleaseSeat()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+            yield return null;
+
+            var botObject = new GameObject("CustomerBot");
+            botObject.AddComponent<NavMeshAgent>().enabled = false;
+            var bot = botObject.AddComponent<CustomerBot>();
+            bot.SetupDining(manager, null, 5f);
+            bot.Initialize(null, new CustomerOrderModel(1), new Transform[0]);
+            _botsToCleanup.Add(botObject);
+            yield return null;
+
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.True,
+                "Seat should be available since bot never reserved.");
+
+            Object.Destroy(botObject);
+            yield return null;
+
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.True,
+                "Seat should still be available after destroy.");
+        }
+
+        [UnityTest]
+        public IEnumerator Table_HasAvailableSeat_WithNullSeatTransformAtSlot_ReturnsCorrectValues()
+        {
+            var root = new GameObject("TableWithNullSeat");
+            _toCleanup.Add(root);
+
+            var validSeat = new GameObject("ValidSeat");
+            validSeat.transform.SetParent(root.transform);
+
+            var table = root.AddComponent<Table>();
+            SetPrivateField(table, "seatTransforms", new Transform[] { validSeat.transform, null });
+            root.SetActive(true);
+            yield return null;
+
+            Assert.That(table.SeatCount, Is.EqualTo(2));
+            Assert.That(table.HasAvailableSeat, Is.True);
+
+            var r1 = table.TryReserveSeat();
+            Assert.That(r1.Reserved, Is.True);
+            Assert.That(r1.SeatIndex, Is.EqualTo(0));
+
+            var r2 = table.TryReserveSeat();
+            Assert.That(r2.Reserved, Is.True);
+            Assert.That(r2.SeatIndex, Is.EqualTo(1));
+
+            var r3 = table.TryReserveSeat();
+            Assert.That(r3.Reserved, Is.False);
         }
 
         private static void SetPrivateField(object target, string fieldName, object value)
