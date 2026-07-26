@@ -619,8 +619,8 @@ namespace Engineering.Tests
             Object.Destroy(botObject);
             yield return null;
 
-            Assert.That(manager.TryReserveSeat(out _, out _), Is.True,
-                "Seat should still be available after destroy.");
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.False,
+                "Seat should remain occupied because the bot never owned the reservation.");
         }
 
         [UnityTest]
