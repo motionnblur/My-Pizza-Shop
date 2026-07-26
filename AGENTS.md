@@ -35,6 +35,8 @@ This file is the fast entry point for AI agents and contributors. Read it before
 | `Assets/Engineering/Scripts/Domain/GrillStation/` | Pure C# domain model: `GrillStationModel` (authoritative owner of ready-pizza count and production capacity rules). `GrillStation` delegates to it. No `UnityEngine` dependency. |
 | `Assets/Engineering/Scripts/Domain/Economy/` | Pure C# domain model: `WalletModel` (authoritative owner of money balance and spend/credit rules). `PlayerWallet` delegates to it. No `UnityEngine` dependency. |
 | `Assets/Engineering/Scripts/Domain/Inventory/` | Pure C# domain model: `PizzaInventoryModel` (authoritative owner of player pizza count/capacity rules). `PlayerPizzaInventory` delegates to it. No `UnityEngine` dependency. |
+| `Assets/Engineering/Scripts/Domain/Table/` | Pure C# domain models: `TableModel` (seat reservation/release rules), `TableWasteModel` (leftover-waste count and accumulation rules), and `ReserveSeatResult`/`ReleaseSeatResult`/`AddLeftoversResult` immutable result structs. No `UnityEngine` dependency. |
+| `Assets/Engineering/Scripts/Mono/Actors/Table/` | `Table` — seat management and leftover-waste delegation to `TableWasteModel` and `TableWasteVisuals`. `TableManager` — cross-table reservation, release, and `AddLeftoversToTable` API. `TableWasteVisuals` — pooled leftover visual stack with configurable anchor and spacing. |
 | `Assets/Engineering/Scripts/Domain/CustomerQueue/` | Pure C# domain models: `CustomerOrderModel` (authoritative owner of per-customer order pizza count and remaining/received-amount rules) and `CustomerQueueModel` (authoritative owner of queue capacity, enqueue, remove-front, and remove-at-index rules). `EnqueueResult` and `RemoveFrontResult` are immutable result structs. No `UnityEngine` dependency. |
 | `Assets/Engineering/Scripts/Mono/Actors/ServeStation/` | Player deposits pizzas into station storage through `PlateTrigger`; `ServeTrigger` sells storage to the front customer; money is awarded per pizza served and `PizzaServed` is raised. `ServeStation` is the Unity facade/orchestrator that delegates storage and calculations to `ServeStationModel` and coordinates `CustomerQueueController` (queue ownership, registration, slot assignment, front-customer removal, arbitrary-customer `RemoveCustomer`) and `ServeStationVisuals` (pizza visual pool creation and positioning). |
 | `Assets/Engineering/Scripts/Mono/Actors/TrashStation/` | Trash disposal station; removes all pizzas from player with DoTween fly-and-shrink animation, raises `PizzaTrashed` event. |
@@ -50,6 +52,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 | `Assets/Engineering/Prefabs/CustomerBot.prefab` | Customer-bot prefab — capsule visual, NavMeshAgent, CapsuleCollider, CustomerBot component. |
 | `Assets/Engineering/Prefabs/ServingStation.prefab` | Serving-station prefab — `ServeStation` on root, separate `plateTrigger`/`serveTrigger` children, and `CustomerQueue` with 10 `CustomerSlot_0–9` queue-slot transforms. |
 | `Assets/Engineering/Prefabs/TrashStation.prefab` | Trash-station prefab — `TrashStation` on root, `TrashPlate` on `triggerArea`, `TrashTarget` child. |
+| `Assets/Engineering/Prefabs/leftover.prefab` | Placeholder leftover visual (cube mesh with material) used by `TableWasteVisuals`. |
 | `Assets/Scenes/` | Authored scenes. |
 | `Assets/Settings/` | Render-pipeline assets and project visual settings. |
 
@@ -83,6 +86,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 - `PurchaseProgressModel` is the authoritative owner of unlock price, paid amount, remaining amount, and purchase completion state. `BuyingArea` is the Unity trigger adapter that delegates state to `PurchaseProgressModel` and owns trigger callbacks and `EconomyManager` interaction. `BuyingArea._unlockPrice` is Inspector-configured with `[SerializeField] private` and defaults to 100. `EconomyManager` remains the coroutine, currency, animation-request, destruction, and purchased-event orchestrator. Final-payment capping is not part of the current behavior-preserving design.
 - `PlateTrigger` and `ServeTrigger` are separate child trigger relays on the serving-station prefab. `PlateTrigger` deposits pizzas on enter; `ServeTrigger` serves the front customer on enter/stay. The station stack anchor comes from the assigned non-trigger plate collider's `bounds.max.y`.
 - `TrashStation` removes all pizzas from the player via `PlayerPizzaInventory.TryRemove`, retrieves visuals from an internal `UnityEngine.Pool.ObjectPool<GameObject>`, positions them at the player's pizza stack world positions, animates them to `TrashTarget` with DoTween (`DOMove` + `DOScale(0)`), then releases them back to the pool. Raises `PizzaTrashed` event for SFX. `TrashPlate` on `triggerArea` forwards player detection to the station.
+- `Table` delegates leftover-waste state to `TableWasteModel`. `TableManager` exposes `AddLeftoversToTable(tableIndex, pizzaCount)`. When `CustomerBot` transitions from `Eating` to `Leaving`, it calls `AddLeftoversToTable` with `_orderModel.InitialPizzaCount` before releasing the seat. `TableWasteVisuals` manages a pooled leftover visual stack positioned from its anchor with `leftoverStackSpacing`. No leftovers are created if the customer is destroyed or fails to reach the table.
 - Do not rename Input action maps/actions, tags, or serialized fields without updating their scene/prefab and code consumers.
 
 ## Scene And Build
@@ -97,7 +101,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 
 ## Validation
 
-- The project source currently declares 180 EditMode and 85 PlayMode tests. Run the affected suite after gameplay changes; test counts alone do not prove they passed.
+- The project source currently declares 187 EditMode and 88 PlayMode tests. Run the affected suite after gameplay changes; test counts alone do not prove they passed.
 - For script changes, compile in Unity and check Console errors. For gameplay changes, exercise the affected flow in Play Mode when the Editor is available.
 - Do not claim a successful build or scene validation without actually performing it.
 

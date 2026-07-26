@@ -408,6 +408,66 @@ namespace Engineering.Tests
             Object.Destroy(serveSettings);
         }
 
+        [UnityTest]
+        public IEnumerator Table_AddLeftovers_AccumulatesOnSameTable()
+        {
+            var (table, manager) = CreateTableWithManager(2);
+            yield return null;
+
+            var r1 = table.AddLeftovers(2);
+            Assert.That(r1.Added, Is.True);
+
+            var r2 = table.AddLeftovers(3);
+            Assert.That(r2.Added, Is.True);
+
+            var r3 = table.AddLeftovers(0);
+            Assert.That(r3.Added, Is.False);
+
+            var r4 = table.AddLeftovers(-1);
+            Assert.That(r4.Added, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerBot_Eating_AddsLeftoversBeforeReleasingSeat()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+            var bot = CreateBotWithDining(manager, eatingDuration: 0.1f);
+            yield return null;
+
+            bot.TransitionToDining();
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.False, "Seat should be occupied.");
+
+            SetPrivateField(bot, "_state", 5);
+            SetPrivateField(bot, "_eatingTimer", 0.05f);
+
+            yield return new WaitForSeconds(0.2f);
+
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.True,
+                "Seat should be released after eating timer expires.");
+
+            var wasteModel = GetPrivateField(table, "_wasteModel");
+            var leftoverCount = (int)GetPrivateField(wasteModel, "_leftoverCount");
+            Assert.That(leftoverCount, Is.EqualTo(1),
+                "One leftover should be created for the customer's order of 1 pizza.");
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerBot_NoLeftovers_WhenDestroyedDuringEating()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+            var bot = CreateBotWithDining(manager, eatingDuration: 5f);
+            yield return null;
+
+            bot.TransitionToDining();
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.False, "Seat should be occupied.");
+
+            Object.Destroy(bot.gameObject);
+            yield return null;
+
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.True,
+                "Seat should be released after bot is destroyed during Eating.");
+        }
+
         private (Table table, TableManager manager) CreateTableWithManager(int seatCount)
         {
             var tableGO = new GameObject("TestTable");
@@ -659,6 +719,15 @@ namespace Engineering.Tests
             Assert.That(field, Is.Not.Null,
                 $"Expected {target.GetType().Name} to define '{fieldName}'.");
             field.SetValue(target, value);
+        }
+
+        private static object GetPrivateField(object target, string fieldName)
+        {
+            var field = target.GetType().GetField(fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null,
+                $"Expected {target.GetType().Name} to define '{fieldName}'.");
+            return field.GetValue(target);
         }
     }
 }

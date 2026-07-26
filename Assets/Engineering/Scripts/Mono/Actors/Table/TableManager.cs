@@ -49,5 +49,13 @@ namespace Engineering.Scripts.Mono.Actors.Table
                 return null;
             return tables[tableIndex].GetSeatTransform(seatIndex);
         }
+
+        public void AddLeftoversToTable(int tableIndex, int pizzaCount)
+        {
+            if (tables == null || tableIndex < 0 || tableIndex >= tables.Length || tables[tableIndex] == null)
+                return;
+
+            tables[tableIndex].AddLeftovers(pizzaCount);
+        }
     }
 }

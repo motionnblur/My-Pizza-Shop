@@ -6,8 +6,10 @@ namespace Engineering.Scripts.Mono.Actors.Table
     public class Table : MonoBehaviour
     {
         [SerializeField] private Transform[] seatTransforms;
+        [SerializeField] private TableWasteVisuals wasteVisuals;
 
         private TableModel _model;
+        private TableWasteModel _wasteModel;
 
         public int SeatCount => seatTransforms != null ? seatTransforms.Length : 0;
         public bool HasAvailableSeat
@@ -38,17 +40,21 @@ namespace Engineering.Scripts.Mono.Actors.Table
             }
 
             _model = new TableModel(seatTransforms.Length);
+            _wasteModel = new TableWasteModel();
         }
 
         public void Initialize(int seatCapacity)
         {
             _model = new TableModel(seatCapacity);
+            _wasteModel = new TableWasteModel();
         }
 
         private void EnsureModel()
         {
             if (_model == null && SeatCount > 0)
                 _model = new TableModel(SeatCount);
+            if (_wasteModel == null)
+                _wasteModel = new TableWasteModel();
         }
 
         public ReserveSeatResult TryReserveSeat()
@@ -72,6 +78,27 @@ namespace Engineering.Scripts.Mono.Actors.Table
             if (seatTransforms == null || seatIndex < 0 || seatIndex >= seatTransforms.Length)
                 return null;
             return seatTransforms[seatIndex];
+        }
+
+        public AddLeftoversResult AddLeftovers(int pizzaCount)
+        {
+            EnsureModel();
+            if (_wasteModel == null)
+                return AddLeftoversResult.InvalidAmount;
+
+            var result = _wasteModel.TryAddLeftovers(pizzaCount);
+            if (result.Added && wasteVisuals != null)
+                wasteVisuals.Refresh(_wasteModel.LeftoverCount);
+
+            return result;
+        }
+
+        public void ClearLeftovers()
+        {
+            EnsureModel();
+            _wasteModel?.Clear();
+            if (wasteVisuals != null)
+                wasteVisuals.Clear();
         }
     }
 }

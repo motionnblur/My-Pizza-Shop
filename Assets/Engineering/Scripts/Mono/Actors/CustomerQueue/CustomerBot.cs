@@ -122,7 +122,10 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
                     if (_eatingTimer <= 0f)
                     {
                         if (_tableManager != null)
+                        {
+                            _tableManager.AddLeftoversToTable(_tableIndex, _orderModel.InitialPizzaCount);
                             _tableManager.ReleaseSeat(_tableIndex, _seatIndex);
+                        }
                         _state = BotState.Leaving;
                         if (IsAgentReady)
                         {
