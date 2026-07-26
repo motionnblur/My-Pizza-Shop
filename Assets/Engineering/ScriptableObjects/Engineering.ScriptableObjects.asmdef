@@ -1,8 +1,8 @@
 {
-  "name": "Engineering",
-  "rootNamespace": "Engineering",
+  "name": "Engineering.ScriptableObjects",
+  "rootNamespace": "Engineering.ScriptableObjects",
   "references": [
-    "Unity.InputSystem"
+    "GUID:d0b24fee01f6438bb24d6e849c84c8cf"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

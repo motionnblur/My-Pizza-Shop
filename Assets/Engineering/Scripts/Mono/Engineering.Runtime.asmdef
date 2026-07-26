@@ -1,10 +1,10 @@
 {
-  "name": "Engineering.Tests.PlayMode",
-  "rootNamespace": "Engineering.Tests",
+  "name": "Engineering.Runtime",
+  "rootNamespace": "Engineering.Scripts.Mono",
   "references": [
     "GUID:d0b24fee01f6438bb24d6e849c84c8cf",
     "GUID:f58d1684ec9642b7992bbeaabb5aea79",
-    "GUID:0e0ebec4ece14108894ac3aaf81878da"
+    "Unity.InputSystem"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
@@ -14,8 +14,5 @@
   "autoReferenced": true,
   "defineConstraints": [],
   "versionDefines": [],
-  "noEngineReferences": false,
-  "optionalUnityReferences": [
-    "TestAssemblies"
-  ]
+  "noEngineReferences": false
 }
