@@ -1,10 +1,12 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using Engineering.Scripts.Mono.Actors.TrashStation;
 using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Player;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.TestTools;
 
 namespace Engineering.Tests
@@ -160,31 +162,136 @@ namespace Engineering.Tests
         }
 
         [UnityTest]
-        public IEnumerator TrashAllPizzas_AnimatesAndDestroysTempVisuals()
+        public IEnumerator TrashAllPizzas_AnimatesAndReleasesVisuals()
         {
             CreateFixture(playerPizzaCount: 2);
             yield return null;
 
             var trashStation = _trashStationObject.GetComponent<TrashStation>();
-            var initialChildCount = _trashStationObject.transform.childCount;
+
+            trashStation.TrashAllPizzas(_playerObject.GetComponent<PlayerPizzaInventory>());
+
+            yield return new WaitForSeconds(0.2f);
+
+            var activeVisuals = GetActiveVisuals(trashStation);
+
+            Assert.That(_playerObject.GetComponent<PlayerPizzaInventory>().Count, Is.EqualTo(0));
+
+            Assert.That(activeVisuals.Count, Is.EqualTo(0),
+                "All visuals should be released after animation completes");
+
+            var pool = GetPool(trashStation);
+            Assert.That(pool.CountInactive, Is.EqualTo(2),
+                "Released visuals should be inactive in the pool after completion");
+        }
+
+        [UnityTest]
+        public IEnumerator FirstTrashCreatesRequiredVisuals()
+        {
+            CreateFixture(playerPizzaCount: 3);
+            yield return null;
+
+            var trashStation = _trashStationObject.GetComponent<TrashStation>();
 
             trashStation.TrashAllPizzas(_playerObject.GetComponent<PlayerPizzaInventory>());
 
             yield return null;
 
-            var tempVisualsField = typeof(TrashStation).GetField("_tempVisuals",
-                BindingFlags.Instance | BindingFlags.NonPublic);
-            var tempVisuals = (System.Collections.Generic.List<GameObject>)tempVisualsField.GetValue(trashStation);
+            var activeVisuals = GetActiveVisuals(trashStation);
+            Assert.That(activeVisuals.Count, Is.EqualTo(3),
+                "Should have one active visual per pizza after first trash");
+        }
 
-            if (tempVisuals != null && tempVisuals.Count > 0)
-            {
-                yield return new WaitForSeconds(0.2f);
-            }
+        [UnityTest]
+        public IEnumerator SecondTrashReusesPooledVisuals()
+        {
+            CreateFixture(playerPizzaCount: 3);
+            yield return null;
+
+            var trashStation = _trashStationObject.GetComponent<TrashStation>();
+            var inventory = _playerObject.GetComponent<PlayerPizzaInventory>();
+
+            trashStation.TrashAllPizzas(inventory);
+
+            yield return new WaitForSeconds(0.2f);
+
+            inventory.TryAdd(3);
+
+            var pool = GetPool(trashStation);
+            var countAllBefore = pool.CountAll;
+
+            trashStation.TrashAllPizzas(inventory);
 
             yield return null;
 
-            Assert.That(_playerObject.GetComponent<PlayerPizzaInventory>().Count, Is.EqualTo(0));
-            Assert.That(_trashStationObject.transform.childCount, Is.EqualTo(initialChildCount));
+            Assert.That(pool.CountAll, Is.EqualTo(countAllBefore),
+                "No additional pizza visuals should be instantiated after pool warm-up");
+            Assert.That(pool.CountActive, Is.EqualTo(3),
+                "All pooled visuals should be active after second trash");
+        }
+
+        [UnityTest]
+        public IEnumerator ReleasedVisualsAreInactiveAndResetBeforeReuse()
+        {
+            CreateFixture(playerPizzaCount: 2);
+            yield return null;
+
+            var trashStation = _trashStationObject.GetComponent<TrashStation>();
+            var inventory = _playerObject.GetComponent<PlayerPizzaInventory>();
+
+            trashStation.TrashAllPizzas(inventory);
+
+            yield return new WaitForSeconds(0.2f);
+
+            var pool = GetPool(trashStation);
+            Assert.That(pool.CountInactive, Is.EqualTo(2), "All visuals should be inactive in pool after release");
+
+            inventory.TryAdd(2);
+            trashStation.TrashAllPizzas(inventory);
+
+            yield return null;
+
+            var activeVisuals = GetActiveVisuals(trashStation);
+            Assert.That(activeVisuals.Count, Is.EqualTo(2), "Reused visuals should be active");
+            Assert.That(pool.CountAll, Is.EqualTo(2), "No new visuals should have been created");
+        }
+
+        [UnityTest]
+        public IEnumerator AllVisualsReleasedAfterCompletion()
+        {
+            CreateFixture(playerPizzaCount: 4);
+            yield return null;
+
+            var trashStation = _trashStationObject.GetComponent<TrashStation>();
+            var isAnimatingField = typeof(TrashStation).GetField("_isAnimating",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
+            trashStation.TrashAllPizzas(_playerObject.GetComponent<PlayerPizzaInventory>());
+
+            yield return new WaitForSeconds(0.2f);
+
+            var activeVisuals = GetActiveVisuals(trashStation);
+            Assert.That(activeVisuals.Count, Is.EqualTo(0), "All visuals released after animation completes");
+            Assert.That((bool)isAnimatingField.GetValue(trashStation), Is.False,
+                "_isAnimating should be false after all animations finish");
+        }
+
+        [UnityTest]
+        public IEnumerator DestroyingStationDuringAnimationDoesNotError()
+        {
+            CreateFixture(playerPizzaCount: 3);
+            yield return null;
+
+            var trashStation = _trashStationObject.GetComponent<TrashStation>();
+
+            trashStation.TrashAllPizzas(_playerObject.GetComponent<PlayerPizzaInventory>());
+
+            yield return null;
+
+            Object.Destroy(_trashStationObject);
+            _trashStationObject = null;
+
+            yield return new WaitForSeconds(0.5f);
         }
 
         [UnityTest]
@@ -266,6 +373,22 @@ namespace Engineering.Tests
             var method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(method, Is.Not.Null, $"Expected {target.GetType().Name} to define '{methodName}'.");
             method.Invoke(target, arguments);
+        }
+
+        private static List<GameObject> GetActiveVisuals(TrashStation station)
+        {
+            var field = typeof(TrashStation).GetField("_activeVisuals",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, "Expected TrashStation to define '_activeVisuals'.");
+            return (List<GameObject>)field.GetValue(station);
+        }
+
+        private static ObjectPool<GameObject> GetPool(TrashStation station)
+        {
+            var field = typeof(TrashStation).GetField("_pizzaPool",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, "Expected TrashStation to define '_pizzaPool'.");
+            return (ObjectPool<GameObject>)field.GetValue(station);
         }
     }
 }

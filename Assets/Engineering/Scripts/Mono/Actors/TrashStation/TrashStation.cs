@@ -3,6 +3,7 @@ using DG.Tweening;
 using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Player;
 using UnityEngine;
+using UnityEngine.Pool;
 
 namespace Engineering.Scripts.Mono.Actors.TrashStation
 {
@@ -13,9 +14,41 @@ namespace Engineering.Scripts.Mono.Actors.TrashStation
         [SerializeField] private Transform trashTarget;
         [SerializeField] private SVoidEventChannel pizzaTrashedEvent;
 
-        private readonly List<GameObject> _tempVisuals = new List<GameObject>();
-        private readonly List<Tween> _activeTweens = new List<Tween>();
+        private ObjectPool<GameObject> _pizzaPool;
+        private Vector3 _originalScale = Vector3.one;
+        private readonly List<GameObject> _activeVisuals = new();
+        private readonly List<Tween> _activeTweens = new();
         private bool _isAnimating;
+
+        private const int PoolDefaultCapacity = 10;
+        private const int PoolMaxSize = 20;
+
+        private void EnsurePoolInitialized()
+        {
+            if (_pizzaPool != null)
+                return;
+
+            _originalScale = pizzaVisualPrefab.transform.localScale;
+
+            _pizzaPool = new ObjectPool<GameObject>(
+                createFunc: () =>
+                {
+                    var obj = Instantiate(pizzaVisualPrefab);
+                    obj.SetActive(false);
+                    return obj;
+                },
+                actionOnGet: null,
+                actionOnRelease: OnReleasePizzaVisual,
+                actionOnDestroy: obj => Destroy(obj),
+                defaultCapacity: PoolDefaultCapacity,
+                maxSize: PoolMaxSize);
+        }
+
+        private static void OnReleasePizzaVisual(GameObject visual)
+        {
+            visual.transform.DOKill(false);
+            visual.SetActive(false);
+        }
 
         public void TrashAllPizzas(PlayerPizzaInventory playerPizzaInventory)
         {
@@ -33,6 +66,8 @@ namespace Engineering.Scripts.Mono.Actors.TrashStation
                 return;
             }
 
+            EnsurePoolInitialized();
+
             var pizzaStackAnchor = playerPizzaInventory.PizzaStackAnchor;
             var spacing = playerPizzaInventory.PizzaStackSpacing;
             var target = trashTarget != null ? trashTarget.position : transform.position;
@@ -43,19 +78,16 @@ namespace Engineering.Scripts.Mono.Actors.TrashStation
                     ? pizzaStackAnchor.TransformPoint(Vector3.up * (i * spacing))
                     : playerPizzaInventory.transform.position + Vector3.up * (i * spacing);
 
-                var visual = Instantiate(pizzaVisualPrefab, worldPos, Quaternion.identity);
-                _tempVisuals.Add(visual);
+                var visual = GetPizzaVisual(worldPos);
+                _activeVisuals.Add(visual);
             }
 
             playerPizzaInventory.TryRemove(count);
             _isAnimating = true;
 
-            var completedCount = 0;
-            var totalVisuals = _tempVisuals.Count;
-
-            for (var i = 0; i < _tempVisuals.Count; i++)
+            for (var i = 0; i < _activeVisuals.Count; i++)
             {
-                var visual = _tempVisuals[i];
+                var visual = _activeVisuals[i];
                 var delay = i * sTrashStation.staggerDelay;
 
                 var moveTween = visual.transform
@@ -68,46 +100,62 @@ namespace Engineering.Scripts.Mono.Actors.TrashStation
                     .SetDelay(delay)
                     .SetEase(sTrashStation.moveEase);
 
-                moveTween.OnComplete(() =>
-                {
-                    completedCount++;
-                    if (completedCount >= totalVisuals)
-                    {
-                        ClearTempVisuals();
-                        _isAnimating = false;
-                        _activeTweens.Clear();
-                        pizzaTrashedEvent?.Raise();
-                    }
-                });
+                moveTween.OnComplete(() => ReleasePizzaVisual(visual));
 
                 _activeTweens.Add(moveTween);
             }
         }
 
-        private void ClearTempVisuals()
+        private GameObject GetPizzaVisual(Vector3 position)
         {
-            foreach (var visual in _tempVisuals)
-            {
-                if (visual != null)
-                    Destroy(visual);
-            }
+            var visual = _pizzaPool.Get();
+            visual.transform.SetPositionAndRotation(position, Quaternion.identity);
+            visual.transform.localScale = _originalScale;
+            visual.SetActive(true);
+            return visual;
+        }
 
-            _tempVisuals.Clear();
+        private void ReleasePizzaVisual(GameObject visual)
+        {
+            if (visual == null)
+                return;
+
+            _pizzaPool.Release(visual);
+            _activeVisuals.Remove(visual);
+
+            if (_activeVisuals.Count == 0)
+                CompleteTrashAnimation();
+        }
+
+        private void CompleteTrashAnimation()
+        {
+            _isAnimating = false;
+            _activeTweens.Clear();
+            pizzaTrashedEvent?.Raise();
         }
 
         private void OnDestroy()
         {
             foreach (var tween in _activeTweens)
                 tween?.Kill();
-
-            foreach (var visual in _tempVisuals)
-            {
-                if (visual != null)
-                    visual.transform.DOKill();
-            }
-
             _activeTweens.Clear();
-            ClearTempVisuals();
+
+            if (_pizzaPool != null)
+            {
+                foreach (var visual in _activeVisuals)
+                {
+                    if (visual != null)
+                        _pizzaPool.Release(visual);
+                }
+            }
+            _activeVisuals.Clear();
+
+            if (_pizzaPool != null)
+            {
+                _pizzaPool.Clear();
+                _pizzaPool.Dispose();
+                _pizzaPool = null;
+            }
         }
     }
 }
