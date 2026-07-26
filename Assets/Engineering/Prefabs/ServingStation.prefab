@@ -84,6 +84,8 @@ GameObject:
   m_Component:
   - component: {fileID: 2350328394199862730}
   - component: {fileID: 1111111111111111101}
+  - component: {fileID: 2222222222222222201}
+  - component: {fileID: 2222222222222222202}
   m_Layer: 0
   m_Name: ServingStation
   m_TagString: Untagged
@@ -124,6 +126,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Engineering::Engineering.Engineering.Scripts.Mono.Actors.ServeStation.ServeStation
   sServeStation: {fileID: 11400000, guid: 41fa959125113844b936a8df75a1944e, type: 2}
   pizzaServedEvent: {fileID: 11400000, guid: 9820046290d0fdb4198c926c8681b513, type: 2}
+  queueController: {fileID: 2222222222222222201}
+  stationVisuals: {fileID: 2222222222222222202}
+--- !u!114 &2222222222222222201
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3793659507227945827}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 446eeb3ad4e99c147ae8571e5c4257ed, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Engineering::Engineering.Engineering.Scripts.Mono.Actors.ServeStation.CustomerQueueController
   queueSlots:
   - {fileID: 4400000000000000001}
   - {fileID: 4400000000000000002}
@@ -135,6 +151,18 @@ MonoBehaviour:
   - {fileID: 4400000000000000008}
   - {fileID: 4400000000000000009}
   - {fileID: 4400000000000000010}
+--- !u!114 &2222222222222222202
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3793659507227945827}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d5db89713caa094da1e9a307ae157dd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Engineering::Engineering.Engineering.Scripts.Mono.Actors.ServeStation.ServeStationVisuals
   pizzaVisualPrefab: {fileID: 6504674961691310178, guid: 16bdc8937be73d74ba3a701b01cbbf0a, type: 3}
   plateCollider: {fileID: 1111111111111111401}
   pizzaStackSpacing: 0.14

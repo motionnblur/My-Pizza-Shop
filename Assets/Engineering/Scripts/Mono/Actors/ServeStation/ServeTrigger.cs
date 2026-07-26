@@ -10,7 +10,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             if (!other.CompareTag("Player") || serveStation == null)
                 return;
 
-            serveStation.TryServeFrontCustomer();
+            serveStation.ServeFrontCustomer();
         }
 
         private void OnTriggerStay(Collider other)
@@ -18,7 +18,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             if (!other.CompareTag("Player") || serveStation == null)
                 return;
 
-            serveStation.TryServeFrontCustomer();
+            serveStation.ServeFrontCustomer();
         }
     }
 }

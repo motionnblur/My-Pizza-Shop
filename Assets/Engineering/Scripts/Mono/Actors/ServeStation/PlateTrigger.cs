@@ -12,7 +12,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
                 return;
 
             var playerInventory = other.GetComponentInParent<PlayerPizzaInventory>();
-            serveStation.TryDepositPizzas(playerInventory);
+            serveStation.DepositFrom(playerInventory);
         }
     }
 }

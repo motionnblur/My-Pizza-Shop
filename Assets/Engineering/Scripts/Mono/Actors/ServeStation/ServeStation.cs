@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using Engineering.ScriptableObjects;
-using Engineering.Scripts.Domain.CustomerQueue;
 using Engineering.Scripts.Domain.ServeStation;
 using Engineering.Scripts.Mono.Managers;
 using Engineering.Scripts.Mono.Player;
@@ -14,19 +12,13 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
     {
         [SerializeField] private SServeStation sServeStation;
         [SerializeField] private SVoidEventChannel pizzaServedEvent;
-        [SerializeField] private Transform[] queueSlots;
-        [SerializeField] private GameObject pizzaVisualPrefab;
-        [SerializeField] private BoxCollider plateCollider;
-        [SerializeField, Min(0.01f)] private float pizzaStackSpacing = 0.14f;
+        [SerializeField] private CustomerQueueController queueController;
+        [SerializeField] private ServeStationVisuals stationVisuals;
         private CurrencyService _currencyService;
-        private Vector3 _cachedStackBasePosition;
 
-        private readonly List<CustomerBot> _customers = new List<CustomerBot>();
-        private readonly List<GameObject> _pizzaVisuals = new List<GameObject>();
         private ServeStationModel _model;
-        private CustomerQueueModel _queueModel;
 
-        public int CustomerCount => _queueModel?.Count ?? 0;
+        public int CustomerCount => queueController != null ? queueController.CustomerCount : 0;
         public int QueueCapacity => sServeStation != null ? sServeStation.maxQueueCustomers : 0;
         public int StoredPizzaCount => _model?.StoredPizzaCount ?? 0;
 
@@ -48,17 +40,25 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
 
         private void OnEnable()
         {
+            if (sServeStation == null)
+                return;
+
             TryPrepareModel();
-            UpdateStackBasePosition();
-            CreateVisualPool();
-            RefreshVisuals();
+
+            if (queueController != null)
+            {
+                queueController.Initialize(sServeStation.maxQueueCustomers);
+            }
+
+            if (stationVisuals != null)
+            {
+                stationVisuals.Initialize(sServeStation.maxStoredPizzas);
+                stationVisuals.Refresh(StoredPizzaCount);
+            }
         }
 
-        private bool TryPrepareModel()
+        private void TryPrepareModel()
         {
-            if (sServeStation == null)
-                return false;
-
             if (_model == null)
             {
                 _model = new ServeStationModel(sServeStation.maxStoredPizzas, sServeStation.pricePerPizza);
@@ -67,81 +67,62 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             {
                 _model.UpdateConfiguration(sServeStation.maxStoredPizzas, sServeStation.pricePerPizza);
             }
-
-            if (_queueModel == null)
-            {
-                _queueModel = new CustomerQueueModel(sServeStation.maxQueueCustomers);
-            }
-            else
-            {
-                _queueModel.UpdateCapacity(sServeStation.maxQueueCustomers);
-            }
-
-            return true;
         }
 
-        public bool RegisterCustomer(CustomerBot customer)
+        public bool TryRegisterCustomer(CustomerBot customer)
         {
             if (customer == null || sServeStation == null)
                 return false;
 
-            if (!TryPrepareModel())
+            if (_model == null)
                 return false;
 
-            var orderModel = customer.OrderModel;
-            if (orderModel == null)
+            if (queueController == null)
                 return false;
 
-            var slotIndex = _customers.Count;
-            if (queueSlots == null || slotIndex >= queueSlots.Length || queueSlots[slotIndex] == null)
-                return false;
-
-            var enqueueResult = _queueModel.TryEnqueue(orderModel);
-            if (!enqueueResult.Accepted)
-                return false;
-
-            _customers.Add(customer);
-            customer.AssignQueueSlot(queueSlots[slotIndex], slotIndex);
-            return true;
+            return queueController.TryRegister(customer);
         }
 
-        public int TryDepositPizzas(PlayerPizzaInventory playerPizzaInventory)
+        public int DepositFrom(PlayerPizzaInventory inventory)
         {
-            if (playerPizzaInventory == null)
+            if (inventory == null)
                 return 0;
 
-            if (!TryPrepareModel())
+            if (_model == null)
                 return 0;
 
-            var requestedAmount = _model.CalculateDepositAmount(playerPizzaInventory.Count);
+            var requestedAmount = _model.CalculateDepositAmount(inventory.Count);
             if (requestedAmount <= 0)
                 return 0;
 
-            var removedAmount = playerPizzaInventory.TryRemove(requestedAmount);
+            var removedAmount = inventory.TryRemove(requestedAmount);
             if (removedAmount <= 0)
                 return 0;
 
             var depositedAmount = _model.Deposit(removedAmount);
-            RefreshVisuals();
+
+            if (stationVisuals != null)
+                stationVisuals.Refresh(StoredPizzaCount);
+
             return depositedAmount;
         }
 
-        public int TryServeFrontCustomer()
+        public int ServeFrontCustomer()
         {
-            if (!TryPrepareModel())
+            if (_model == null)
                 return 0;
 
             if (_currencyService == null || _currencyService.Wallet == null)
                 return 0;
 
-            if (_queueModel == null || !_queueModel.HasFront)
+            if (queueController == null || queueController.FrontCustomer == null)
                 return 0;
 
-            var frontCustomer = _customers[0];
+            var frontCustomer = queueController.FrontCustomer;
             if (!frontCustomer.HasReachedAssignedSlot)
                 return 0;
 
-            var frontOrder = _queueModel.Front;
+            var frontOrder = frontCustomer.OrderModel;
             if (frontOrder == null)
                 return 0;
 
@@ -150,7 +131,9 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
                 return 0;
 
             frontOrder.ReceivePizzas(result.DeliveredPizzaCount);
-            RefreshVisuals();
+
+            if (stationVisuals != null)
+                stationVisuals.Refresh(StoredPizzaCount);
 
             _currencyService.Credit(result.MoneyEarned);
 
@@ -158,60 +141,10 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
 
             if (result.OrderCompleted)
             {
-                _queueModel.TryRemoveFront();
-                _customers.RemoveAt(0);
-                Destroy(frontCustomer.gameObject);
-
-                if (queueSlots != null)
-                {
-                    for (var i = 0; i < _customers.Count; i++)
-                    {
-                        if (i < queueSlots.Length && queueSlots[i] != null)
-                            _customers[i].AssignQueueSlot(queueSlots[i], i);
-                    }
-                }
+                queueController.RemoveFrontCustomer();
             }
 
             return result.DeliveredPizzaCount;
-        }
-
-        private void CreateVisualPool()
-        {
-            if (_pizzaVisuals.Count > 0 || sServeStation == null || pizzaVisualPrefab == null)
-                return;
-
-            for (var index = 0; index < sServeStation.maxStoredPizzas; index++)
-            {
-                var pizzaVisual = Instantiate(pizzaVisualPrefab, transform);
-                pizzaVisual.SetActive(false);
-                _pizzaVisuals.Add(pizzaVisual);
-            }
-        }
-
-        private void RefreshVisuals()
-        {
-            var basePos = _cachedStackBasePosition;
-
-            for (var index = 0; index < _pizzaVisuals.Count; index++)
-            {
-                if (_pizzaVisuals[index] == null)
-                    continue;
-
-                _pizzaVisuals[index].transform.position = basePos + Vector3.up * (index * pizzaStackSpacing);
-                _pizzaVisuals[index].transform.rotation = Quaternion.identity;
-                _pizzaVisuals[index].SetActive(index < StoredPizzaCount);
-            }
-        }
-        
-        private void UpdateStackBasePosition()
-        {
-            if (plateCollider == null)
-                _cachedStackBasePosition = transform.position;
-            else
-            {
-                var bounds = plateCollider.bounds;
-                _cachedStackBasePosition = new Vector3(bounds.center.x, bounds.max.y, bounds.center.z);
-            }
         }
     }
 }
