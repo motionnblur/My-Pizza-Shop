@@ -1300,7 +1300,8 @@ namespace Engineering.Tests
 
         private static void InvokePrivateMethod(object target, string methodName, params object[] arguments)
         {
-            var method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
+            var method = target.GetType().GetMethod(methodName,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             Assert.That(method, Is.Not.Null, $"Expected {target.GetType().Name} to define '{methodName}'.");
             method.Invoke(target, arguments);
         }
