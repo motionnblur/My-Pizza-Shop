@@ -55,7 +55,11 @@ This file is the fast entry point for AI agents and contributors. Read it before
 
 ## Architecture And Conventions
 
-- Runtime behavior is **MonoBehaviour-centric**. `Engineering.asmdef` owns gameplay code, while separate EditMode and PlayMode test assemblies reference it.
+- Runtime behavior is **MonoBehaviour-centric**. Gameplay code is split into three layered assemblies:
+  - `Engineering.Domain.asmdef` — pure C# domain models, no UnityEngine dependency (`noEngineReferences: true`).
+  - `Engineering.ScriptableObjects.asmdef` — ScriptableObject assets (tuning data, event channels).
+  - `Engineering.Runtime.asmdef` — all MonoBehaviours, references Domain + ScriptableObjects + `Unity.InputSystem`.
+  Separate EditMode and PlayMode test assemblies reference all three runtime assemblies.
 - Use namespaces rooted at `Engineering` and preserve the existing folder-to-namespace pattern. All namespaces follow the pattern `Engineering.Scripts.Mono.<Folder>` matching their directory structure (e.g., `Engineering.Scripts.Mono.Actors.GrillStation`, `Engineering.Scripts.Mono.Items`). There is no `Engineering.Engineering` duplication and no legacy `PizzaMaker` namespace.
 - Use `[SerializeField] private` for Inspector-assigned dependencies and tuning values.
 - Private runtime fields use `_camelCase`; serialized fields in existing code may use either `_camelCase` or `camelCase`. Follow the nearest file's convention.

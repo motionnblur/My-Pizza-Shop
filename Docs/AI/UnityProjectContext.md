@@ -50,7 +50,7 @@
 
 ## Assembly Boundaries
 
-`Engineering.asmdef` compiles first-party runtime code into the `Engineering` assembly and explicitly references `Unity.InputSystem`. `Engineering.Tests.Editor.asmdef` and `Engineering.Tests.PlayMode.asmdef` reference that runtime assembly and Unity Test Framework test assemblies, keeping tests separated from player code.
+`Engineering.Domain.asmdef` compiles pure C# domain models with no Engine references (`noEngineReferences: true`). `Engineering.ScriptableObjects.asmdef` compiles ScriptableObject assets and references Domain. `Engineering.Runtime.asmdef` compiles all MonoBehaviours and references Domain + ScriptableObjects + `Unity.InputSystem`. `Engineering.Tests.Editor.asmdef` and `Engineering.Tests.PlayMode.asmdef` reference all three runtime assemblies plus Unity Test Framework test assemblies, keeping tests separated from player code.
 
 ## Scenes And Startup Flow
 
@@ -170,7 +170,9 @@
 - `Assets/Engineering/Prefabs/TrashStation.prefab`
 - `Assets/Engineering/Prefabs/MoneyArea.prefab`
 - `Assets/Engineering/Prefabs/MoneyToCollect.prefab`
-- `Assets/Engineering/Engineering.asmdef`
+- `Assets/Engineering/Scripts/Domain/Engineering.Domain.asmdef`
+- `Assets/Engineering/ScriptableObjects/Engineering.ScriptableObjects.asmdef`
+- `Assets/Engineering/Scripts/Mono/Engineering.Runtime.asmdef`
 - `Assets/Engineering/Tests/Editor/CoreGameplayTests.cs`
 - `Assets/Engineering/Tests/Editor/ServeStationModelTests.cs`
 - `Assets/Engineering/Tests/Editor/PlayerPizzaInventoryTests.cs`
