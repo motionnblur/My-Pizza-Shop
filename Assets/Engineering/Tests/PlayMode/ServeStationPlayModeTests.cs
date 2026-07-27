@@ -9,6 +9,7 @@ using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Managers;
 using Engineering.Scripts.Mono.Player;
 using NUnit.Framework;
+using TMPro;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.TestTools;
@@ -1196,6 +1197,81 @@ namespace Engineering.Tests
             var pizzaVisuals = (List<GameObject>)pizzaVisualsField.GetValue(_stationVisuals);
 
             Assert.That(pizzaVisuals.Count, Is.EqualTo(0));
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerBot_OrderText_ShowsInitialCount()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 0);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var bot = CreateCustomerBot(3);
+            var canvasObject = new GameObject("OrderUICanvas");
+            canvasObject.transform.SetParent(bot.transform);
+            canvasObject.AddComponent<Canvas>();
+            var textObject = new GameObject("OrderText");
+            textObject.transform.SetParent(canvasObject.transform);
+            var tmpText = textObject.AddComponent<TextMeshProUGUI>();
+            SetPrivateField(bot, "orderText", tmpText);
+
+            bot.Initialize(serveStation, new CustomerOrderModel(3), new Transform[0]);
+
+            Assert.That(tmpText.text, Is.EqualTo("Pizza: 3"));
+            Assert.That(textObject.activeSelf, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerBot_OrderText_UpdatesAfterServingOne()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 1);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var bot = CreateCustomerBot(3);
+            var canvasObject = new GameObject("OrderUICanvas");
+            canvasObject.transform.SetParent(bot.transform);
+            canvasObject.AddComponent<Canvas>();
+            var textObject = new GameObject("OrderText");
+            textObject.transform.SetParent(canvasObject.transform);
+            var tmpText = textObject.AddComponent<TextMeshProUGUI>();
+            SetPrivateField(bot, "orderText", tmpText);
+
+            bot.Initialize(serveStation, new CustomerOrderModel(3), new Transform[0]);
+            serveStation.TryRegisterCustomer(bot);
+            SetPrivateField(bot, "_hasReachedAssignedSlot", true);
+
+            serveStation.DepositFrom(_playerInventory);
+            serveStation.ServeFrontCustomer();
+
+            Assert.That(tmpText.text, Is.EqualTo("Pizza: 2"));
+            Assert.That(textObject.activeSelf, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerBot_OrderText_DisablesOnCompleteOrder()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 1);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var bot = CreateCustomerBot(1);
+            var canvasObject = new GameObject("OrderUICanvas");
+            canvasObject.transform.SetParent(bot.transform);
+            canvasObject.AddComponent<Canvas>();
+            var textObject = new GameObject("OrderText");
+            textObject.transform.SetParent(canvasObject.transform);
+            var tmpText = textObject.AddComponent<TextMeshProUGUI>();
+            SetPrivateField(bot, "orderText", tmpText);
+
+            bot.Initialize(serveStation, new CustomerOrderModel(1), new Transform[0]);
+            serveStation.TryRegisterCustomer(bot);
+            SetPrivateField(bot, "_hasReachedAssignedSlot", true);
+
+            serveStation.DepositFrom(_playerInventory);
+            serveStation.ServeFrontCustomer();
+
+            Assert.That(textObject.activeSelf, Is.False);
         }
 
         private void EnsureNavMeshExists()
