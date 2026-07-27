@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 6554547544734132325}
   - component: {fileID: 810272628905234864}
   - component: {fileID: 3498052682821361310}
+  - component: {fileID: 810272628905234865}
   m_Layer: 6
   m_Name: Scripts
   m_TagString: Player
@@ -105,7 +106,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7823266616813979655}
-  - component: {fileID: 810272628905234865}
   m_Layer: 6
   m_Name: Player
   m_TagString: Player
@@ -136,7 +136,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2034507407284336888}
+  m_GameObject: {fileID: 1033184541141458600}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fc6364fccab24ce1af0035059f7174ea, type: 3}
