@@ -22,6 +22,14 @@ namespace Engineering.Scripts.Mono.Actors.Table
             }
         }
         public int MaxLeftovers => _wasteModel?.MaxLeftovers ?? maxLeftovers;
+        public int LeftoverCount
+        {
+            get
+            {
+                EnsureModel();
+                return _wasteModel != null ? _wasteModel.LeftoverCount : 0;
+            }
+        }
 
         private void Awake()
         {
@@ -107,6 +115,19 @@ namespace Engineering.Scripts.Mono.Actors.Table
             _wasteModel?.Clear();
             if (wasteVisuals != null)
                 wasteVisuals.Clear();
+        }
+
+        public int TryRemoveLeftovers(int requestedAmount)
+        {
+            EnsureModel();
+            if (_wasteModel == null)
+                return 0;
+
+            var removed = _wasteModel.TryRemoveLeftovers(requestedAmount);
+            if (removed > 0 && wasteVisuals != null)
+                wasteVisuals.Refresh(_wasteModel.LeftoverCount);
+
+            return removed;
         }
     }
 }

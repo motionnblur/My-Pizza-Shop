@@ -9,20 +9,26 @@ namespace Engineering.Scripts.Mono.Actors.TrashStation
 
         private void OnTriggerEnter(Collider other)
         {
-            TryTrashPizzas(other);
+            TryProcessPlayer(other);
         }
 
         private void OnTriggerStay(Collider other)
         {
-            TryTrashPizzas(other);
+            TryProcessPlayer(other);
         }
 
-        private void TryTrashPizzas(Collider other)
+        private void TryProcessPlayer(Collider other)
         {
             if (!other.CompareTag("Player") || trashStation == null)
                 return;
 
-            trashStation.TrashAllPizzas(other.GetComponentInParent<PlayerPizzaInventory>());
+            var playerPizzaInventory = other.GetComponentInParent<PlayerPizzaInventory>();
+            if (playerPizzaInventory != null && playerPizzaInventory.Count > 0)
+                trashStation.TrashAllPizzas(playerPizzaInventory);
+
+            var playerWasteInventory = other.GetComponentInParent<PlayerWasteInventory>();
+            if (playerWasteInventory != null && playerWasteInventory.Count > 0)
+                trashStation.TryDisposeWaste(playerWasteInventory);
         }
     }
 }

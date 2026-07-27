@@ -227,5 +227,78 @@ namespace Engineering.Tests
             waste.TryAddLeftovers(4);
             Assert.That(waste.LeftoverCount, Is.EqualTo(5));
         }
+
+        [Test]
+        public void TryRemoveLeftovers_RemovesExactAmount()
+        {
+            var waste = new TableWasteModel(10);
+            waste.TryAddLeftovers(5);
+
+            var removed = waste.TryRemoveLeftovers(3);
+
+            Assert.That(removed, Is.EqualTo(3));
+            Assert.That(waste.LeftoverCount, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void TryRemoveLeftovers_RemovesAllWhenRequestedMoreThanAvailable()
+        {
+            var waste = new TableWasteModel(10);
+            waste.TryAddLeftovers(3);
+
+            var removed = waste.TryRemoveLeftovers(10);
+
+            Assert.That(removed, Is.EqualTo(3));
+            Assert.That(waste.LeftoverCount, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void TryRemoveLeftovers_ReturnsZeroWhenEmpty()
+        {
+            var waste = new TableWasteModel(10);
+
+            var removed = waste.TryRemoveLeftovers(3);
+
+            Assert.That(removed, Is.EqualTo(0));
+            Assert.That(waste.LeftoverCount, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void TryRemoveLeftovers_RejectsZeroAmount()
+        {
+            var waste = new TableWasteModel(10);
+            waste.TryAddLeftovers(5);
+
+            var removed = waste.TryRemoveLeftovers(0);
+
+            Assert.That(removed, Is.EqualTo(0));
+            Assert.That(waste.LeftoverCount, Is.EqualTo(5));
+        }
+
+        [Test]
+        public void TryRemoveLeftovers_RejectsNegativeAmount()
+        {
+            var waste = new TableWasteModel(10);
+            waste.TryAddLeftovers(5);
+
+            var removed = waste.TryRemoveLeftovers(-2);
+
+            Assert.That(removed, Is.EqualTo(0));
+            Assert.That(waste.LeftoverCount, Is.EqualTo(5));
+        }
+
+        [Test]
+        public void TryRemoveLeftovers_CanAddAfterPartialRemoval()
+        {
+            var waste = new TableWasteModel(5);
+            waste.TryAddLeftovers(5);
+
+            waste.TryRemoveLeftovers(3);
+            Assert.That(waste.RemainingCapacity, Is.EqualTo(3));
+
+            var result = waste.TryAddLeftovers(2);
+            Assert.That(result.Added, Is.True);
+            Assert.That(waste.LeftoverCount, Is.EqualTo(4));
+        }
     }
 }

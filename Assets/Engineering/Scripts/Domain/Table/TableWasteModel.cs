@@ -32,6 +32,19 @@ namespace Engineering.Scripts.Domain.Table
             return new AddLeftoversResult(true, _leftoverCount);
         }
 
+        public int TryRemoveLeftovers(int requestedAmount)
+        {
+            if (requestedAmount <= 0)
+                return 0;
+
+            var removedAmount = _leftoverCount < requestedAmount ? _leftoverCount : requestedAmount;
+            if (removedAmount <= 0)
+                return 0;
+
+            _leftoverCount -= removedAmount;
+            return removedAmount;
+        }
+
         public void Clear()
         {
             _leftoverCount = 0;
