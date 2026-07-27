@@ -15,6 +15,7 @@ namespace Engineering.Scripts.Mono.Player
 
         private readonly List<GameObject> _pizzaVisuals = new List<GameObject>();
         private PizzaInventoryModel _model;
+        private PlayerWasteInventory _wasteInventory;
 
         public int Count
         {
@@ -31,6 +32,7 @@ namespace Engineering.Scripts.Mono.Player
 
         private void Awake()
         {
+            _wasteInventory = GetComponent<PlayerWasteInventory>();
             CreateVisualPool();
             RefreshVisuals();
         }
@@ -42,6 +44,9 @@ namespace Engineering.Scripts.Mono.Player
 
         public int TryAdd(int requestedAmount)
         {
+            if (_wasteInventory != null && _wasteInventory.Count > 0)
+                return 0;
+
             EnsureModel();
             return _model.TryAdd(requestedAmount);
         }
