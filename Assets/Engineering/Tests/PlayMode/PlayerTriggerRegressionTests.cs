@@ -90,7 +90,7 @@ namespace Engineering.Tests
         }
 
         [UnityTest]
-        public IEnumerator TrashPlate_RemovesPizzaAndWasteFromScriptsInventories()
+        public IEnumerator TrashPlate_RemovesPizzasFromScriptsInventory()
         {
             var trashFixture = PlayerPrefabTestFixture.CreateTrashPlateFixture();
             _toCleanup.Add(trashFixture.StationObject);
@@ -98,7 +98,6 @@ namespace Engineering.Tests
             var player = PlayerPrefabTestFixture.InstantiatePlayer();
             _toCleanup.Add(player);
             PlayerPrefabTestFixture.AddPizzas(player, 3);
-            PlayerPrefabTestFixture.AddWaste(player, 4);
 
             var collider = PlayerPrefabTestFixture.GetPlayerCollider(player);
 
@@ -106,9 +105,28 @@ namespace Engineering.Tests
             yield return null;
 
             var pizzaInv = PlayerPrefabTestFixture.GetPizzaInventory(player);
-            var wasteInv = PlayerPrefabTestFixture.GetWasteInventory(player);
             Assert.That(pizzaInv.Count, Is.EqualTo(0),
                 "TrashPlate must remove pizzas from PlayerPizzaInventory under Scripts.");
+
+            trashFixture.Destroy();
+        }
+
+        [UnityTest]
+        public IEnumerator TrashPlate_RemovesWasteFromScriptsInventory()
+        {
+            var trashFixture = PlayerPrefabTestFixture.CreateTrashPlateFixture();
+            _toCleanup.Add(trashFixture.StationObject);
+
+            var player = PlayerPrefabTestFixture.InstantiatePlayer();
+            _toCleanup.Add(player);
+            PlayerPrefabTestFixture.AddWaste(player, 4);
+
+            var collider = PlayerPrefabTestFixture.GetPlayerCollider(player);
+
+            InvokePrivateMethod(trashFixture.Plate, "OnTriggerEnter", collider);
+            yield return null;
+
+            var wasteInv = PlayerPrefabTestFixture.GetWasteInventory(player);
             Assert.That(wasteInv.Count, Is.EqualTo(0),
                 "TrashPlate must remove waste from PlayerWasteInventory under Scripts.");
 
@@ -199,7 +217,6 @@ namespace Engineering.Tests
             var player = PlayerPrefabTestFixture.InstantiatePlayer();
             _toCleanup.Add(player);
             PlayerPrefabTestFixture.AddPizzas(player, 3);
-            PlayerPrefabTestFixture.AddWaste(player, 2);
 
             var nonPlayerCollider = new GameObject("NonPlayerCollider");
             nonPlayerCollider.tag = "Untagged";
@@ -211,11 +228,8 @@ namespace Engineering.Tests
             yield return null;
 
             var pizzaInv = PlayerPrefabTestFixture.GetPizzaInventory(player);
-            var wasteInv = PlayerPrefabTestFixture.GetWasteInventory(player);
             Assert.That(pizzaInv.Count, Is.EqualTo(3),
                 "Non-Player collider must not trash pizzas.");
-            Assert.That(wasteInv.Count, Is.EqualTo(2),
-                "Non-Player collider must not trash waste.");
 
             trashFixture.Destroy();
         }
@@ -305,7 +319,7 @@ namespace Engineering.Tests
         }
 
         [UnityTest]
-        public IEnumerator TrashPlatePhysics_RemovesPizzaAndWasteOnTriggerEnter()
+        public IEnumerator TrashPlatePhysics_RemovesPizzasOnTriggerEnter()
         {
             var trashFixture = PlayerPrefabTestFixture.CreateTrashPlateFixture();
             _toCleanup.Add(trashFixture.StationObject);
@@ -313,7 +327,6 @@ namespace Engineering.Tests
             var player = PlayerPrefabTestFixture.InstantiatePlayer();
             _toCleanup.Add(player);
             PlayerPrefabTestFixture.AddPizzas(player, 3);
-            PlayerPrefabTestFixture.AddWaste(player, 4);
             PlayerPrefabTestFixture.SetPlayerKinematic(player);
 
             player.transform.position = Vector3.zero;
@@ -324,9 +337,31 @@ namespace Engineering.Tests
             yield return new WaitForFixedUpdate();
 
             var pizzaInv = PlayerPrefabTestFixture.GetPizzaInventory(player);
-            var wasteInv = PlayerPrefabTestFixture.GetWasteInventory(player);
             Assert.That(pizzaInv.Count, Is.EqualTo(0),
                 "TrashPlate must remove pizzas via real physics OnTriggerEnter.");
+
+            trashFixture.Destroy();
+        }
+
+        [UnityTest]
+        public IEnumerator TrashPlatePhysics_RemovesWasteOnTriggerEnter()
+        {
+            var trashFixture = PlayerPrefabTestFixture.CreateTrashPlateFixture();
+            _toCleanup.Add(trashFixture.StationObject);
+
+            var player = PlayerPrefabTestFixture.InstantiatePlayer();
+            _toCleanup.Add(player);
+            PlayerPrefabTestFixture.AddWaste(player, 4);
+            PlayerPrefabTestFixture.SetPlayerKinematic(player);
+
+            player.transform.position = Vector3.zero;
+            trashFixture.StationObject.transform.position = Vector3.zero;
+
+            Physics.SyncTransforms();
+            yield return new WaitForFixedUpdate();
+            yield return new WaitForFixedUpdate();
+
+            var wasteInv = PlayerPrefabTestFixture.GetWasteInventory(player);
             Assert.That(wasteInv.Count, Is.EqualTo(0),
                 "TrashPlate must remove waste via real physics OnTriggerEnter.");
 
