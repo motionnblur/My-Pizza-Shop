@@ -88,6 +88,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 - `TrashStation` removes all pizzas from the player via `PlayerPizzaInventory.TryRemove`, retrieves visuals from an internal `UnityEngine.Pool.ObjectPool<GameObject>`, positions them at the player's pizza stack world positions, animates them to `TrashTarget` with DoTween (`DOMove` + `DOScale(0)`), then releases them back to the pool. Raises `PizzaTrashed` event for SFX. `TrashPlate` on `triggerArea` forwards player detection to the station.
 - `Table` delegates leftover-waste state to `TableWasteModel`. `TableManager` exposes `AddLeftoversToTable(tableIndex, pizzaCount)`. When `CustomerBot` transitions from `Eating` to `Leaving`, it calls `AddLeftoversToTable` with `_orderModel.InitialPizzaCount` before releasing the seat. `TableWasteVisuals` manages a pooled leftover visual stack positioned from its anchor with `leftoverStackSpacing`. No leftovers are created if the customer is destroyed or fails to reach the table.
 - Do not rename Input action maps/actions, tags, or serialized fields without updating their scene/prefab and code consumers.
+- **Player prefab contract:** `Player.prefab` must maintain the `Player[Transform] → Scripts[PlayerPizzaInventory, PlayerWasteInventory] / Mesh[CapsuleCollider, Rigidbody, PlayerTriggerRelay]` hierarchy. All interaction triggers (`GrillPlate`, `PlateTrigger`, `TrashPlate`, `TableWasteTrigger`) resolve inventories via `other.transform.root.GetComponentInChildren<T>()` after checking the `Player` tag, so the Scripts/Mesh separation and rooted hierarchy must survive any prefab changes.
 
 ## Scene And Build
 
@@ -101,9 +102,19 @@ This file is the fast entry point for AI agents and contributors. Read it before
 
 ## Validation
 
-- The project source currently declares 187 EditMode and 88 PlayMode tests. Run the affected suite after gameplay changes; test counts alone do not prove they passed.
+- The project source currently declares 262 EditMode and 163 PlayMode tests. Run the affected suite after gameplay changes; test counts alone do not prove they passed.
 - For script changes, compile in Unity and check Console errors. For gameplay changes, exercise the affected flow in Play Mode when the Editor is available.
 - Do not claim a successful build or scene validation without actually performing it.
+- **Player prefab contract:** `PlayerPrefabContractTests` (EditMode) validates the Player prefab hierarchy required by all trigger interactions — Scripts/Mesh children, inventory placement, collider, tag, and PlayerTriggerRelay wiring.
+- **Player trigger regression:** `PlayerTriggerRegressionTests` (PlayMode) runs contract-level and real-physics regression tests for GrillPlate, PlateTrigger, TrashPlate, and TableWasteTrigger interactions with an instantiated Player.prefab clone.
+
+## CI
+
+- **Workflow:** `.github/workflows/unity-tests.yml` runs on push to `dev`/`main` and PRs targeting `main`.
+- **Jobs:** separate `editmode-tests` and `playmode-tests` using Unity `6000.3.20f1` via GameCI (`game-ci/unity-test-runner@v4`).
+- **Secret:** `UNITY_LICENSE` repository secret must be configured. The workflow fails early with a clear message if the secret is missing.
+- **Artifacts:** test result XML files are uploaded as `editmode-test-results` and `playmode-test-results` on every run.
+- **Local equivalent:** run EditMode and PlayMode suites through Unity Test Runner; CI mirrors this with GameCI.
 
 ## Do Not Touch By Default
 

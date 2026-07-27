@@ -1,0 +1,92 @@
+name: Unity Tests
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  license-check:
+    name: License Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify UNITY_LICENSE secret
+        shell: bash
+        run: |
+          if [ -z "${{ secrets.UNITY_LICENSE }}" ]; then
+            echo "::error::UNITY_LICENSE secret is not configured."
+            echo "Add UNITY_LICENSE as a repository secret (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          echo "UNITY_LICENSE secret is present."
+
+  editmode-tests:
+    name: EditMode Tests
+    runs-on: ubuntu-latest
+    needs: license-check
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-EditMode-${{ hashFiles('Packages/manifest.json', 'Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            Library-EditMode-
+            Library-
+
+      - uses: game-ci/unity-test-runner@v4
+        id: editmode
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          projectPath: .
+          testMode: EditMode
+          unityVersion: 6000.3.20f1
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          checkName: EditMode Test Results
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: editmode-test-results
+          path: |
+            artifacts/*.xml
+            **/TestResults*.xml
+            **/test-results/*.xml
+
+  playmode-tests:
+    name: PlayMode Tests
+    runs-on: ubuntu-latest
+    needs: license-check
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-PlayMode-${{ hashFiles('Packages/manifest.json', 'Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            Library-PlayMode-
+            Library-
+
+      - uses: game-ci/unity-test-runner@v4
+        id: playmode
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          projectPath: .
+          testMode: PlayMode
+          unityVersion: 6000.3.20f1
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          checkName: PlayMode Test Results
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playmode-test-results
+          path: |
+            artifacts/*.xml
+            **/TestResults*.xml
+            **/test-results/*.xml

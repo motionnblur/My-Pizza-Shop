@@ -105,5 +105,9 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# Generated from Player.prefab by PlayerPrefabPrebuildSetup for PlayMode tests.
+/Assets/Engineering/Tests/PlayMode/Resources/
+/Assets/Engineering/Tests/PlayMode/Resources.meta
 plan.md
 .tasks
