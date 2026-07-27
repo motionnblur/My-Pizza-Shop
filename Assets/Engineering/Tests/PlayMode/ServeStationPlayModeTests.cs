@@ -1214,10 +1214,11 @@ namespace Engineering.Tests
             textObject.transform.SetParent(canvasObject.transform);
             var tmpText = textObject.AddComponent<TextMeshProUGUI>();
             SetPrivateField(bot, "orderText", tmpText);
+            SetPrivateField(bot, "orderTextFormat", "{0}");
 
             bot.Initialize(serveStation, new CustomerOrderModel(3), new Transform[0]);
 
-            Assert.That(tmpText.text, Is.EqualTo("Pizza: 3"));
+            Assert.That(tmpText.text, Is.EqualTo("3"));
             Assert.That(textObject.activeSelf, Is.True);
         }
 
@@ -1236,6 +1237,7 @@ namespace Engineering.Tests
             textObject.transform.SetParent(canvasObject.transform);
             var tmpText = textObject.AddComponent<TextMeshProUGUI>();
             SetPrivateField(bot, "orderText", tmpText);
+            SetPrivateField(bot, "orderTextFormat", "{0}");
 
             bot.Initialize(serveStation, new CustomerOrderModel(3), new Transform[0]);
             serveStation.TryRegisterCustomer(bot);
@@ -1244,7 +1246,7 @@ namespace Engineering.Tests
             serveStation.DepositFrom(_playerInventory);
             serveStation.ServeFrontCustomer();
 
-            Assert.That(tmpText.text, Is.EqualTo("Pizza: 2"));
+            Assert.That(tmpText.text, Is.EqualTo("2"));
             Assert.That(textObject.activeSelf, Is.True);
         }
 
@@ -1263,6 +1265,7 @@ namespace Engineering.Tests
             textObject.transform.SetParent(canvasObject.transform);
             var tmpText = textObject.AddComponent<TextMeshProUGUI>();
             SetPrivateField(bot, "orderText", tmpText);
+            SetPrivateField(bot, "orderTextFormat", "{0}");
 
             bot.Initialize(serveStation, new CustomerOrderModel(1), new Transform[0]);
             serveStation.TryRegisterCustomer(bot);
