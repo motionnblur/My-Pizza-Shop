@@ -19,16 +19,30 @@ namespace Engineering.Scripts.Mono.Actors.TrashStation
 
         private void TryProcessPlayer(Collider other)
         {
-            if (!other.CompareTag("Player") || trashStation == null)
+            if (trashStation == null)
                 return;
 
-            var playerPizzaInventory = other.GetComponentInParent<PlayerPizzaInventory>();
+            if (!IsPlayerCollider(other))
+                return;
+
+            var playerRoot = other.transform.root;
+
+            var playerPizzaInventory = playerRoot.GetComponentInChildren<PlayerPizzaInventory>();
             if (playerPizzaInventory != null && playerPizzaInventory.Count > 0)
                 trashStation.TrashAllPizzas(playerPizzaInventory);
 
-            var playerWasteInventory = other.GetComponentInParent<PlayerWasteInventory>();
+            var playerWasteInventory = playerRoot.GetComponentInChildren<PlayerWasteInventory>();
             if (playerWasteInventory != null && playerWasteInventory.Count > 0)
                 trashStation.TryDisposeWaste(playerWasteInventory);
+        }
+
+        private static bool IsPlayerCollider(Collider other)
+        {
+            if (other.CompareTag("Player"))
+                return true;
+
+            var root = other.transform.root;
+            return root != null && root.CompareTag("Player");
         }
     }
 }

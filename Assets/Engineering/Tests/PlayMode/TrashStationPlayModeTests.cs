@@ -18,6 +18,7 @@ namespace Engineering.Tests
         private GameObject _pizzaVisualPrefab;
         private STrashStation _trashSettings;
         private SVoidEventChannel _pizzaTrashedEvent;
+        private readonly List<GameObject> _toCleanup = new();
 
         [UnityTearDown]
         public IEnumerator TearDown()
@@ -36,6 +37,13 @@ namespace Engineering.Tests
 
             if (_pizzaTrashedEvent != null)
                 Object.Destroy(_pizzaTrashedEvent);
+
+            foreach (var go in _toCleanup)
+            {
+                if (go != null)
+                    Object.Destroy(go);
+            }
+            _toCleanup.Clear();
 
             yield return null;
         }
@@ -308,6 +316,297 @@ namespace Engineering.Tests
             yield return null;
 
             Assert.That(_playerObject.GetComponent<PlayerPizzaInventory>().Count, Is.EqualTo(0));
+        }
+
+        [UnityTest]
+        public IEnumerator TrashPlateTrigger_RealPrefabHierarchy_WasteDisposed()
+        {
+            CreateTrashStationWithWaste();
+            yield return null;
+
+            var playerRoot = CreatePlayerWithSiblingHierarchy(wasteCount: 5);
+            var trashPlate = _trashStationObject.GetComponentInChildren<TrashPlate>();
+
+            var meshChild = playerRoot.transform.Find("Mesh");
+            var childCollider = meshChild.GetComponent<Collider>();
+
+            InvokePrivateMethod(trashPlate, "OnTriggerEnter", childCollider);
+            yield return null;
+
+            var wasteInv = playerRoot.transform.Find("Scripts").GetComponent<PlayerWasteInventory>();
+            Assert.That(wasteInv.Count, Is.EqualTo(0), "Waste should be disposed through sibling hierarchy lookup.");
+        }
+
+        [UnityTest]
+        public IEnumerator TrashPlateTrigger_ChildColliderRootTag_WasteDisposed()
+        {
+            CreateTrashStationWithWaste();
+            yield return null;
+
+            var playerRoot = CreatePlayerWithSiblingHierarchy(wasteCount: 3, tagRootOnly: true);
+            var trashPlate = _trashStationObject.GetComponentInChildren<TrashPlate>();
+
+            var meshChild = playerRoot.transform.Find("Mesh");
+            var childCollider = meshChild.GetComponent<Collider>();
+
+            InvokePrivateMethod(trashPlate, "OnTriggerEnter", childCollider);
+            yield return null;
+
+            var wasteInv = playerRoot.transform.Find("Scripts").GetComponent<PlayerWasteInventory>();
+            Assert.That(wasteInv.Count, Is.EqualTo(0), "Waste should be disposed when tag is on root only.");
+        }
+
+        [UnityTest]
+        public IEnumerator TrashPlateTrigger_NonPlayerChildCollider_Ignored()
+        {
+            CreateTrashStationWithWaste();
+            yield return null;
+
+            var nonPlayerRoot = new GameObject("NonPlayerRoot");
+            nonPlayerRoot.tag = "Untagged";
+            nonPlayerRoot.SetActive(false);
+            var child = new GameObject("Child");
+            child.transform.SetParent(nonPlayerRoot.transform);
+            var childCollider = child.AddComponent<BoxCollider>();
+            childCollider.isTrigger = false;
+            nonPlayerRoot.SetActive(true);
+            _toCleanup.Add(nonPlayerRoot);
+
+            var trashPlate = _trashStationObject.GetComponentInChildren<TrashPlate>();
+
+            InvokePrivateMethod(trashPlate, "OnTriggerEnter", childCollider);
+            yield return null;
+
+            var wasteInv = _trashStationObject.GetComponent<TrashStation>();
+            var isWasteAnimating = typeof(TrashStation).GetField("_isWasteAnimating",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That((bool)isWasteAnimating.GetValue(wasteInv), Is.False,
+                "Waste animation should not start for non-player.");
+        }
+
+        [UnityTest]
+        public IEnumerator TrashPlateTrigger_PlayerWithoutWasteInventory_Ignored()
+        {
+            CreateTrashStationWithWaste();
+            yield return null;
+
+            var playerRoot = CreatePlayerWithSiblingHierarchy(wasteCount: 0, includeWasteInventory: false);
+            var trashPlate = _trashStationObject.GetComponentInChildren<TrashPlate>();
+
+            var meshChild = playerRoot.transform.Find("Mesh");
+            var childCollider = meshChild.GetComponent<Collider>();
+
+            InvokePrivateMethod(trashPlate, "OnTriggerEnter", childCollider);
+            yield return null;
+
+            var trashStation = _trashStationObject.GetComponent<TrashStation>();
+            var isWasteAnimating = typeof(TrashStation).GetField("_isWasteAnimating",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That((bool)isWasteAnimating.GetValue(trashStation), Is.False,
+                "Waste animation should not start for player without waste inventory.");
+        }
+
+        [UnityTest]
+        public IEnumerator TrashPlateTrigger_PizzaStillWorksWithSiblingHierarchy()
+        {
+            CreateFixture(playerPizzaCount: 0);
+            yield return null;
+
+            _playerObject.tag = "Player";
+
+            var scriptsChild = new GameObject("Scripts");
+            scriptsChild.transform.SetParent(_playerObject.transform);
+
+            var meshChild = new GameObject("Mesh");
+            meshChild.transform.SetParent(_playerObject.transform);
+            var meshCollider = meshChild.AddComponent<BoxCollider>();
+
+            _playerObject.GetComponent<PlayerPizzaInventory>().TryAdd(4);
+            yield return null;
+
+            var trashPlate = _trashStationObject.GetComponentInChildren<TrashPlate>();
+
+            InvokePrivateMethod(trashPlate, "OnTriggerEnter", meshCollider);
+            yield return null;
+
+            Assert.That(_playerObject.GetComponent<PlayerPizzaInventory>().Count, Is.EqualTo(0),
+                "Pizzas should still be trashed through sibling hierarchy.");
+        }
+
+        [UnityTest]
+        public IEnumerator TrashPlateTrigger_WasteNotRetriggeredWhileAnimating()
+        {
+            CreateTrashStationWithWaste();
+            yield return null;
+
+            var trashStation = _trashStationObject.GetComponent<TrashStation>();
+            var isWasteAnimatingField = typeof(TrashStation).GetField("_isWasteAnimating",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            isWasteAnimatingField.SetValue(trashStation, true);
+
+            var playerRoot = CreatePlayerWithSiblingHierarchy(wasteCount: 5);
+            var trashPlate = _trashStationObject.GetComponentInChildren<TrashPlate>();
+            var meshChild = playerRoot.transform.Find("Mesh");
+            var childCollider = meshChild.GetComponent<Collider>();
+
+            InvokePrivateMethod(trashPlate, "OnTriggerEnter", childCollider);
+            yield return null;
+
+            var wasteInv = playerRoot.transform.Find("Scripts").GetComponent<PlayerWasteInventory>();
+            Assert.That(wasteInv.Count, Is.EqualTo(5),
+                "Waste should not be disposed while waste animation is active.");
+        }
+
+        [UnityTest]
+        public IEnumerator TrashPlateTrigger_WasteDisposedEventRaisedOnce()
+        {
+            CreateTrashStationWithWaste();
+            var channel = ScriptableObject.CreateInstance<SVoidEventChannel>();
+            SetPrivateField(_trashStationObject.GetComponent<TrashStation>(),
+                "wasteDisposedEvent", channel);
+            yield return null;
+
+            var invocationCount = 0;
+            channel.RegisterListener(() => invocationCount++);
+
+            var playerRoot = CreatePlayerWithSiblingHierarchy(wasteCount: 3);
+            var trashPlate = _trashStationObject.GetComponentInChildren<TrashPlate>();
+            var meshChild = playerRoot.transform.Find("Mesh");
+            var childCollider = meshChild.GetComponent<Collider>();
+
+            InvokePrivateMethod(trashPlate, "OnTriggerEnter", childCollider);
+            yield return new WaitForSeconds(0.2f);
+
+            Assert.That(invocationCount, Is.EqualTo(1),
+                "WasteDisposed event should be raised exactly once.");
+
+            Object.Destroy(channel);
+        }
+
+        [UnityTest]
+        public IEnumerator TrashPlateTrigger_WasteDisposed_RemovesWasteAndReleasesVisuals()
+        {
+            CreateTrashStationWithWaste(includeWasteVisualPrefab: true);
+            yield return null;
+
+            var playerRoot = CreatePlayerWithSiblingHierarchy(wasteCount: 3);
+            var trashPlate = _trashStationObject.GetComponentInChildren<TrashPlate>();
+            var meshChild = playerRoot.transform.Find("Mesh");
+            var childCollider = meshChild.GetComponent<Collider>();
+
+            InvokePrivateMethod(trashPlate, "OnTriggerEnter", childCollider);
+            yield return new WaitForSeconds(0.2f);
+
+            var wasteInv = playerRoot.transform.Find("Scripts").GetComponent<PlayerWasteInventory>();
+            Assert.That(wasteInv.Count, Is.EqualTo(0), "Waste count should be zero after disposal.");
+
+            var trashStation = _trashStationObject.GetComponent<TrashStation>();
+            var activeWasteVisuals = typeof(TrashStation).GetField("_activeWasteVisuals",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            var activeList = (List<GameObject>)activeWasteVisuals.GetValue(trashStation);
+            Assert.That(activeList.Count, Is.EqualTo(0),
+                "All waste visuals should be released after animation completes.");
+
+            var wastePool = typeof(TrashStation).GetField("_wastePool",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            var pool = (ObjectPool<GameObject>)wastePool.GetValue(trashStation);
+            Assert.That(pool.CountInactive, Is.EqualTo(3),
+                "Released waste visuals should be inactive in the pool after completion.");
+        }
+
+        [UnityTest]
+        public IEnumerator TrashPlateTrigger_WasteDisposedWithoutVisuals()
+        {
+            CreateTrashStationWithWaste(includeWasteVisualPrefab: false);
+            yield return null;
+
+            var playerRoot = CreatePlayerWithSiblingHierarchy(wasteCount: 3);
+            var trashPlate = _trashStationObject.GetComponentInChildren<TrashPlate>();
+            var meshChild = playerRoot.transform.Find("Mesh");
+            var childCollider = meshChild.GetComponent<Collider>();
+
+            InvokePrivateMethod(trashPlate, "OnTriggerEnter", childCollider);
+            yield return null;
+
+            var wasteInv = playerRoot.transform.Find("Scripts").GetComponent<PlayerWasteInventory>();
+            Assert.That(wasteInv.Count, Is.EqualTo(0),
+                "Waste should be disposed even without visual prefab.");
+        }
+
+        private void CreateTrashStationWithWaste(bool includeWasteVisualPrefab = true)
+        {
+            _trashSettings = ScriptableObject.CreateInstance<STrashStation>();
+            _trashSettings.animationDuration = 0.01f;
+            _trashSettings.staggerDelay = 0.01f;
+
+            _trashStationObject = new GameObject("TrashStationTest");
+            _trashStationObject.SetActive(false);
+            var trashStation = _trashStationObject.AddComponent<TrashStation>();
+
+            var trashTarget = new GameObject("TrashTargetTest");
+            trashTarget.transform.SetParent(_trashStationObject.transform);
+
+            SetPrivateField(trashStation, "sTrashStation", _trashSettings);
+
+            if (includeWasteVisualPrefab)
+            {
+                var wastePrefab = new GameObject("DummyWasteVisual");
+                wastePrefab.SetActive(false);
+                _toCleanup.Add(wastePrefab);
+                SetPrivateField(trashStation, "wasteVisualPrefab", wastePrefab);
+            }
+
+            SetPrivateField(trashStation, "trashTarget", trashTarget.transform);
+
+            var plateObject = new GameObject("TrashPlateTest");
+            plateObject.transform.SetParent(_trashStationObject.transform);
+            var plateCollider = plateObject.AddComponent<BoxCollider>();
+            plateCollider.isTrigger = true;
+            var trashPlate = plateObject.AddComponent<TrashPlate>();
+            SetPrivateField(trashPlate, "trashStation", trashStation);
+
+            _trashStationObject.SetActive(true);
+        }
+
+        private GameObject CreatePlayerWithSiblingHierarchy(
+            int wasteCount,
+            bool includeWasteInventory = true,
+            bool tagRootOnly = false)
+        {
+            var playerRoot = new GameObject("PlayerRoot");
+            playerRoot.SetActive(false);
+            playerRoot.tag = "Player";
+
+            var scriptsChild = new GameObject("Scripts");
+            scriptsChild.transform.SetParent(playerRoot.transform);
+            if (!tagRootOnly)
+                scriptsChild.tag = "Player";
+
+            if (includeWasteInventory)
+            {
+                var wasteInv = scriptsChild.AddComponent<PlayerWasteInventory>();
+                var wasteAnchor = new GameObject("WasteStackAnchor");
+                wasteAnchor.transform.SetParent(scriptsChild.transform);
+                SetPrivateField(wasteInv, "capacity", 10);
+                SetPrivateField(wasteInv, "wasteStackAnchor", wasteAnchor.transform);
+            }
+
+            var meshChild = new GameObject("Mesh");
+            meshChild.transform.SetParent(playerRoot.transform);
+            if (!tagRootOnly)
+                meshChild.tag = "Player";
+            meshChild.AddComponent<BoxCollider>();
+
+            playerRoot.SetActive(true);
+
+            if (includeWasteInventory && wasteCount > 0)
+            {
+                var wasteInv = scriptsChild.GetComponent<PlayerWasteInventory>();
+                wasteInv.TryAdd(wasteCount);
+            }
+
+            _toCleanup.Add(playerRoot);
+            return playerRoot;
         }
 
         private void CreateFixture(
