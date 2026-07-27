@@ -2,6 +2,7 @@ using Engineering.Scripts.Mono.Actors.Table;
 using Engineering.Scripts.Mono.Actors.TrashStation;
 using Engineering.Scripts.Mono.Player;
 using UnityEditor;
+using UnityEditor.TestTools.TestRunner.Api;
 using UnityEngine;
 
 public static class WasteSystemSetup
@@ -203,5 +204,18 @@ public static class WasteSystemSetup
         {
             Object.DestroyImmediate(prefabRoot);
         }
+    }
+
+    [MenuItem("Tools/Waste System/Run Waste Tests")]
+    public static void RunWasteTests()
+    {
+        var api = ScriptableObject.CreateInstance<TestRunnerApi>();
+        var filter = new Filter
+        {
+            testMode = TestMode.PlayMode,
+            groupNames = new[] { "Engineering.Tests.TableWastePlayModeTests", "Engineering.Tests.TrashStationPlayModeTests" }
+        };
+        api.Execute(new ExecutionSettings(filter));
+        Debug.Log("Waste system PlayMode tests triggered.");
     }
 }
