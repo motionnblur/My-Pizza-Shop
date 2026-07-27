@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Engineering.Scripts.Mono.Actors.Table
 {
-    [RequireComponent(typeof(Collider))]
+    [RequireComponent(typeof(BoxCollider))]
     public class TableWasteTrigger : MonoBehaviour
     {
         [SerializeField] private Table table;
