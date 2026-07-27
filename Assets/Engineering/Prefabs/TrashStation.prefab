@@ -261,3 +261,5 @@ MonoBehaviour:
   pizzaVisualPrefab: {fileID: 6504674961691310178, guid: 16bdc8937be73d74ba3a701b01cbbf0a, type: 3}
   trashTarget: {fileID: 5551111111111115002}
   pizzaTrashedEvent: {fileID: 11400000, guid: f1f2f3f4e5e6d7c8b9a0a1a2a3a4b5c6, type: 2}
+  wasteVisualPrefab: {fileID: 7604092308326701355, guid: 6e2d416ff308f2842b40de28763f132c, type: 3}
+  wasteDisposedEvent: {fileID: 11400000, guid: c7d8e9f0a1b2c3d4e5f60718293a4b5c, type: 2}
