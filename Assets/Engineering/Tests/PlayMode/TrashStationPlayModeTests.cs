@@ -61,7 +61,7 @@ namespace Engineering.Tests
             yield return null;
 
             var trashStation = _trashStationObject.GetComponent<TrashStation>();
-            var isAnimatingField = typeof(TrashStation).GetField("_isAnimating",
+            var isAnimatingField = typeof(TrashStation).GetField("_isPizzaAnimating",
                 BindingFlags.Instance | BindingFlags.NonPublic);
 
             trashStation.TrashAllPizzas(_playerObject.GetComponent<PlayerPizzaInventory>());
@@ -79,7 +79,7 @@ namespace Engineering.Tests
             yield return null;
 
             var trashStation = _trashStationObject.GetComponent<TrashStation>();
-            var isAnimatingField = typeof(TrashStation).GetField("_isAnimating",
+            var isAnimatingField = typeof(TrashStation).GetField("_isPizzaAnimating",
                 BindingFlags.Instance | BindingFlags.NonPublic);
 
             trashStation.TrashAllPizzas(null);
@@ -111,7 +111,7 @@ namespace Engineering.Tests
             yield return null;
 
             var trashStation = _trashStationObject.GetComponent<TrashStation>();
-            var isAnimatingField = typeof(TrashStation).GetField("_isAnimating",
+            var isAnimatingField = typeof(TrashStation).GetField("_isPizzaAnimating",
                 BindingFlags.Instance | BindingFlags.NonPublic);
             isAnimatingField.SetValue(trashStation, true);
 
@@ -263,7 +263,7 @@ namespace Engineering.Tests
             yield return null;
 
             var trashStation = _trashStationObject.GetComponent<TrashStation>();
-            var isAnimatingField = typeof(TrashStation).GetField("_isAnimating",
+            var isAnimatingField = typeof(TrashStation).GetField("_isPizzaAnimating",
                 BindingFlags.Instance | BindingFlags.NonPublic);
 
             trashStation.TrashAllPizzas(_playerObject.GetComponent<PlayerPizzaInventory>());
@@ -273,7 +273,7 @@ namespace Engineering.Tests
             var activeVisuals = GetActiveVisuals(trashStation);
             Assert.That(activeVisuals.Count, Is.EqualTo(0), "All visuals released after animation completes");
             Assert.That((bool)isAnimatingField.GetValue(trashStation), Is.False,
-                "_isAnimating should be false after all animations finish");
+                "_isPizzaAnimating should be false after all animations finish");
         }
 
         [UnityTest]
@@ -377,9 +377,9 @@ namespace Engineering.Tests
 
         private static List<GameObject> GetActiveVisuals(TrashStation station)
         {
-            var field = typeof(TrashStation).GetField("_activeVisuals",
+            var field = typeof(TrashStation).GetField("_activePizzaVisuals",
                 BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.That(field, Is.Not.Null, "Expected TrashStation to define '_activeVisuals'.");
+            Assert.That(field, Is.Not.Null, "Expected TrashStation to define '_activePizzaVisuals'.");
             return (List<GameObject>)field.GetValue(station);
         }
 

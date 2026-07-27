@@ -13,7 +13,10 @@ namespace Engineering.Scripts.Mono.Actors.Table
 
         private void OnTriggerEnter(Collider other)
         {
-            if (!other.CompareTag("Player") || table == null || _isProcessing)
+            if (table == null || _isProcessing)
+                return;
+
+            if (!IsPlayerCollider(other))
                 return;
 
             _hasPlayerInside = true;
@@ -22,7 +25,10 @@ namespace Engineering.Scripts.Mono.Actors.Table
 
         private void OnTriggerStay(Collider other)
         {
-            if (!other.CompareTag("Player") || table == null || _isProcessing || !_hasPlayerInside)
+            if (table == null || _isProcessing || !_hasPlayerInside)
+                return;
+
+            if (!IsPlayerCollider(other))
                 return;
 
             TryCollectWaste(other);
@@ -30,8 +36,17 @@ namespace Engineering.Scripts.Mono.Actors.Table
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.CompareTag("Player"))
+            if (IsPlayerCollider(other))
                 _hasPlayerInside = false;
+        }
+
+        private static bool IsPlayerCollider(Collider other)
+        {
+            if (other.CompareTag("Player"))
+                return true;
+
+            var root = other.transform.root;
+            return root != null && root.CompareTag("Player");
         }
 
         private void TryCollectWaste(Collider playerCollider)
@@ -60,3 +75,5 @@ namespace Engineering.Scripts.Mono.Actors.Table
         }
     }
 }
+
+

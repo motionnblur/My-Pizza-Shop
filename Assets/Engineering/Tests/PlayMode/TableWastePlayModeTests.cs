@@ -449,7 +449,117 @@ namespace Engineering.Tests
             Object.Destroy(channel);
         }
 
-        // --- Test 14: Player without waste inventory ---
+        // --- Test 14: Child collider (tag on root, not on child) ---
+
+        [UnityTest]
+        public IEnumerator TableWasteTrigger_ChildColliderDetectedViaRootTag()
+        {
+            var (table, _, _) = CreateTableWithWaste(1, 10);
+            table.AddLeftovers(4);
+            yield return null;
+
+            var player = new GameObject("PlayerRoot");
+            player.tag = "Player";
+            player.SetActive(false);
+
+            var child = new GameObject("ChildCollider");
+            child.transform.SetParent(player.transform);
+            child.tag = "Untagged";
+            var childCollider = child.AddComponent<BoxCollider>();
+            childCollider.isTrigger = true;
+
+            var wasteInv = child.AddComponent<PlayerWasteInventory>();
+            SetPrivateField(wasteInv, "capacity", 10);
+            var wasteAnchor = new GameObject("WasteAnchor");
+            wasteAnchor.transform.SetParent(child.transform);
+            SetPrivateField(wasteInv, "wasteStackAnchor", wasteAnchor.transform);
+            SetPrivateField(wasteInv, "leftoverVisualPrefab", CreateLeftoverPrefab());
+
+            player.SetActive(true);
+            _toCleanup.Add(player);
+
+            var triggerGO = new GameObject("TableWasteTrigger");
+            triggerGO.transform.SetParent(player.transform);
+            var trigger = triggerGO.AddComponent<TableWasteTrigger>();
+            SetPrivateField(trigger, "table", table);
+
+            InvokePrivateMethod(trigger, "OnTriggerEnter", childCollider);
+            yield return null;
+
+            Assert.That(wasteInv.Count, Is.EqualTo(4),
+                "Player waste inventory should collect via child collider.");
+            Assert.That(table.LeftoverCount, Is.EqualTo(0), "Table should have 0 leftovers.");
+        }
+
+        // --- Test 15: Root collider (tag on root object, collider on root) ---
+
+        [UnityTest]
+        public IEnumerator TableWasteTrigger_RootColliderDetectedViaTag()
+        {
+            var (table, _, _) = CreateTableWithWaste(1, 10);
+            table.AddLeftovers(3);
+            yield return null;
+
+            var player = new GameObject("PlayerRoot");
+            player.tag = "Player";
+            player.SetActive(false);
+
+            var rootCollider = player.AddComponent<BoxCollider>();
+            rootCollider.isTrigger = true;
+
+            var wasteAnchor = new GameObject("WasteAnchor");
+            wasteAnchor.transform.SetParent(player.transform);
+            var wasteInv = player.AddComponent<PlayerWasteInventory>();
+            SetPrivateField(wasteInv, "capacity", 10);
+            SetPrivateField(wasteInv, "wasteStackAnchor", wasteAnchor.transform);
+            SetPrivateField(wasteInv, "leftoverVisualPrefab", CreateLeftoverPrefab());
+
+            player.SetActive(true);
+            _toCleanup.Add(player);
+
+            var triggerGO = new GameObject("TableWasteTrigger");
+            var trigger = triggerGO.AddComponent<TableWasteTrigger>();
+            SetPrivateField(trigger, "table", table);
+
+            InvokePrivateMethod(trigger, "OnTriggerEnter", rootCollider);
+            yield return null;
+
+            Assert.That(wasteInv.Count, Is.EqualTo(3),
+                "Player waste inventory should collect via root collider.");
+            Assert.That(table.LeftoverCount, Is.EqualTo(0), "Table should have 0 leftovers.");
+        }
+
+        // --- Test 16: Non-player child collider is ignored ---
+
+        [UnityTest]
+        public IEnumerator TableWasteTrigger_NonPlayerChildColliderIgnored()
+        {
+            var (table, _, _) = CreateTableWithWaste(1, 10);
+            table.AddLeftovers(2);
+            yield return null;
+
+            var nonPlayerRoot = new GameObject("NonPlayerRoot");
+            nonPlayerRoot.tag = "Untagged";
+
+            var child = new GameObject("ChildWithCollider");
+            child.transform.SetParent(nonPlayerRoot.transform);
+            var childCollider = child.AddComponent<BoxCollider>();
+            childCollider.isTrigger = true;
+
+            _toCleanup.Add(nonPlayerRoot);
+
+            var triggerGO = new GameObject("TableWasteTrigger");
+            var trigger = triggerGO.AddComponent<TableWasteTrigger>();
+            SetPrivateField(trigger, "table", table);
+
+            InvokePrivateMethod(trigger, "OnTriggerEnter", childCollider);
+            yield return null;
+
+            Assert.That(table.LeftoverCount, Is.EqualTo(2),
+                "Table leftovers should remain unchanged for non-player child.");
+        }
+
+        // --- Test 17: Player without waste inventory ---
 
         [UnityTest]
         public IEnumerator TableWasteTrigger_PlayerWithoutWasteInventory_Ignored()
@@ -497,3 +607,4 @@ namespace Engineering.Tests
         }
     }
 }
+
