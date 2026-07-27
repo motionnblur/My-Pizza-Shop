@@ -1363,8 +1363,8 @@ namespace Engineering.Tests
             _tableManagerObject = new GameObject("TableManager");
             _tableManager = _tableManagerObject.AddComponent<TableManager>();
             var tableObject = new GameObject("Table");
+            tableObject.SetActive(false);
             tableObject.transform.SetParent(_tableManagerObject.transform);
-            var tableComponent = tableObject.AddComponent<Table>();
             var seatA = new GameObject("SeatA");
             seatA.transform.SetParent(tableObject.transform);
             var seatB = new GameObject("SeatB");
@@ -1373,8 +1373,10 @@ namespace Engineering.Tests
             seatC.transform.SetParent(tableObject.transform);
             var seatD = new GameObject("SeatD");
             seatD.transform.SetParent(tableObject.transform);
+            var tableComponent = tableObject.AddComponent<Table>();
             SetPrivateField(tableComponent, "seatTransforms",
                 new[] { seatA.transform, seatB.transform, seatC.transform, seatD.transform });
+            tableObject.SetActive(true);
             SetPrivateField(_tableManager, "tables", new[] { tableComponent });
 
             var exitPointObject = new GameObject("ExitPoint");
