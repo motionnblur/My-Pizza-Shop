@@ -559,7 +559,52 @@ namespace Engineering.Tests
                 "Table leftovers should remain unchanged for non-player child.");
         }
 
-        // --- Test 17: Player without waste inventory ---
+        // --- Test 17: Real prefab hierarchy — collider on root, inventory on sibling child ---
+
+        [UnityTest]
+        public IEnumerator TableWasteTrigger_SiblingChildInventory_CollectsFromTable()
+        {
+            var (table, _, _) = CreateTableWithWaste(1, 10);
+            table.AddLeftovers(6);
+            yield return null;
+
+            Assert.That(table.LeftoverCount, Is.EqualTo(6), "Table should have 6 leftovers initially.");
+
+            // Real prefab hierarchy: PlayerRoot (tagged Player) → Scripts child has PlayerWasteInventory, root has collider
+            var playerRoot = new GameObject("PlayerRoot");
+            playerRoot.tag = "Player";
+            playerRoot.SetActive(false);
+
+            var rootCollider = playerRoot.AddComponent<BoxCollider>();
+            rootCollider.isTrigger = true;
+
+            var scriptsChild = new GameObject("Scripts");
+            scriptsChild.transform.SetParent(playerRoot.transform);
+            scriptsChild.tag = "Untagged";
+
+            var wasteInv = scriptsChild.AddComponent<PlayerWasteInventory>();
+            SetPrivateField(wasteInv, "capacity", 10);
+            var wasteAnchor = new GameObject("WasteAnchor");
+            wasteAnchor.transform.SetParent(scriptsChild.transform);
+            SetPrivateField(wasteInv, "wasteStackAnchor", wasteAnchor.transform);
+            SetPrivateField(wasteInv, "leftoverVisualPrefab", CreateLeftoverPrefab());
+
+            playerRoot.SetActive(true);
+            _toCleanup.Add(playerRoot);
+
+            var triggerGO = new GameObject("TableWasteTrigger");
+            var trigger = triggerGO.AddComponent<TableWasteTrigger>();
+            SetPrivateField(trigger, "table", table);
+
+            InvokePrivateMethod(trigger, "OnTriggerEnter", rootCollider);
+            yield return null;
+
+            Assert.That(wasteInv.Count, Is.EqualTo(6),
+                "PlayerWasteInventory on sibling Scripts child should receive leftovers from root collider entry.");
+            Assert.That(table.LeftoverCount, Is.EqualTo(0), "Table should have 0 leftovers after collection.");
+        }
+
+        // --- Test 18: Player without waste inventory ---
 
         [UnityTest]
         public IEnumerator TableWasteTrigger_PlayerWithoutWasteInventory_Ignored()

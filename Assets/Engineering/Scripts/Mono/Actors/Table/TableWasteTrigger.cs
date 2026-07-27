@@ -51,7 +51,7 @@ namespace Engineering.Scripts.Mono.Actors.Table
 
         private void TryCollectWaste(Collider playerCollider)
         {
-            var wasteInventory = playerCollider.GetComponentInParent<PlayerWasteInventory>();
+            var wasteInventory = playerCollider.transform.root.GetComponentInChildren<PlayerWasteInventory>();
             if (wasteInventory == null)
                 return;
 
