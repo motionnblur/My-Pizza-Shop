@@ -67,9 +67,9 @@ namespace Engineering.Scripts.Mono.Actors.Table
 
             _isProcessing = true;
 
-            var removed = table.TryRemoveLeftovers(transferAmount);
-            if (removed > 0)
-                wasteInventory.TryAdd(removed);
+            var added = wasteInventory.TryAdd(transferAmount);
+            if (added > 0)
+                table.TryRemoveLeftovers(added);
 
             _isProcessing = false;
         }
