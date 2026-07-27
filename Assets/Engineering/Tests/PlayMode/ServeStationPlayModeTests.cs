@@ -602,6 +602,40 @@ namespace Engineering.Tests
         }
 
         [UnityTest]
+        public IEnumerator PlateTrigger_FindsInventoryOnPlayerScriptsSibling()
+        {
+            CreateQueueFixture(maxQueueCustomers: 2, pricePerPizza: 10, playerPizzaCount: 0);
+            yield return null;
+
+            var serveStation = _serveStationObject.GetComponent<ServeStation>();
+            var playerRoot = new GameObject("Player");
+            playerRoot.tag = "Player";
+
+            var scriptsObject = new GameObject("Scripts");
+            scriptsObject.transform.SetParent(playerRoot.transform);
+            var inventory = scriptsObject.AddComponent<PlayerPizzaInventory>();
+            inventory.TryAdd(3);
+
+            var meshObject = new GameObject("Mesh");
+            meshObject.transform.SetParent(playerRoot.transform);
+            meshObject.tag = "Player";
+            var playerCollider = meshObject.AddComponent<BoxCollider>();
+
+            var plateTriggerObject = new GameObject("PlateTrigger");
+            plateTriggerObject.transform.SetParent(_serveStationObject.transform);
+            var plateTrigger = plateTriggerObject.AddComponent<PlateTrigger>();
+            SetPrivateField(plateTrigger, "serveStation", serveStation);
+
+            InvokePrivateMethod(plateTrigger, "OnTriggerEnter", playerCollider);
+
+            Assert.That(inventory.Count, Is.EqualTo(0));
+            Assert.That(serveStation.StoredPizzaCount, Is.EqualTo(3));
+
+            Object.Destroy(playerRoot);
+            Object.Destroy(plateTriggerObject);
+        }
+
+        [UnityTest]
         public IEnumerator CustomerSpawner_OrdersWithinRange()
         {
             CreateQueueFixture(maxQueueCustomers: 10, pricePerPizza: 10, playerPizzaCount: 0);

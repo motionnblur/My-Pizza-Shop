@@ -11,7 +11,8 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             if (!other.CompareTag("Player") || serveStation == null)
                 return;
 
-            var playerInventory = other.GetComponentInParent<PlayerPizzaInventory>();
+            var playerRoot = other.transform.root;
+            var playerInventory = playerRoot.GetComponentInChildren<PlayerPizzaInventory>();
             serveStation.DepositFrom(playerInventory);
         }
     }
