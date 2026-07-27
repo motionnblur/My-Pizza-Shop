@@ -159,6 +159,64 @@ namespace Engineering.Tests
         }
 
         // ---------------------------------------------------------------------
+        // Mutual-exclusion tests: player cannot carry pizzas and waste at once.
+        // ---------------------------------------------------------------------
+
+        [UnityTest]
+        public IEnumerator GrillPlate_DoesNotCollectPizzas_WhenPlayerHasWaste()
+        {
+            var grillFixture = PlayerPrefabTestFixture.CreateGrillStationFixture(
+                maxReadyPizzas: 3, productionInterval: 0.02f);
+            _toCleanup.Add(grillFixture.StationObject);
+
+            yield return new WaitForSeconds(0.2f);
+            Assert.That(grillFixture.Station.ReadyPizzaCount, Is.EqualTo(3));
+
+            var player = PlayerPrefabTestFixture.InstantiatePlayer();
+            _toCleanup.Add(player);
+            PlayerPrefabTestFixture.AddWaste(player, 2);
+
+            var collider = PlayerPrefabTestFixture.GetPlayerCollider(player);
+
+            InvokePrivateMethod(grillFixture.Plate, "OnTriggerEnter", collider);
+            yield return null;
+
+            var pizzaInv = PlayerPrefabTestFixture.GetPizzaInventory(player);
+            Assert.That(pizzaInv.Count, Is.EqualTo(0),
+                "GrillPlate must not collect pizzas when player carries waste.");
+            Assert.That(grillFixture.Station.ReadyPizzaCount, Is.EqualTo(3),
+                "GrillStation pizzas must be preserved.");
+
+            grillFixture.Destroy();
+        }
+
+        [UnityTest]
+        public IEnumerator TableWasteTrigger_DoesNotCollectWaste_WhenPlayerHasPizzas()
+        {
+            var tableFixture = PlayerPrefabTestFixture.CreateTableWasteFixture(
+                maxLeftovers: 10, initialLeftovers: 5);
+            _toCleanup.Add(tableFixture.TableObject);
+            _toCleanup.Add(tableFixture.TriggerObject);
+
+            var player = PlayerPrefabTestFixture.InstantiatePlayer();
+            _toCleanup.Add(player);
+            PlayerPrefabTestFixture.AddPizzas(player, 3);
+
+            var collider = PlayerPrefabTestFixture.GetPlayerCollider(player);
+
+            InvokePrivateMethod(tableFixture.Trigger, "OnTriggerEnter", collider);
+            yield return null;
+
+            var wasteInv = PlayerPrefabTestFixture.GetWasteInventory(player);
+            Assert.That(wasteInv.Count, Is.EqualTo(0),
+                "TableWasteTrigger must not collect waste when player carries pizzas.");
+            Assert.That(tableFixture.Table.LeftoverCount, Is.EqualTo(5),
+                "Table leftovers must be preserved when player has pizzas.");
+
+            tableFixture.Destroy();
+        }
+
+        // ---------------------------------------------------------------------
         // Negative tests: non-Player colliders do not alter state.
         // ---------------------------------------------------------------------
 
@@ -390,6 +448,68 @@ namespace Engineering.Tests
             Assert.That(wasteInv.Count, Is.EqualTo(5),
                 "TableWasteTrigger must transfer leftovers via real physics OnTriggerEnter.");
             Assert.That(tableFixture.Table.LeftoverCount, Is.EqualTo(0));
+
+            tableFixture.Destroy();
+        }
+
+        // ---------------------------------------------------------------------
+        // Physics mutual-exclusion tests.
+        // ---------------------------------------------------------------------
+
+        [UnityTest]
+        public IEnumerator Physics_GrillPlate_DoesNotCollectPizzas_WhenPlayerHasWaste()
+        {
+            var grillFixture = PlayerPrefabTestFixture.CreateGrillStationFixture(
+                maxReadyPizzas: 3, productionInterval: 0.02f);
+            _toCleanup.Add(grillFixture.StationObject);
+
+            yield return new WaitForSeconds(0.2f);
+            Assert.That(grillFixture.Station.ReadyPizzaCount, Is.EqualTo(3));
+
+            var player = PlayerPrefabTestFixture.InstantiatePlayer();
+            _toCleanup.Add(player);
+            PlayerPrefabTestFixture.AddWaste(player, 2);
+            PlayerPrefabTestFixture.SetPlayerKinematic(player);
+
+            player.transform.position = Vector3.zero;
+            grillFixture.StationObject.transform.position = Vector3.zero;
+
+            Physics.SyncTransforms();
+            yield return new WaitForFixedUpdate();
+
+            var pizzaInv = PlayerPrefabTestFixture.GetPizzaInventory(player);
+            Assert.That(pizzaInv.Count, Is.EqualTo(0),
+                "Physics: GrillPlate must not collect pizzas when player carries waste.");
+            Assert.That(grillFixture.Station.ReadyPizzaCount, Is.EqualTo(3),
+                "Physics: GrillStation pizzas must be preserved.");
+
+            grillFixture.Destroy();
+        }
+
+        [UnityTest]
+        public IEnumerator Physics_TableWasteTrigger_DoesNotCollectWaste_WhenPlayerHasPizzas()
+        {
+            var tableFixture = PlayerPrefabTestFixture.CreateTableWasteFixture(
+                maxLeftovers: 10, initialLeftovers: 5);
+            _toCleanup.Add(tableFixture.TableObject);
+            _toCleanup.Add(tableFixture.TriggerObject);
+
+            tableFixture.TriggerObject.transform.position = Vector3.zero;
+
+            var player = PlayerPrefabTestFixture.InstantiatePlayer();
+            _toCleanup.Add(player);
+            PlayerPrefabTestFixture.AddPizzas(player, 3);
+            PlayerPrefabTestFixture.SetPlayerKinematic(player);
+            player.transform.position = Vector3.zero;
+
+            Physics.SyncTransforms();
+            yield return new WaitForFixedUpdate();
+
+            var wasteInv = PlayerPrefabTestFixture.GetWasteInventory(player);
+            Assert.That(wasteInv.Count, Is.EqualTo(0),
+                "Physics: TableWasteTrigger must not collect waste when player carries pizzas.");
+            Assert.That(tableFixture.Table.LeftoverCount, Is.EqualTo(5),
+                "Physics: Table leftovers must be preserved when player has pizzas.");
 
             tableFixture.Destroy();
         }

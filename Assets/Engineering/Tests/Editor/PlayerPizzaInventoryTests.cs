@@ -59,6 +59,57 @@ namespace Engineering.Tests
         }
 
         [Test]
+        public void TryAdd_ReturnsZero_WhenWasteInventoryHasItems()
+        {
+            var wasteInv = _playerObject.AddComponent<PlayerWasteInventory>();
+            SetPrivateField(wasteInv, "capacity", 10);
+            wasteInv.TryAdd(5);
+
+            var accepted = _inventory.TryAdd(3);
+
+            Assert.That(accepted, Is.EqualTo(0));
+            Assert.That(_inventory.Count, Is.EqualTo(0));
+            Assert.That(wasteInv.Count, Is.EqualTo(5));
+        }
+
+        [Test]
+        public void TryAdd_AcceptsPizzas_WhenWasteInventoryEmpty()
+        {
+            _playerObject.AddComponent<PlayerWasteInventory>();
+
+            var accepted = _inventory.TryAdd(3);
+
+            Assert.That(accepted, Is.EqualTo(3));
+            Assert.That(_inventory.Count, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void WasteInventory_TryAdd_ReturnsZero_WhenPizzaInventoryHasItems()
+        {
+            var wasteInv = _playerObject.AddComponent<PlayerWasteInventory>();
+            SetPrivateField(wasteInv, "capacity", 10);
+
+            _inventory.TryAdd(5);
+
+            var accepted = wasteInv.TryAdd(3);
+
+            Assert.That(accepted, Is.EqualTo(0));
+            Assert.That(_inventory.Count, Is.EqualTo(5));
+        }
+
+        [Test]
+        public void WasteInventory_TryAdd_AcceptsWaste_WhenPizzaInventoryEmpty()
+        {
+            var wasteInv = _playerObject.AddComponent<PlayerWasteInventory>();
+            SetPrivateField(wasteInv, "capacity", 10);
+
+            var accepted = wasteInv.TryAdd(4);
+
+            Assert.That(accepted, Is.EqualTo(4));
+            Assert.That(wasteInv.Count, Is.EqualTo(4));
+        }
+
+        [Test]
         public void PizzaStackBasePosition_UsesThePlateColliderTopSurface()
         {
             var plateObject = new GameObject("PizzaPlateTest");

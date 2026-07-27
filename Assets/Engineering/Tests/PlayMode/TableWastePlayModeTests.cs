@@ -630,6 +630,66 @@ namespace Engineering.Tests
             Assert.That(table.LeftoverCount, Is.EqualTo(3), "Table leftovers should remain unchanged.");
         }
 
+        // --- Test 19: Player with pizzas cannot collect waste, table is untouched ---
+
+        [UnityTest]
+        public IEnumerator TableWasteTrigger_DoesNotCollectWaste_WhenPlayerHasPizzas()
+        {
+            var (table, _, _) = CreateTableWithWaste(1, 10);
+            table.AddLeftovers(5);
+            yield return null;
+
+            var player = CreatePlayerWithBothInventories(pizzaCapacity: 10, wasteCapacity: 10);
+            var pizzaInv = player.GetComponent<PlayerPizzaInventory>();
+            var wasteInv = player.GetComponent<PlayerWasteInventory>();
+            pizzaInv.TryAdd(3);
+
+            var triggerGO = new GameObject("TableWasteTrigger");
+            triggerGO.transform.SetParent(player.transform);
+            var triggerCollider = triggerGO.AddComponent<BoxCollider>();
+            triggerCollider.isTrigger = true;
+            _toCleanup.Add(triggerGO);
+
+            var trigger = triggerGO.AddComponent<TableWasteTrigger>();
+            SetPrivateField(trigger, "table", table);
+
+            InvokePrivateMethod(trigger, "OnTriggerEnter", triggerCollider);
+            yield return null;
+
+            Assert.That(wasteInv.Count, Is.EqualTo(0),
+                "Player with pizzas should not collect waste.");
+            Assert.That(table.LeftoverCount, Is.EqualTo(5),
+                "Table leftovers must be preserved when player has pizzas.");
+            Assert.That(pizzaInv.Count, Is.EqualTo(3),
+                "Pizza count should be unchanged.");
+        }
+
+        private GameObject CreatePlayerWithBothInventories(int pizzaCapacity, int wasteCapacity)
+        {
+            var player = new GameObject("TestPlayer");
+            player.tag = "Player";
+            player.SetActive(false);
+
+            var pizzaAnchor = new GameObject("PizzaStackAnchor");
+            pizzaAnchor.transform.SetParent(player.transform);
+            var wasteAnchor = new GameObject("WasteStackAnchor");
+            wasteAnchor.transform.SetParent(player.transform);
+
+            var pizzaInv = player.AddComponent<PlayerPizzaInventory>();
+            SetPrivateField(pizzaInv, "capacity", pizzaCapacity);
+            SetPrivateField(pizzaInv, "pizzaStackAnchor", pizzaAnchor.transform);
+            SetPrivateField(pizzaInv, "pizzaVisualPrefab", CreateLeftoverPrefab());
+
+            var wasteInv = player.AddComponent<PlayerWasteInventory>();
+            SetPrivateField(wasteInv, "capacity", wasteCapacity);
+            SetPrivateField(wasteInv, "wasteStackAnchor", wasteAnchor.transform);
+            SetPrivateField(wasteInv, "leftoverVisualPrefab", CreateLeftoverPrefab());
+
+            player.SetActive(true);
+            _toCleanup.Add(player);
+            return player;
+        }
+
         private static void SetPrivateField(object target, string fieldName, object value)
         {
             var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);

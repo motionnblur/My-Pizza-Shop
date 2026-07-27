@@ -98,6 +98,57 @@ namespace Engineering.Tests
             Object.Destroy(plateObject);
         }
 
+        [UnityTest]
+        public IEnumerator GrillPlate_DoesNotCollectPizzas_WhenPlayerHasWaste()
+        {
+            _grillSettings = ScriptableObject.CreateInstance<SGrillStation>();
+            _grillSettings.productionInterval = 0.05f;
+            _grillSettings.maxReadyPizzas = 3;
+
+            _stationObject = new GameObject("GrillStationTest");
+            _stationObject.SetActive(false);
+            var grillStation = _stationObject.AddComponent<GrillStation>();
+            SetPrivateField(grillStation, "sGrillStation", _grillSettings);
+            _stationObject.SetActive(true);
+
+            yield return new WaitForSeconds(0.2f);
+            Assert.That(grillStation.ReadyPizzaCount, Is.EqualTo(3));
+
+            _playerObject = new GameObject("Player");
+            _playerObject.tag = "Player";
+            _playerObject.SetActive(false);
+            var scriptsObject = new GameObject("Scripts");
+            scriptsObject.transform.SetParent(_playerObject.transform);
+
+            var pizzaInv = scriptsObject.AddComponent<PlayerPizzaInventory>();
+            SetPrivateField(pizzaInv, "capacity", 10);
+
+            var wasteInv = scriptsObject.AddComponent<PlayerWasteInventory>();
+            SetPrivateField(wasteInv, "capacity", 10);
+            wasteInv.TryAdd(4);
+
+            var meshObject = new GameObject("Mesh");
+            meshObject.transform.SetParent(_playerObject.transform);
+            meshObject.tag = "Player";
+            var playerCollider = meshObject.AddComponent<BoxCollider>();
+            _playerObject.SetActive(true);
+
+            var plateObject = new GameObject("GrillPlate");
+            var grillPlate = plateObject.AddComponent<GrillPlate>();
+            SetPrivateField(grillPlate, "grillStation", grillStation);
+
+            InvokePrivateMethod(grillPlate, "OnTriggerEnter", playerCollider);
+
+            Assert.That(pizzaInv.Count, Is.EqualTo(0),
+                "Player with waste should not collect pizzas.");
+            Assert.That(wasteInv.Count, Is.EqualTo(4),
+                "Waste count should be unchanged.");
+            Assert.That(grillStation.ReadyPizzaCount, Is.EqualTo(3),
+                "GrillStation pizzas must be preserved when player has waste.");
+
+            Object.Destroy(plateObject);
+        }
+
         private static void SetPrivateField(object target, string fieldName, object value)
         {
             var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
