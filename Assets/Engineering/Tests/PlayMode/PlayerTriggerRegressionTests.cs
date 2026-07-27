@@ -273,6 +273,7 @@ namespace Engineering.Tests
             _toCleanup.Add(trashFixture.StationObject);
 
             var player = PlayerPrefabTestFixture.InstantiatePlayer();
+            player.transform.position = new Vector3(0f, -999f, 0f);
             _toCleanup.Add(player);
             PlayerPrefabTestFixture.AddPizzas(player, 3);
 
