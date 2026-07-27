@@ -213,9 +213,34 @@ public static class WasteSystemSetup
         var filter = new Filter
         {
             testMode = TestMode.PlayMode,
-            groupNames = new[] { "Engineering.Tests.TableWastePlayModeTests", "Engineering.Tests.TrashStationPlayModeTests" }
+            groupNames = new[] { "Engineering.Tests.TableWastePlayModeTests" }
         };
         api.Execute(new ExecutionSettings(filter));
-        Debug.Log("Waste system PlayMode tests triggered.");
+        Debug.Log("Waste system TableWastePlayModeTests triggered.");
+    }
+
+    [MenuItem("Tools/Waste System/Run TrashStation Tests")]
+    public static void RunTrashStationTests()
+    {
+        var api = ScriptableObject.CreateInstance<TestRunnerApi>();
+        var filter = new Filter
+        {
+            testMode = TestMode.PlayMode,
+            groupNames = new[] { "Engineering.Tests.TrashStationPlayModeTests" }
+        };
+        api.Execute(new ExecutionSettings(filter));
+        Debug.Log("Waste system TrashStationPlayModeTests triggered.");
+    }
+
+    [MenuItem("Tools/Waste System/Run All PlayMode Tests")]
+    public static void RunAllPlayModeTests()
+    {
+        var api = ScriptableObject.CreateInstance<TestRunnerApi>();
+        var filter = new Filter
+        {
+            testMode = TestMode.PlayMode
+        };
+        api.Execute(new ExecutionSettings(filter));
+        Debug.Log("All PlayMode tests triggered.");
     }
 }
