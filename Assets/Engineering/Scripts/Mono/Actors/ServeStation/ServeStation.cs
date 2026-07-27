@@ -145,6 +145,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
                 return 0;
 
             frontOrder.ReceivePizzas(result.DeliveredPizzaCount);
+            frontCustomer.RefreshOrderText();
 
             if (stationVisuals != null)
                 stationVisuals.Refresh(StoredPizzaCount);

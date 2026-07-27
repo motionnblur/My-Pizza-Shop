@@ -1,6 +1,7 @@
 using Engineering.Scripts.Domain.CustomerQueue;
 using Engineering.Scripts.Mono.Actors.Table;
 using ServeStationType = Engineering.Scripts.Mono.Actors.ServeStation.ServeStation;
+using TMPro;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -9,6 +10,10 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
     [RequireComponent(typeof(NavMeshAgent))]
     public class CustomerBot : MonoBehaviour
     {
+        [Header("Order UI")]
+        [SerializeField] private TMP_Text orderText;
+        [SerializeField] private string orderTextFormat = "Pizza: {0}";
+
         private ServeStationType _station;
         private CustomerOrderModel _orderModel;
         private Transform[] _approachWaypoints;
@@ -157,6 +162,17 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
             _currentWaypointIndex = 0;
             _hasReachedAssignedSlot = false;
             _approachStarted = false;
+            RefreshOrderText();
+        }
+
+        public void RefreshOrderText()
+        {
+            if (orderText == null)
+                return;
+
+            var remainingPizzaCount = RemainingPizzaCount;
+            orderText.text = string.Format(orderTextFormat, remainingPizzaCount);
+            orderText.gameObject.SetActive(remainingPizzaCount > 0);
         }
 
         public void SetupDining(TableManager tableManager, Transform exitPoint, float eatingDuration)
