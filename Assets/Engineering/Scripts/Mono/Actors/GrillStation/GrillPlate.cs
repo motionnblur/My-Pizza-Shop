@@ -41,7 +41,8 @@ namespace Engineering.Scripts.Mono.Actors.GrillStation
             if (!other.CompareTag("Player") || grillStation == null)
                 return;
 
-            grillStation.TryCollectAll(other.GetComponentInParent<PlayerPizzaInventory>());
+            var playerRoot = other.transform.root;
+            grillStation.TryCollectAll(playerRoot.GetComponentInChildren<PlayerPizzaInventory>());
         }
     }
 }
