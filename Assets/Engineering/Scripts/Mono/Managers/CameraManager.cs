@@ -1,4 +1,5 @@
 using System;
+using Engineering.ScriptableObjects;
 using UnityEngine;
 
 namespace Engineering.Scripts.Mono.Managers
@@ -7,11 +8,7 @@ namespace Engineering.Scripts.Mono.Managers
     {
         [SerializeField] private Transform target;
         [SerializeField] private Transform cameraTransform;
-
-        [SerializeField] private float xDamping = 0.18f;
-        [SerializeField] private float yDamping = 0.25f;
-        [SerializeField] private float zDamping = 0.18f;
-        [SerializeField] private float maxFollowSpeed;
+        [SerializeField] private SCameraSettings settings;
 
         private Vector3 _positionOffset;
         private Quaternion _initialRotation;
@@ -38,6 +35,10 @@ namespace Engineering.Scripts.Mono.Managers
             if (cameraTransform == null)
                 throw new InvalidOperationException(
                     $"{nameof(CameraManager)} requires a camera Transform reference.");
+
+            if (settings == null)
+                throw new InvalidOperationException(
+                    $"{nameof(CameraManager)} requires a {nameof(SCameraSettings)} reference.");
         }
 
         private void CaptureOffsets()
@@ -48,16 +49,16 @@ namespace Engineering.Scripts.Mono.Managers
 
         private void LateUpdate()
         {
-            if (target == null || cameraTransform == null)
+            if (target == null || cameraTransform == null || settings == null)
                 return;
 
             Vector3 targetPosition = target.position + _positionOffset;
             float dt = Time.deltaTime;
-            float maxSpeed = maxFollowSpeed > 0f ? maxFollowSpeed : float.PositiveInfinity;
+            float maxSpeed = settings.MaxFollowSpeed > 0f ? settings.MaxFollowSpeed : float.PositiveInfinity;
 
-            float clampedXDamping = Mathf.Max(xDamping, 0.001f);
-            float clampedYDamping = Mathf.Max(yDamping, 0.001f);
-            float clampedZDamping = Mathf.Max(zDamping, 0.001f);
+            float clampedXDamping = Mathf.Max(settings.XDamping, 0.001f);
+            float clampedYDamping = Mathf.Max(settings.YDamping, 0.001f);
+            float clampedZDamping = Mathf.Max(settings.ZDamping, 0.001f);
 
             float newX = Mathf.SmoothDamp(
                 cameraTransform.position.x, targetPosition.x, ref _velocity.x,

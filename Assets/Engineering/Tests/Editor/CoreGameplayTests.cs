@@ -305,6 +305,7 @@ namespace Engineering.Tests
         private GameObject _cameraObject;
         private GameObject _targetObject;
         private CameraManager _cameraManager;
+        private SCameraSettings _settings;
 
         [SetUp]
         public void SetUp()
@@ -317,8 +318,12 @@ namespace Engineering.Tests
 
             _targetObject = new GameObject("CameraTargetTest");
             _targetObject.transform.position = new Vector3(1f, 2f, 3f);
+
+            _settings = ScriptableObject.CreateInstance<SCameraSettings>();
+
             SetPrivateField(_cameraManager, "target", _targetObject.transform);
             SetPrivateField(_cameraManager, "cameraTransform", _cameraObject.transform);
+            SetPrivateField(_cameraManager, "settings", _settings);
 
             _cameraObject.SetActive(true);
             InvokePrivateMethod(_cameraManager, "Awake");
@@ -329,6 +334,8 @@ namespace Engineering.Tests
         {
             Object.DestroyImmediate(_cameraObject);
             Object.DestroyImmediate(_targetObject);
+            if (_settings != null)
+                Object.DestroyImmediate(_settings);
         }
 
         [Test]
@@ -370,6 +377,22 @@ namespace Engineering.Tests
 
             Assert.That(exception.InnerException.Message, Does.Contain("target Transform reference"));
             Object.DestroyImmediate(missingTargetCamera);
+        }
+
+        [Test]
+        public void Awake_RequiresSettingsReference()
+        {
+            var missingSettingsCamera = new GameObject("MissingSettingsCamera");
+            missingSettingsCamera.SetActive(false);
+            var manager = missingSettingsCamera.AddComponent<CameraManager>();
+            SetPrivateField(manager, "target", missingSettingsCamera.transform);
+            SetPrivateField(manager, "cameraTransform", missingSettingsCamera.transform);
+
+            var exception = Assert.Throws<TargetInvocationException>(() =>
+                InvokePrivateMethod(manager, "Awake"));
+
+            Assert.That(exception.InnerException.Message, Does.Contain("requires a"));
+            Object.DestroyImmediate(missingSettingsCamera);
         }
 
         private static void InvokePrivateMethod(object target, string methodName, params object[] arguments)

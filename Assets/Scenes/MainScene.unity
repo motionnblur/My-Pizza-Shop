@@ -393,6 +393,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Engineering.Runtime::Engineering.Scripts.Mono.Managers.CameraManager
   target: {fileID: 657796370}
   cameraTransform: {fileID: 310883652}
+  settings: {fileID: 11400000, guid: e333ba16e82c49dd8e8b7164c25d56a7, type: 2}
 --- !u!1 &456437129
 GameObject:
   m_ObjectHideFlags: 0

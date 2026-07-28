@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using Engineering.ScriptableObjects;
 using Engineering.Scripts.Mono.Managers;
 using NUnit.Framework;
 using UnityEditor;
@@ -13,6 +14,7 @@ namespace Engineering.Tests
         private CameraManager _manager;
         private GameObject _targetGo;
         private GameObject _cameraGo;
+        private SCameraSettings _settings;
 
         [SetUp]
         public void SetUp()
@@ -24,6 +26,8 @@ namespace Engineering.Tests
             _cameraGo = new GameObject("Camera");
 
             _manager = _managerGo.AddComponent<CameraManager>();
+
+            _settings = ScriptableObject.CreateInstance<SCameraSettings>();
         }
 
         [TearDown]
@@ -35,6 +39,8 @@ namespace Engineering.Tests
                 UnityEngine.Object.DestroyImmediate(_targetGo);
             if (_cameraGo != null)
                 UnityEngine.Object.DestroyImmediate(_cameraGo);
+            if (_settings != null)
+                UnityEngine.Object.DestroyImmediate(_settings);
         }
 
         private void SetReferences(Transform target, Transform cameraTransform)
@@ -42,6 +48,7 @@ namespace Engineering.Tests
             var serialized = new SerializedObject(_manager);
             serialized.FindProperty("target").objectReferenceValue = target;
             serialized.FindProperty("cameraTransform").objectReferenceValue = cameraTransform;
+            serialized.FindProperty("settings").objectReferenceValue = _settings;
             serialized.ApplyModifiedProperties();
         }
 
@@ -100,6 +107,23 @@ namespace Engineering.Tests
             var exception = Assert.Throws<TargetInvocationException>(() => InvokeAwake());
             Assert.That(exception.InnerException, Is.TypeOf<InvalidOperationException>());
             Assert.That(exception.InnerException.Message, Does.Contain("camera Transform reference"));
+        }
+
+        [Test]
+        public void Awake_WithNullSettings_ThrowsInvalidOperationException()
+        {
+            _targetGo.transform.position = Vector3.zero;
+            _cameraGo.transform.position = Vector3.zero;
+
+            var serialized = new SerializedObject(_manager);
+            serialized.FindProperty("target").objectReferenceValue = _targetGo.transform;
+            serialized.FindProperty("cameraTransform").objectReferenceValue = _cameraGo.transform;
+            serialized.FindProperty("settings").objectReferenceValue = null;
+            serialized.ApplyModifiedProperties();
+
+            var exception = Assert.Throws<TargetInvocationException>(() => InvokeAwake());
+            Assert.That(exception.InnerException, Is.TypeOf<InvalidOperationException>());
+            Assert.That(exception.InnerException.Message, Does.Contain("requires a"));
         }
 
         [Test]
@@ -166,6 +190,22 @@ namespace Engineering.Tests
             InvokeAwake();
 
             SetField("target", null);
+
+            InvokeLateUpdate();
+
+            Assert.That(_cameraGo.transform.position, Is.EqualTo(new Vector3(10f, 20f, 30f)));
+            Assert.That(_cameraGo.transform.rotation, Is.EqualTo(Quaternion.Euler(5f, 10f, 15f)));
+        }
+
+        [Test]
+        public void LateUpdate_WithNullSettings_DoesNotChangeCameraTransform()
+        {
+            _cameraGo.transform.position = new Vector3(10f, 20f, 30f);
+            _cameraGo.transform.rotation = Quaternion.Euler(5f, 10f, 15f);
+            SetReferences(_targetGo.transform, _cameraGo.transform);
+            InvokeAwake();
+
+            SetField("settings", null);
 
             InvokeLateUpdate();
 
