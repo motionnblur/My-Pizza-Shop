@@ -5,8 +5,8 @@
 ## Project Summary
 
 - **Project root:** repository root
-- **Last analyzed:** 2026-07-27
-- **Last analyzed commit:** `e5a40eb`
+- **Last analyzed:** 2026-07-28
+- **Last analyzed commit:** `4d88913`
 - **Summary:** Early-stage casual 3D game named *My Pizza Shop*. The current gameplay slice includes movement, wallet and ground-money collection, timed area purchases, autonomous pizza production and collection, player pizza stacks, pizza serving station with customer queue and money reward, trash station with DoTween fly-and-shrink animation, UI counters, pooled DOTween money-transfer effects, customer bot NavMesh movement, timed customer spawner, and ScriptableObject event channels for decoupled gameplay feedback.
 
 ## Confirmed Environment
@@ -22,9 +22,10 @@
 | --- | --- | --- | --- |
 | Rendering | URP 17.3.0 | Confirmed | `Packages/manifest.json`, `ProjectSettings/GraphicsSettings.asset` |
 | Input | Input System 1.19.0; `InputManager` uses an asset-backed `Player` action map | Confirmed | `Packages/manifest.json`, `ProjectSettings/ProjectSettings.asset`, `Assets/Engineering/Scripts/Mono/Managers/InputManager.cs` |
+| Camera | MainScene has one URP `Main Camera`, orthographic with size 5; a separate `CameraManager` child of `Managers` follows the Player while controlling the camera through an explicit reference and preserving the initial position offset and rotation. Cinemachine is not present in the manifest or first-party code | Confirmed | `Assets/Scenes/MainScene.unity`, `Assets/Engineering/Scripts/Mono/Managers/CameraManager.cs`, `Packages/manifest.json` |
 | Navigation | AI Navigation 2.0.13 is installed and used by `CustomerBot` for NavMesh movement; MainScene has a baked NavMeshSurface covering SpawnPoint, 2 waypoints, and 10 queue slots | Confirmed | `Packages/manifest.json`, `CustomerBot.cs`, `Assets/Scenes/MainScene_NavMeshData.asset` |
 | UI | UGUI 2.0.0 is installed; project UI usage not inspected | Confirmed / unknown usage | `Packages/manifest.json` |
-| Tests | Unity Test Framework 1.6.0 is installed; current source declares 203 EditMode `[Test]` methods and 109 PlayMode `[UnityTest]` methods covering core gameplay, UI, economy, money-animation pooling, pizza inventory, grill production, serving station with customer queue, customer queue domain models, purchase progress domain models, table model, table waste model, table flow, and trash station including pooled visual reuse and cleanup | Confirmed declaration counts; execution not performed | `Packages/manifest.json`, `Assets/Engineering/Tests/` |
+| Tests | Unity Test Framework 1.6.0 is installed; current source declares 273 EditMode `[Test]` methods and 174 PlayMode `[UnityTest]` methods covering core gameplay, camera follow behavior, UI, economy, money-animation pooling, pizza inventory, grill production, serving station with customer queue, customer queue domain models, purchase progress domain models, table model, table waste model, table flow, and trash station including pooled visual reuse and cleanup | Confirmed declaration counts; execution not performed | `Packages/manifest.json`, `Assets/Engineering/Tests/` |
 | Tweening | DOTween is included as a vendor plugin and actively used for money-transfer animation | Confirmed | `Assets/Plugins/Demigiant/DOTween/`, `AnimationManager.cs` |
 | Gameplay events | `SVoidEventChannel` decouples parameterless gameplay feedback; `SIntEventChannel` publishes pizza inventory counts to UI | Confirmed | Event-channel sources and assets, `EconomyManager.cs`, `SoundManager.cs`, `PlayerPizzaInventory.cs`, `UIManager.cs` |
 | Other tooling | Timeline, Visual Scripting, Rider and Visual Studio integrations are installed; first-party usage is unverified | Confirmed / unverified usage | `Packages/manifest.json` |
@@ -69,6 +70,7 @@
 | Input flow | Central input adapter publishes C# events to consumers | Confirmed | `InputManager.cs`, `PlayerMovement.cs` |
 | Global state | `MainSceneInstaller` is the composition root for `MainScene`. Scene-object dependencies are injected through public `Initialize` methods during `Awake`. No `DontDestroyOnLoad` or static singletons. | Confirmed | `MainSceneInstaller.cs`, component sources |
 | Player movement | Rigidbody velocity set in `FixedUpdate`, camera-relative | Confirmed | `PlayerMovement.cs` |
+| Camera/input boundary | `InputManager` publishes `LookChanged` from `Player/Look`, with bindings for gamepad right stick, pointer delta, and joystick hat switch. No first-party consumer currently subscribes to that event. A separate `CameraManager` child of `Managers` follows the Player in `LateUpdate` through explicit `target` and `cameraTransform` references, preserving the initial camera rotation and position offset. `PlayerMovement` reads an Inspector-assigned `cameraTransform`; MainScene overrides it with `Main Camera`. | Confirmed | `InputManager.cs`, `PlayerMovement.cs`, `CameraManager.cs`, `Assets/InputSystem_Actions.inputactions`, `Assets/Scenes/MainScene.unity`, `Assets/Engineering/Prefabs/Player.prefab` |
 | Economy | ScriptableObject-configured payment rate, coroutine-based purchase areas, trigger-based ground-money collection, pizza-serving money rewards, and the scene-authored `CurrencyService` bridge that owns the live `PlayerWallet` reference. All cross-scene dependencies are injected through public `Initialize` methods called by `MainSceneInstaller`. | Confirmed | `SEconomy.cs`, `SAnimation.cs`, `CurrencyService.cs`, `EconomyManager.cs`, `BuyingArea.cs`, `MoneyToCollect.cs`, `ServeStation.cs`, `MainSceneInstaller.cs` |
 | Pizza production | Each `GrillStation` produces independently up to a ScriptableObject-configured capacity; `GrillPlate` collects ready pizzas into the player inventory | Confirmed | `SGrillStation.cs`, `GrillStation.cs`, `GrillPlate.cs`, `PlayerPizzaInventory.cs` |
 | Pizza serving | `ServeStationModel` is the authoritative owner of stored-pizza state, deposit, serve, completion, and reward calculations. `ServeStation` is the Unity adapter that delegates to `ServeStationModel` and coordinates `CustomerQueueController` (queue ownership, registration, slot assignment, front-customer removal, arbitrary-customer `RemoveCustomer`) and `ServeStationVisuals` (pizza visual pool creation and positioning). `CustomerQueueController` owns `CustomerQueueModel`, the ordered `List<CustomerBot>`, queue-slot assignment, and enforces queue capacity. `ServeStationVisuals` owns the pizza visual pool and stack positioning based on the plate collider. `TryRegisterCustomer` delegates to `CustomerQueueController.TryRegister`. `DepositFrom` transfers player pizzas into station storage (no money, no event), then refreshes visuals. `ServeFrontCustomer` (no-arg) delegates to `ServeStationModel.TryServe`, awards money, raises `PizzaServed`, removes completed front customer via `CustomerQueueController.RemoveFrontCustomer`, and refreshes visuals. `OnSeatReleased` finds the first waiting customer with `GetFirstWaitingCustomer` and removes it with `RemoveCustomer` (not `DequeueFrontCustomer`) to correctly handle non-front waiting customers. `PlateTrigger` deposits on enter; `ServeTrigger` serves on enter/stay. | Confirmed | `ServeStationModel.cs`, `ServeResult.cs`, `SServeStation.cs`, `ServeStation.cs`, `PlateTrigger.cs`, `ServeTrigger.cs`, `CustomerQueueController.cs`, `ServeStationVisuals.cs`, `PlayerPizzaInventory.cs`, `EconomyManager.cs`, `CustomerBot.cs` |
@@ -118,9 +120,11 @@
 ## Unknowns And Confidence
 
 - The startup scene is `MainScene.unity` as the single enabled build scene.
+- The current camera is an orthographic scene camera with Player follow; look input is already relayed but camera rotation and zoom behavior are not implemented.
 - `MainScene` now assigns `pizzaServedEvent` on both `ServingStation` (via prefab reference) and `SoundManager` (scene override); the configured serve SFX is received and played.
 - No Unity MCP provider or Editor-console capability was available to this audit. Full current test execution, Console inspection, and Play Mode verification remain unrecorded.
 - The project is likely Android-focused, based on explicit Android settings, but release targets are not confirmed.
+- Current camera behavior has not been verified in the Unity Editor or Play Mode; occlusion handling, touch-camera UX, follow smoothing, and zoom limits remain design/implementation decisions.
 
 ## Source Files Inspected
 
@@ -131,6 +135,11 @@
 - `Packages/manifest.json`
 - `Packages/packages-lock.json`
 - `Assets/Engineering/Scripts/Mono/Managers/InputManager.cs`
+- `Assets/Engineering/Scripts/Mono/Managers/CameraManager.cs`
+- `Assets/Engineering/Scripts/Mono/Player/PlayerMovement.cs`
+- `Assets/Engineering/Prefabs/Player.prefab`
+- `Assets/InputSystem_Actions.inputactions`
+- `Assets/Scenes/MainScene.unity`
 - `Assets/Engineering/Scripts/Mono/Managers/EconomyManager.cs`
 - `Assets/Engineering/Scripts/Mono/Managers/UIManager.cs`
 - `Assets/Engineering/Scripts/Mono/Managers/AnimationManager.cs`

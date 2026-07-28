@@ -300,4 +300,77 @@ namespace Engineering.Tests
         }
     }
 
+    public class CameraManagerTests
+    {
+        private GameObject _cameraObject;
+        private GameObject _targetObject;
+        private CameraManager _cameraManager;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _cameraObject = new GameObject("CameraManagerTest");
+            _cameraObject.SetActive(false);
+            _cameraObject.transform.position = new Vector3(10f, 9f, 8f);
+            _cameraObject.transform.rotation = Quaternion.Euler(45f, 45f, 0f);
+            _cameraManager = _cameraObject.AddComponent<CameraManager>();
+
+            _targetObject = new GameObject("CameraTargetTest");
+            _targetObject.transform.position = new Vector3(1f, 2f, 3f);
+            SetPrivateField(_cameraManager, "target", _targetObject.transform);
+            SetPrivateField(_cameraManager, "cameraTransform", _cameraObject.transform);
+
+            _cameraObject.SetActive(true);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Object.DestroyImmediate(_cameraObject);
+            Object.DestroyImmediate(_targetObject);
+        }
+
+        [Test]
+        public void LateUpdate_FollowsTargetWhilePreservingInitialOffsetAndRotation()
+        {
+            _targetObject.transform.position = new Vector3(4f, 5f, 6f);
+
+            InvokePrivateMethod(_cameraManager, "LateUpdate");
+
+            Assert.That(_cameraObject.transform.position, Is.EqualTo(new Vector3(13f, 12f, 11f)));
+            Assert.That(Quaternion.Angle(
+                _cameraObject.transform.rotation,
+                Quaternion.Euler(45f, 45f, 0f)), Is.LessThan(0.001f));
+        }
+
+        [Test]
+        public void Awake_RequiresTargetReference()
+        {
+            var missingTargetCamera = new GameObject("MissingTargetCamera");
+            missingTargetCamera.SetActive(false);
+            var manager = missingTargetCamera.AddComponent<CameraManager>();
+            SetPrivateField(manager, "cameraTransform", missingTargetCamera.transform);
+
+            var exception = Assert.Throws<TargetInvocationException>(() =>
+                InvokePrivateMethod(manager, "Awake"));
+
+            Assert.That(exception.InnerException.Message, Does.Contain("target Transform reference"));
+            Object.DestroyImmediate(missingTargetCamera);
+        }
+
+        private static void InvokePrivateMethod(object target, string methodName, params object[] arguments)
+        {
+            var method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(method, Is.Not.Null, $"Expected {target.GetType().Name} to define '{methodName}'.");
+            method.Invoke(target, arguments);
+        }
+
+        private static void SetPrivateField(object target, string fieldName, object value)
+        {
+            var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, $"Expected {target.GetType().Name} to define '{fieldName}'.");
+            field.SetValue(target, value);
+        }
+    }
+
 }
