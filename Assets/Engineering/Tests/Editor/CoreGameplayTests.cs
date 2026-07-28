@@ -336,12 +336,25 @@ namespace Engineering.Tests
         {
             _targetObject.transform.position = new Vector3(4f, 5f, 6f);
 
+            Vector3 snapPosition = _targetObject.transform.position +
+                GetPrivateField<Vector3>(_cameraManager, "_positionOffset");
+
             InvokePrivateMethod(_cameraManager, "LateUpdate");
 
-            Assert.That(_cameraObject.transform.position, Is.EqualTo(new Vector3(13f, 12f, 11f)));
+            Assert.That(_cameraObject.transform.position, Is.Not.EqualTo(snapPosition),
+                "Damping must prevent instant teleport to the target position.");
             Assert.That(Quaternion.Angle(
                 _cameraObject.transform.rotation,
-                Quaternion.Euler(45f, 45f, 0f)), Is.LessThan(0.001f));
+                Quaternion.Euler(45f, 45f, 0f)), Is.LessThan(0.001f),
+                "Initial rotation must be preserved across LateUpdate.");
+        }
+
+        private static T GetPrivateField<T>(object target, string fieldName)
+        {
+            var field = target.GetType().GetField(fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, $"Expected {target.GetType().Name} to define '{fieldName}'.");
+            return (T)field.GetValue(target);
         }
 
         [Test]

@@ -45,6 +45,20 @@ namespace Engineering.Tests
             serialized.ApplyModifiedProperties();
         }
 
+        private void SetField(string fieldName, object value)
+        {
+            var field = typeof(CameraManager).GetField(fieldName,
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            field.SetValue(_manager, value);
+        }
+
+        private T GetField<T>(string fieldName)
+        {
+            var field = typeof(CameraManager).GetField(fieldName,
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            return (T)field.GetValue(_manager);
+        }
+
         private void InvokeAwake()
         {
             var method = typeof(CameraManager).GetMethod("Awake",
@@ -66,41 +80,15 @@ namespace Engineering.Tests
             method.Invoke(_manager, null);
         }
 
-        private Vector3 GetVelocity()
-        {
-            var field = typeof(CameraManager).GetField("_velocity",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-            return (Vector3)field.GetValue(_manager);
-        }
-
-        private void SetVelocity(Vector3 velocity)
-        {
-            var field = typeof(CameraManager).GetField("_velocity",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-            field.SetValue(_manager, velocity);
-        }
-
-        private Vector3 GetPositionOffset()
-        {
-            var field = typeof(CameraManager).GetField("_positionOffset",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-            return (Vector3)field.GetValue(_manager);
-        }
-
-        private Quaternion GetInitialRotation()
-        {
-            var field = typeof(CameraManager).GetField("_initialRotation",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-            return (Quaternion)field.GetValue(_manager);
-        }
-
         [Test]
         public void Awake_WithNullTarget_ThrowsInvalidOperationException()
         {
             _cameraGo.transform.position = Vector3.zero;
             SetReferences(null, _cameraGo.transform);
 
-            Assert.That(() => _managerGo.SetActive(true), Throws.InvalidOperationException);
+            var exception = Assert.Throws<TargetInvocationException>(() => InvokeAwake());
+            Assert.That(exception.InnerException, Is.TypeOf<InvalidOperationException>());
+            Assert.That(exception.InnerException.Message, Does.Contain("target Transform reference"));
         }
 
         [Test]
@@ -109,7 +97,9 @@ namespace Engineering.Tests
             _targetGo.transform.position = Vector3.zero;
             SetReferences(_targetGo.transform, null);
 
-            Assert.That(() => _managerGo.SetActive(true), Throws.InvalidOperationException);
+            var exception = Assert.Throws<TargetInvocationException>(() => InvokeAwake());
+            Assert.That(exception.InnerException, Is.TypeOf<InvalidOperationException>());
+            Assert.That(exception.InnerException.Message, Does.Contain("camera Transform reference"));
         }
 
         [Test]
@@ -119,23 +109,37 @@ namespace Engineering.Tests
             _cameraGo.transform.position = new Vector3(5f, 10f, 15f);
             SetReferences(_targetGo.transform, _cameraGo.transform);
 
-            _managerGo.SetActive(true);
+            InvokeAwake();
 
             Vector3 expectedOffset = new Vector3(4f, 8f, 12f);
-            Assert.That(GetPositionOffset(), Is.EqualTo(expectedOffset));
+            Assert.That(GetField<Vector3>("_positionOffset"), Is.EqualTo(expectedOffset));
         }
 
         [Test]
         public void Awake_CapturesInitialRotationCorrectly()
         {
-            _cameraGo.transform.rotation = Quaternion.Euler(10f, 20f, 30f);
+            var expectedRotation = Quaternion.Euler(10f, 20f, 30f);
+            _cameraGo.transform.rotation = expectedRotation;
             _targetGo.transform.position = Vector3.zero;
             _cameraGo.transform.position = Vector3.zero;
             SetReferences(_targetGo.transform, _cameraGo.transform);
 
-            _managerGo.SetActive(true);
+            InvokeAwake();
 
-            Assert.That(GetInitialRotation(), Is.EqualTo(Quaternion.Euler(10f, 20f, 30f)));
+            Quaternion captured = GetField<Quaternion>("_initialRotation");
+            Assert.That(Quaternion.Angle(captured, expectedRotation), Is.LessThan(0.001f));
+        }
+
+        [Test]
+        public void Awake_ResetsVelocityToZero()
+        {
+            _targetGo.transform.position = Vector3.zero;
+            _cameraGo.transform.position = new Vector3(5f, 5f, 5f);
+            SetReferences(_targetGo.transform, _cameraGo.transform);
+
+            InvokeAwake();
+
+            Assert.That(GetField<Vector3>("_velocity"), Is.EqualTo(Vector3.zero));
         }
 
         [Test]
@@ -144,13 +148,13 @@ namespace Engineering.Tests
             _targetGo.transform.position = Vector3.zero;
             _cameraGo.transform.position = new Vector3(5f, 5f, 5f);
             SetReferences(_targetGo.transform, _cameraGo.transform);
-            _managerGo.SetActive(true);
+            InvokeAwake();
 
-            SetVelocity(new Vector3(100f, 200f, 300f));
+            SetField("_velocity", new Vector3(100f, 200f, 300f));
 
             InvokeOnEnable();
 
-            Assert.That(GetVelocity(), Is.EqualTo(Vector3.zero));
+            Assert.That(GetField<Vector3>("_velocity"), Is.EqualTo(Vector3.zero));
         }
 
         [Test]
@@ -159,11 +163,9 @@ namespace Engineering.Tests
             _cameraGo.transform.position = new Vector3(10f, 20f, 30f);
             _cameraGo.transform.rotation = Quaternion.Euler(5f, 10f, 15f);
             SetReferences(_targetGo.transform, _cameraGo.transform);
-            _managerGo.SetActive(true);
+            InvokeAwake();
 
-            var serialized = new SerializedObject(_manager);
-            serialized.FindProperty("target").objectReferenceValue = null;
-            serialized.ApplyModifiedProperties();
+            SetField("target", null);
 
             InvokeLateUpdate();
 
@@ -178,7 +180,7 @@ namespace Engineering.Tests
             _targetGo.transform.position = Vector3.zero;
             _cameraGo.transform.position = new Vector3(0f, 2f, 0f);
             SetReferences(_targetGo.transform, _cameraGo.transform);
-            _managerGo.SetActive(true);
+            InvokeAwake();
 
             _targetGo.transform.position = new Vector3(100f, 100f, 100f);
 
@@ -193,14 +195,35 @@ namespace Engineering.Tests
             _targetGo.transform.position = new Vector3(0f, 0f, 0f);
             _cameraGo.transform.position = new Vector3(10f, 10f, 10f);
             SetReferences(_targetGo.transform, _cameraGo.transform);
-            _managerGo.SetActive(true);
+            InvokeAwake();
 
+            Vector3 offset = GetField<Vector3>("_positionOffset");
             _targetGo.transform.position = new Vector3(100f, 100f, 100f);
-            Vector3 expectedSnapPosition = _targetGo.transform.position + GetPositionOffset();
+            Vector3 expectedSnapPosition = _targetGo.transform.position + offset;
 
             InvokeLateUpdate();
 
             Assert.That(_cameraGo.transform.position, Is.Not.EqualTo(expectedSnapPosition));
+        }
+
+        [Test]
+        public void LateUpdate_ComputeDampedTargetInCorrectDirection()
+        {
+            _targetGo.transform.position = new Vector3(1f, 2f, 3f);
+            _cameraGo.transform.position = new Vector3(10f, 9f, 8f);
+            SetReferences(_targetGo.transform, _cameraGo.transform);
+            InvokeAwake();
+
+            Vector3 offset = GetField<Vector3>("_positionOffset");
+            _targetGo.transform.position = new Vector3(4f, 5f, 6f);
+
+            InvokeLateUpdate();
+
+            Vector3 expectedTarget = _targetGo.transform.position + offset;
+            Vector3 directionToTarget = expectedTarget - _cameraGo.transform.position;
+            Assert.That(directionToTarget.x, Is.GreaterThan(0f), "Camera should move in +X toward damped target");
+            Assert.That(directionToTarget.y, Is.GreaterThan(0f), "Camera should move in +Y toward damped target");
+            Assert.That(directionToTarget.z, Is.GreaterThan(0f), "Camera should move in +Z toward damped target");
         }
 
         [Test]
@@ -209,9 +232,9 @@ namespace Engineering.Tests
             _targetGo.transform.position = new Vector3(2f, 3f, 4f);
             _cameraGo.transform.position = new Vector3(7f, 9f, 13f);
             SetReferences(_targetGo.transform, _cameraGo.transform);
-            _managerGo.SetActive(true);
+            InvokeAwake();
 
-            Vector3 capturedOffset = GetPositionOffset();
+            Vector3 capturedOffset = GetField<Vector3>("_positionOffset");
             Vector3 newTargetPos = new Vector3(50f, 60f, 70f);
             _targetGo.transform.position = newTargetPos;
 
@@ -219,18 +242,6 @@ namespace Engineering.Tests
 
             Vector3 expectedFollowTarget = newTargetPos + capturedOffset;
             Assert.That(_cameraGo.transform.position, Is.Not.EqualTo(expectedFollowTarget));
-        }
-
-        [Test]
-        public void Awake_ResetsVelocityToZero()
-        {
-            _targetGo.transform.position = Vector3.zero;
-            _cameraGo.transform.position = new Vector3(5f, 5f, 5f);
-            SetReferences(_targetGo.transform, _cameraGo.transform);
-
-            _managerGo.SetActive(true);
-
-            Assert.That(GetVelocity(), Is.EqualTo(Vector3.zero));
         }
     }
 }
