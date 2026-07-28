@@ -321,6 +321,7 @@ namespace Engineering.Tests
             SetPrivateField(_cameraManager, "cameraTransform", _cameraObject.transform);
 
             _cameraObject.SetActive(true);
+            InvokePrivateMethod(_cameraManager, "Awake");
         }
 
         [TearDown]
