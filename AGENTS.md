@@ -9,7 +9,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 - **Engine:** Unity 6.3 (`6000.3.20f1`), Universal Render Pipeline (URP).
 - **Game:** `My Pizza Shop`, an early-stage casual/mobile-oriented 3D game.
 - **Gameplay code:** `Assets/Engineering/`.
-- **Current gameplay slice:** player movement and wallet, Input System event relay, timed payments, purchasable trigger areas, autonomous pizza production, player pizza stacks, pizza serving station with customer queue and money reward, trash station with DoTween animation, customer bot NavMesh movement, timed customer spawner, and ScriptableObject event channels for gameplay feedback.
+- **Current gameplay slice:** player movement and wallet, Input System event relay, a separate `CameraManager` with per-axis `SmoothDamp` player follow, ScriptableObject-backed camera tuning, timed payments, purchasable trigger areas, autonomous pizza production, player pizza stacks, pizza serving station with customer queue and money reward, trash station with DoTween animation, customer bot NavMesh movement, timed customer spawner, and ScriptableObject event channels for gameplay feedback.
 - **Primary authored scene on disk:** `Assets/Scenes/MainScene.unity`. The scene's NavMeshSurface is baked and covers SpawnPoint, 2 approach waypoints, and CustomerSlot_0–9. Baked NavMesh data is stored in `Assets/Scenes/MainScene_NavMeshData.asset`.
 
 ## Start Here
@@ -24,6 +24,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 | Path | Responsibility |
 | --- | --- |
 | `Assets/Engineering/Scripts/Mono/Managers/InputManager.cs` | Wraps the Input System's `Player` action map and publishes input events. |
+| `Assets/Engineering/Scripts/Mono/Managers/CameraManager.cs` | Scene-local camera follow manager; follows the player in `LateUpdate` with per-axis `Mathf.SmoothDamp`, preserving the initial camera rotation and position offset. Reads tuning from `SCameraSettings`. |
 | `Assets/Engineering/Scripts/Mono/Managers/EconomyManager.cs` | Plain scene object; transfers wallet money to a purchase area over time. |
 | `Assets/Engineering/Scripts/Mono/Bootstrap/MainSceneInstaller.cs` | Composition root for MainScene; validates and initializes all cross-scene dependencies in `Awake`. |
 | `Assets/Engineering/Scripts/Mono/Player/` | Player movement, wallet, and trigger helpers. |
@@ -46,6 +47,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 | `Assets/Engineering/ScriptableObjects/SGrillStation.cs` | Pizza production-rate and station-capacity tuning asset definition. |
 | `Assets/Engineering/ScriptableObjects/SServeStation.cs` | Pizza serving-station tuning: min/max pizzas per order, max queue customers (1–10), customer spawn interval, price-per-pizza, and max stored pizzas. `maxPizzas` was renamed to `maxPizzasPerOrder` with `[FormerlySerializedAs]` for asset data preservation. |
 | `Assets/Engineering/ScriptableObjects/STrashStation.cs` | Trash station animation tuning asset definition. |
+| `Assets/Engineering/ScriptableObjects/SCameraSettings.cs` | Camera follow tuning asset definition: X/Y/Z damping and optional maximum follow speed. |
 | `Assets/Engineering/ScriptableObjects/SVoidEventChannel.cs` | Decoupled, parameterless gameplay-event channel. |
 | `Assets/Engineering/ScriptableObjects/SIntEventChannel.cs` | Decoupled integer-value event channel used by the pizza inventory UI. |
 | `Assets/Engineering/Prefabs/PizzaVisual.prefab` | Placeholder pizza visual used by the oven and player stacks. |
@@ -73,6 +75,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 - `MainSceneInstaller` is the composition root for `MainScene`. Scene-object dependencies are injected through public `Initialize` methods called during `Awake`. Prefab-local and ScriptableObject references remain Inspector-assigned.
 - `EconomyManager` has a runtime `CurrencyService` reference set via `Initialize`. `BuyingArea` has a runtime `EconomyManager` reference set via `Initialize`. `ServeStation` and `MoneyToCollect` have runtime `CurrencyService` references set via `Initialize`. `PlayerMovement` has a runtime `InputManager` reference set via `Initialize`. `UIManager` has a runtime `PlayerWallet` reference set via `Initialize`.
 - Use physics movement in `FixedUpdate`, as `PlayerMovement` does.
+- `CameraManager` is a separate child of the scene `Managers` object. Its `target` and `cameraTransform` references remain scene-specific; damping values come from the Inspector-assigned `SCameraSettings` asset. Camera position follows in `LateUpdate`; camera rotation remains at its initial scene-authored rotation.
 
 ## Important Contracts
 
@@ -102,7 +105,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 
 ## Validation
 
-- The project source currently declares 262 EditMode and 163 PlayMode tests. Run the affected suite after gameplay changes; test counts alone do not prove they passed.
+- The project source currently declares 294 EditMode and 174 PlayMode tests, including camera-follow and `SCameraSettings` coverage. Run the affected suite after gameplay changes; test counts alone do not prove they passed.
 - For script changes, compile in Unity and check Console errors. For gameplay changes, exercise the affected flow in Play Mode when the Editor is available.
 - Do not claim a successful build or scene validation without actually performing it.
 - **Player prefab contract:** `PlayerPrefabContractTests` (EditMode) validates the Player prefab hierarchy required by all trigger interactions — Scripts/Mesh children, inventory placement, collider, tag, and PlayerTriggerRelay wiring.
@@ -112,7 +115,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 
 - **Workflow:** `.github/workflows/unity-tests.yml` runs on push to `dev`/`main` and PRs targeting `main`.
 - **Jobs:** separate `editmode-tests` and `playmode-tests` using Unity `6000.3.20f1` via GameCI (`game-ci/unity-test-runner@v4`).
-- **Secret:** `UNITY_LICENSE` repository secret must be configured. The workflow fails early with a clear message if the secret is missing.
+- **Secrets:** `UNITY_LICENSE`, `UNITY_EMAIL`, and `UNITY_PASSWORD` repository secrets must be configured. The workflow fails early with a clear message if any required secret is missing.
 - **Artifacts:** test result XML files are uploaded as `editmode-test-results` and `playmode-test-results` on every run.
 - **Local equivalent:** run EditMode and PlayMode suites through Unity Test Runner; CI mirrors this with GameCI.
 

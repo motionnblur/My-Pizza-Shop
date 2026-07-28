@@ -6,8 +6,8 @@
 
 - **Project root:** repository root
 - **Last analyzed:** 2026-07-28
-- **Last analyzed commit:** `4d88913`
-- **Summary:** Early-stage casual 3D game named *My Pizza Shop*. The current gameplay slice includes movement, wallet and ground-money collection, timed area purchases, autonomous pizza production and collection, player pizza stacks, pizza serving station with customer queue and money reward, trash station with DoTween fly-and-shrink animation, UI counters, pooled DOTween money-transfer effects, customer bot NavMesh movement, timed customer spawner, and ScriptableObject event channels for decoupled gameplay feedback.
+- **Last analyzed commit:** `78ac204`
+- **Summary:** Early-stage casual 3D game named *My Pizza Shop*. The current gameplay slice includes movement, wallet and ground-money collection, timed area purchases, autonomous pizza production and collection, player pizza stacks, a separate `CameraManager` with ScriptableObject-backed per-axis damping and player follow, pizza serving station with customer queue and money reward, trash station with DoTween fly-and-shrink animation, UI counters, pooled DOTween money-transfer effects, customer bot NavMesh movement, timed customer spawner, and ScriptableObject event channels for decoupled gameplay feedback.
 
 ## Confirmed Environment
 
@@ -22,10 +22,10 @@
 | --- | --- | --- | --- |
 | Rendering | URP 17.3.0 | Confirmed | `Packages/manifest.json`, `ProjectSettings/GraphicsSettings.asset` |
 | Input | Input System 1.19.0; `InputManager` uses an asset-backed `Player` action map | Confirmed | `Packages/manifest.json`, `ProjectSettings/ProjectSettings.asset`, `Assets/Engineering/Scripts/Mono/Managers/InputManager.cs` |
-| Camera | MainScene has one URP `Main Camera`, orthographic with size 5; a separate `CameraManager` child of `Managers` follows the Player while controlling the camera through an explicit reference, preserving the initial position offset and rotation, and applying per-axis `SmoothDamp` damping (`xDamping`, `yDamping`, `zDamping`) with an optional `maxFollowSpeed` limit. Damping values are stored in a `SCameraSettings` ScriptableObject asset. Cinemachine is not present in the manifest or first-party code | Confirmed | `Assets/Scenes/MainScene.unity`, `Assets/Engineering/Scripts/Mono/Managers/CameraManager.cs`, `Assets/Engineering/ScriptableObjects/SCameraSettings.cs`, `Packages/manifest.json` |
+| Camera | MainScene has one URP `Main Camera`, orthographic with size 5; a separate `CameraManager` child of `Managers` follows the Player while controlling the camera through an explicit reference, preserving the initial position offset and rotation, and applying per-axis `SmoothDamp` damping (`xDamping`, `yDamping`, `zDamping`) with an optional `maxFollowSpeed` limit. Damping values are stored in the assigned `SCameraSettings` ScriptableObject asset. Cinemachine is not present in the manifest or first-party code | Confirmed | `Assets/Scenes/MainScene.unity`, `Assets/Engineering/Scripts/Mono/Managers/CameraManager.cs`, `Assets/Engineering/ScriptableObjects/SCameraSettings.cs`, `Assets/Engineering/ScriptableObjects/SCameraSettings.asset`, `Packages/manifest.json` |
 | Navigation | AI Navigation 2.0.13 is installed and used by `CustomerBot` for NavMesh movement; MainScene has a baked NavMeshSurface covering SpawnPoint, 2 waypoints, and 10 queue slots | Confirmed | `Packages/manifest.json`, `CustomerBot.cs`, `Assets/Scenes/MainScene_NavMeshData.asset` |
 | UI | UGUI 2.0.0 is installed; project UI usage not inspected | Confirmed / unknown usage | `Packages/manifest.json` |
-| Tests | Unity Test Framework 1.6.0 is installed; current source declares 283 EditMode `[Test]` methods and 174 PlayMode `[UnityTest]` methods covering core gameplay, camera follow behavior, UI, economy, money-animation pooling, pizza inventory, grill production, serving station with customer queue, customer queue domain models, purchase progress domain models, table model, table waste model, table flow, and trash station including pooled visual reuse and cleanup | Confirmed declaration counts; execution not performed | `Packages/manifest.json`, `Assets/Engineering/Tests/` |
+| Tests | Unity Test Framework 1.6.0 is installed; current source declares 294 EditMode `[Test]` methods and 174 PlayMode `[UnityTest]` methods covering core gameplay, camera follow and `SCameraSettings` behavior, UI, economy, money-animation pooling, pizza inventory, grill production, serving station with customer queue, customer queue domain models, purchase progress domain models, table model, table waste model, table flow, and trash station including pooled visual reuse and cleanup | Confirmed declaration counts; execution not performed in this audit | `Packages/manifest.json`, `Assets/Engineering/Tests/` |
 | Tweening | DOTween is included as a vendor plugin and actively used for money-transfer animation | Confirmed | `Assets/Plugins/Demigiant/DOTween/`, `AnimationManager.cs` |
 | Gameplay events | `SVoidEventChannel` decouples parameterless gameplay feedback; `SIntEventChannel` publishes pizza inventory counts to UI | Confirmed | Event-channel sources and assets, `EconomyManager.cs`, `SoundManager.cs`, `PlayerPizzaInventory.cs`, `UIManager.cs` |
 | Other tooling | Timeline, Visual Scripting, Rider and Visual Studio integrations are installed; first-party usage is unverified | Confirmed / unverified usage | `Packages/manifest.json` |
@@ -44,7 +44,7 @@
 | `Assets/Engineering/Scripts/Mono/Actors/CustomerQueue/` | Customer bot NavMesh movement and timed customer spawner | Confirmed | `CustomerBot.cs`, `CustomerSpawner.cs` |
 | `Assets/Engineering/Scripts/Mono/Actors/TrashStation/` | Player-to-station pizza disposal with DoTween animation | Confirmed | `TrashStation.cs`, `TrashPlate.cs` |
 | `Assets/Engineering/Scripts/Mono/Actors/Table/` | `Table` — seat management and leftover-waste delegation to `TableWasteModel` and `TableWasteVisuals`. `TableManager` — cross-table reservation, release, and `AddLeftoversToTable` API. `TableWasteVisuals` — pooled leftover visual stack with configurable anchor and spacing. | Confirmed | `Table.cs`, `TableManager.cs`, `TableWasteVisuals.cs` |
-| `Assets/Engineering/ScriptableObjects/` | First-party ScriptableObject definitions for economy and animation tuning | Confirmed | `SEconomy.cs`, `SAnimation.cs` |
+| `Assets/Engineering/ScriptableObjects/` | First-party ScriptableObject definitions for economy, station, camera, animation, and event-channel tuning | Confirmed | Folder and source inventory |
 | `Assets/Engineering/Prefabs/` | Player, purchase-area, animated-money, ground-money, pizza-maker, serving-station, customer-bot, trash-station, placeholder-pizza, and leftover prefabs | Confirmed | Prefab inventory and serialized script-reference inspection |
 | `Assets/Scenes/` | Authored scene assets; contains `MainScene.unity` | Confirmed | File inventory |
 | `Assets/Settings/` | Project visual/render-pipeline configuration assets | Likely | Folder name plus URP project configuration |
@@ -95,9 +95,9 @@
 
 ## Testing And Validation
 
-- **EditMode tests:** 262 `[Test]` declarations in `Assets/Engineering/Tests/Editor/`; they cover wallet, trigger relays, movement, ground-money prefab configuration, Event Channel listener registration, pizza inventory capacity (TryAdd/TryRemove), the plate-collider stack origin, build scene configuration, SoundManager pizzaServedEvent serialized reference in MainScene, production MainScene economy wiring, ServeStationModel deposit/serve/reward/completion calculations, PurchaseProgressModel constructor/payment/completion rules, CustomerQueueModel enqueue/remove-front/capacity rules, CustomerOrderModel receive/completion rules, PizzaInventoryModel domain rules, GrillStationModel domain rules, PaymentSessionModel domain rules, WalletModel domain rules, TableModel rules, TableWasteModel leftover-count rules, an architecture guard verifying every domain `.cs` file has no UnityEngine dependency, and a Player prefab contract test (`PlayerPrefabContractTests`) validating the Scripts/Mesh hierarchy, inventory placement on Scripts, CapsuleCollider on Mesh, Player tag, and PlayerTriggerRelay wiring.
-- **PlayMode tests:** 163 `[UnityTest]` declarations in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, purchase progress persistence, partial payment state, zero/negative payment safety, disable/enable retention, re-entry after cancellation, pickup collection/UI updates, player-only collection, duplicate-trigger protection, moving-player animation targeting, economy Event Channel publication, pizza production/partial collection, pizza serving with customer queue (front-customer delivery, partial delivery, completed-order removal, slot guard, capacity, money, events, trigger flow, player/non-player tag filtering), customer spawner (order range, capacity enforcement, disabled cleanup), table flow (leftover accumulation, eating→leftovers integration, no-leftovers-on-destroy), pizza trashing (removal, events, animation, guard conditions, trigger flow, pooled visual reuse, release, reset, and destruction cleanup), UI scene-object wiring, money-animation pool reuse/cleanup, disable/enable storage retention, runtime price-change integration, and Player trigger regression tests (`PlayerTriggerRegressionTests`) with contract-level and real-physics regression for GrillPlate, PlateTrigger, TrashPlate, and TableWasteTrigger against an instantiated Player.prefab clone.
-- **CI/build validation:** GitHub Actions workflow at `.github/workflows/unity-tests.yml` runs on pushes to `dev`/`main` and PRs targeting `main`. Separate `editmode-tests` and `playmode-tests` jobs use Unity `6000.3.20f1` via GameCI (`game-ci/unity-test-runner@v4`). Test result XML files are uploaded as artifacts. The workflow requires a `UNITY_LICENSE` repository secret; it fails early with a clear message if the secret is missing.
+- **EditMode tests:** 294 `[Test]` declarations in `Assets/Engineering/Tests/Editor/`; they cover wallet, trigger relays, movement, camera follow and `SCameraSettings` tuning, ground-money prefab configuration, Event Channel listener registration, pizza inventory capacity (TryAdd/TryRemove), the plate-collider stack origin, build scene configuration, SoundManager pizzaServedEvent serialized reference in MainScene, production MainScene economy wiring, ServeStationModel deposit/serve/reward/completion calculations, PurchaseProgressModel constructor/payment/completion rules, CustomerQueueModel enqueue/remove-front/capacity rules, CustomerOrderModel receive/completion rules, PizzaInventoryModel domain rules, GrillStationModel domain rules, PaymentSessionModel domain rules, WalletModel domain rules, TableModel rules, TableWasteModel leftover-count rules, an architecture guard verifying every domain `.cs` file has no UnityEngine dependency, and a Player prefab contract test (`PlayerPrefabContractTests`) validating the Scripts/Mesh hierarchy, inventory placement on Scripts, CapsuleCollider on Mesh, Player tag, and PlayerTriggerRelay wiring.
+- **PlayMode tests:** 174 `[UnityTest]` declarations in `Assets/Engineering/Tests/PlayMode/`; they cover payment, purchase-area removal, purchase progress persistence, partial payment state, zero/negative payment safety, disable/enable retention, re-entry after cancellation, pickup collection/UI updates, player-only collection, duplicate-trigger protection, moving-player animation targeting, economy Event Channel publication, pizza production/partial collection, pizza serving with customer queue (front-customer delivery, partial delivery, completed-order removal, slot guard, capacity, money, events, trigger flow, player/non-player tag filtering), customer spawner (order range, capacity enforcement, disabled cleanup), table flow (leftover accumulation, eating→leftovers integration, no-leftovers-on-destroy), pizza trashing (removal, events, animation, guard conditions, trigger flow, pooled visual reuse, release, reset, and destruction cleanup), UI scene-object wiring, money-animation pool reuse/cleanup, disable/enable storage retention, runtime price-change integration, and Player trigger regression tests (`PlayerTriggerRegressionTests`) with contract-level and real-physics regression for GrillPlate, PlateTrigger, TrashPlate, and TableWasteTrigger against an instantiated Player.prefab clone.
+- **CI/build validation:** GitHub Actions workflow at `.github/workflows/unity-tests.yml` runs on pushes to `dev`/`main` and PRs targeting `main`. Separate `editmode-tests` and `playmode-tests` jobs use Unity `6000.3.20f1` via GameCI (`game-ci/unity-test-runner@v4`). Test result XML files are uploaded as artifacts. The workflow requires `UNITY_LICENSE`, `UNITY_EMAIL`, and `UNITY_PASSWORD` repository secrets; it fails early with a clear message if any is missing.
 - **Recommended minimum validation:** Run both test suites, then manually exercise the scene physical trigger, camera, and input wiring in Play Mode. After build-scene or SoundManager changes, also run `SceneConfigurationTests` EditMode suite.
 
 ## Available Unity Tooling
@@ -124,7 +124,7 @@
 - `MainScene` now assigns `pizzaServedEvent` on both `ServingStation` (via prefab reference) and `SoundManager` (scene override); the configured serve SFX is received and played.
 - No Unity MCP provider or Editor-console capability was available to this audit. Full current test execution, Console inspection, and Play Mode verification remain unrecorded.
 - The project is likely Android-focused, based on explicit Android settings, but release targets are not confirmed.
-- Current camera behavior has not been verified in the Unity Editor or Play Mode; occlusion handling, touch-camera UX, follow smoothing, and zoom limits remain design/implementation decisions.
+- Camera follow and damping have been manually verified by the user; independent automated test execution is not recorded in this context. Occlusion handling, touch-camera UX, and zoom limits remain design/implementation decisions.
 
 ## Source Files Inspected
 
@@ -136,6 +136,8 @@
 - `Packages/packages-lock.json`
 - `Assets/Engineering/Scripts/Mono/Managers/InputManager.cs`
 - `Assets/Engineering/Scripts/Mono/Managers/CameraManager.cs`
+- `Assets/Engineering/ScriptableObjects/SCameraSettings.cs`
+- `Assets/Engineering/ScriptableObjects/SCameraSettings.asset`
 - `Assets/Engineering/Scripts/Mono/Player/PlayerMovement.cs`
 - `Assets/Engineering/Prefabs/Player.prefab`
 - `Assets/InputSystem_Actions.inputactions`
@@ -143,7 +145,6 @@
 - `Assets/Engineering/Scripts/Mono/Managers/EconomyManager.cs`
 - `Assets/Engineering/Scripts/Mono/Managers/UIManager.cs`
 - `Assets/Engineering/Scripts/Mono/Managers/AnimationManager.cs`
-- `Assets/Engineering/Scripts/Mono/Player/PlayerMovement.cs`
 - `Assets/Engineering/Scripts/Mono/Player/PlayerWallet.cs`
 - `Assets/Engineering/Scripts/Mono/Player/PlayerPizzaInventory.cs`
 - `Assets/Engineering/Scripts/Mono/Player/PlayerTrigger.cs`
@@ -188,6 +189,8 @@
 - `Assets/Engineering/ScriptableObjects/Engineering.ScriptableObjects.asmdef`
 - `Assets/Engineering/Scripts/Mono/Engineering.Runtime.asmdef`
 - `Assets/Engineering/Tests/Editor/CoreGameplayTests.cs`
+- `Assets/Engineering/Tests/Editor/CameraManagerEditModeTests.cs`
+- `Assets/Engineering/Tests/Editor/SCameraSettingsEditModeTests.cs`
 - `Assets/Engineering/Tests/Editor/ServeStationModelTests.cs`
 - `Assets/Engineering/Tests/Editor/PlayerPizzaInventoryTests.cs`
 - `Assets/Engineering/Tests/PlayMode/EconomyPaymentPlayModeTests.cs`
