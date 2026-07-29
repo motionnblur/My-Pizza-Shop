@@ -15,7 +15,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
         [SerializeField] private SVoidEventChannel pizzaServedEvent;
         [SerializeField] private CustomerQueueController queueController;
         [SerializeField] private ServeStationVisuals stationVisuals;
-        [SerializeField] private TableManager tableManager;
+        private TableManager _tableManager;
         private CurrencyService _currencyService;
 
         private ServeStationModel _model;
@@ -24,7 +24,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
         public int QueueCapacity => sServeStation != null ? sServeStation.maxQueueCustomers : 0;
         public int StoredPizzaCount => _model?.StoredPizzaCount ?? 0;
 
-        public void Initialize(CurrencyService currencyService)
+        public void Initialize(CurrencyService currencyService, TableManager tableManager = null)
         {
             if (currencyService == null)
                 throw new ArgumentNullException(nameof(currencyService));
@@ -38,6 +38,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             }
 
             _currencyService = currencyService;
+            _tableManager = tableManager;
         }
 
         private void OnEnable()
@@ -58,14 +59,20 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
                 stationVisuals.Refresh(StoredPizzaCount);
             }
 
-            if (tableManager != null)
-                tableManager.SeatReleased += OnSeatReleased;
+            if (_tableManager != null)
+            {
+                _tableManager.SeatReleased += OnRetryWaitingCustomer;
+                _tableManager.LeftoversRemoved += OnRetryWaitingCustomer;
+            }
         }
 
         private void OnDisable()
         {
-            if (tableManager != null)
-                tableManager.SeatReleased -= OnSeatReleased;
+            if (_tableManager != null)
+            {
+                _tableManager.SeatReleased -= OnRetryWaitingCustomer;
+                _tableManager.LeftoversRemoved -= OnRetryWaitingCustomer;
+            }
         }
 
         private void TryPrepareModel()
@@ -165,7 +172,7 @@ namespace Engineering.Scripts.Mono.Actors.ServeStation
             return result.DeliveredPizzaCount;
         }
 
-        private void OnSeatReleased()
+        private void OnRetryWaitingCustomer()
         {
             if (queueController == null)
                 return;

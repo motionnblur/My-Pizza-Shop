@@ -7,10 +7,31 @@ namespace Engineering.Scripts.Mono.Actors.Table
     {
         [SerializeField] private Table[] tables;
 
+        private bool _leftoversSubscribed;
+
         public event Action SeatReleased;
+        public event Action LeftoversRemoved;
+
+        private void EnsureSubscribed()
+        {
+            if (_leftoversSubscribed || tables == null)
+                return;
+            foreach (var table in tables)
+            {
+                if (table != null)
+                    table.LeftoverStateChanged += OnTableLeftoverStateChanged;
+            }
+            _leftoversSubscribed = true;
+        }
+
+        private void OnTableLeftoverStateChanged()
+        {
+            LeftoversRemoved?.Invoke();
+        }
 
         public bool TryReserveSeat(out int tableIndex, out int seatIndex)
         {
+            EnsureSubscribed();
             if (tables != null)
             {
                 for (var i = 0; i < tables.Length; i++)
@@ -35,6 +56,7 @@ namespace Engineering.Scripts.Mono.Actors.Table
 
         public bool TryReserveSeat(int expectedLeftoverCount, out int tableIndex, out int seatIndex)
         {
+            EnsureSubscribed();
             if (tables != null)
             {
                 for (var i = 0; i < tables.Length; i++)
@@ -59,6 +81,7 @@ namespace Engineering.Scripts.Mono.Actors.Table
 
         public void ReleaseSeat(int tableIndex, int seatIndex)
         {
+            EnsureSubscribed();
             if (tables == null || tableIndex < 0 || tableIndex >= tables.Length || tables[tableIndex] == null)
                 return;
 
@@ -69,6 +92,7 @@ namespace Engineering.Scripts.Mono.Actors.Table
 
         public Transform GetSeatTransform(int tableIndex, int seatIndex)
         {
+            EnsureSubscribed();
             if (tables == null || tableIndex < 0 || tableIndex >= tables.Length || tables[tableIndex] == null)
                 return null;
             return tables[tableIndex].GetSeatTransform(seatIndex);
@@ -76,6 +100,7 @@ namespace Engineering.Scripts.Mono.Actors.Table
 
         public void AddLeftoversToTable(int tableIndex, int pizzaCount)
         {
+            EnsureSubscribed();
             if (tables == null || tableIndex < 0 || tableIndex >= tables.Length || tables[tableIndex] == null)
                 return;
 

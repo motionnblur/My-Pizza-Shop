@@ -1,3 +1,4 @@
+using System;
 using Engineering.Scripts.Domain.Table;
 using UnityEngine;
 
@@ -11,6 +12,8 @@ namespace Engineering.Scripts.Mono.Actors.Table
 
         private TableModel _model;
         private TableWasteModel _wasteModel;
+
+        public event Action LeftoverStateChanged;
 
         public int SeatCount => seatTransforms != null ? seatTransforms.Length : 0;
         public bool HasAvailableSeat
@@ -115,6 +118,7 @@ namespace Engineering.Scripts.Mono.Actors.Table
             _wasteModel?.Clear();
             if (wasteVisuals != null)
                 wasteVisuals.Clear();
+            LeftoverStateChanged?.Invoke();
         }
 
         public int TryRemoveLeftovers(int requestedAmount)
@@ -124,8 +128,12 @@ namespace Engineering.Scripts.Mono.Actors.Table
                 return 0;
 
             var removed = _wasteModel.TryRemoveLeftovers(requestedAmount);
-            if (removed > 0 && wasteVisuals != null)
-                wasteVisuals.Refresh(_wasteModel.LeftoverCount);
+            if (removed > 0)
+            {
+                if (wasteVisuals != null)
+                    wasteVisuals.Refresh(_wasteModel.LeftoverCount);
+                LeftoverStateChanged?.Invoke();
+            }
 
             return removed;
         }

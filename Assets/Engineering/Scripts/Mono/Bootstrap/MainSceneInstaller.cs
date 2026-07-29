@@ -62,7 +62,7 @@ namespace Engineering.Scripts.Mono.Bootstrap
                 pickup.Initialize(currencyService);
 
             foreach (var station in serveStations)
-                station.Initialize(currencyService);
+                station.Initialize(currencyService, tableManager);
         }
 
         private void ValidateCoreReference(UnityEngine.Object reference, string fieldName)

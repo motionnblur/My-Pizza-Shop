@@ -379,14 +379,13 @@ namespace Engineering.Tests
             serveSettings.maxStoredPizzas = 10;
             serveSettings.pricePerPizza = 10;
             SetPrivateField(serveStation, "sServeStation", serveSettings);
-            SetPrivateField(serveStation, "tableManager", manager);
 
             var currencyServiceObject = new GameObject("CurrencyService");
             var currencyService = currencyServiceObject.AddComponent<CurrencyService>();
             var wallet = new GameObject("Wallet").AddComponent<PlayerWallet>();
             SetPrivateField(wallet, "money", 100);
             currencyService.Initialize(wallet);
-            serveStation.Initialize(currencyService);
+            serveStation.Initialize(currencyService, manager);
 
             serveStationObject.SetActive(true);
             yield return null;
@@ -740,6 +739,136 @@ namespace Engineering.Tests
             }
 
             return (queueController, bots);
+        }
+
+        [UnityTest]
+        public IEnumerator WaitingCustomer_RetriesOnSeatReleased_ThroughServeStation()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+
+            var serveStationObject = new GameObject("ServeStation");
+            serveStationObject.SetActive(false);
+            var serveStation = serveStationObject.AddComponent<ServeStation>();
+            var serveSettings = ScriptableObject.CreateInstance<SServeStation>();
+            serveSettings.maxQueueCustomers = 5;
+            serveSettings.maxStoredPizzas = 10;
+            serveSettings.pricePerPizza = 10;
+            SetPrivateField(serveStation, "sServeStation", serveSettings);
+
+            var queueController = serveStationObject.AddComponent<CustomerQueueController>();
+            SetPrivateField(serveStation, "queueController", queueController);
+            var queueSlots = new Transform[5];
+            for (var i = 0; i < 5; i++)
+            {
+                queueSlots[i] = new GameObject($"Slot{i}").transform;
+                queueSlots[i].SetParent(serveStationObject.transform);
+            }
+            SetPrivateField(queueController, "queueSlots", queueSlots);
+
+            var currencyServiceObject = new GameObject("CurrencyService");
+            var currencyService = currencyServiceObject.AddComponent<CurrencyService>();
+            var walletObject = new GameObject("Wallet");
+            var wallet = walletObject.AddComponent<PlayerWallet>();
+            SetPrivateField(wallet, "money", 100);
+            currencyService.Initialize(wallet);
+            serveStation.Initialize(currencyService, manager);
+
+            serveStationObject.SetActive(true);
+            yield return null;
+
+            var exitPoint = new GameObject("Exit").transform;
+            _toCleanup.Add(exitPoint.gameObject);
+
+            var bot1 = CreateBotWithDining(manager, eatingDuration: 0.1f, exitPoint: exitPoint);
+            var bot2 = CreateBotWithDining(manager, eatingDuration: 5f, exitPoint: exitPoint);
+
+            serveStation.TryRegisterCustomer(bot2);
+            serveStation.TryRegisterCustomer(bot1);
+
+            Assert.That(bot1.TransitionToDining(), Is.True);
+            Assert.That(bot2.TransitionToDining(), Is.False,
+                "bot2 should enter WaitingForTable since the only seat is taken.");
+            Assert.That(bot2.IsWaitingForTable, Is.True);
+
+            SetPrivateField(bot1, "_state", 5);
+            SetPrivateField(bot1, "_eatingTimer", 0.05f);
+
+            yield return new WaitForSeconds(0.2f);
+
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.False,
+                "bot2 should have taken the newly freed seat.");
+            Assert.That(bot2.IsWaitingForTable, Is.False,
+                "bot2 should no longer be waiting for a table.");
+            Assert.That(queueController.CustomerCount, Is.EqualTo(1),
+                "bot1 should still be in the queue (bot1 was dining, not dequeued).");
+        }
+
+        [UnityTest]
+        public IEnumerator WaitingCustomer_RetriesOnLeftoversRemoved_ThroughServeStation()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+            SetPrivateField(table, "maxLeftovers", 2);
+
+            var serveStationObject = new GameObject("ServeStation");
+            serveStationObject.SetActive(false);
+            var serveStation = serveStationObject.AddComponent<ServeStation>();
+            var serveSettings = ScriptableObject.CreateInstance<SServeStation>();
+            serveSettings.maxQueueCustomers = 5;
+            serveSettings.maxStoredPizzas = 10;
+            serveSettings.pricePerPizza = 10;
+            SetPrivateField(serveStation, "sServeStation", serveSettings);
+
+            var queueController = serveStationObject.AddComponent<CustomerQueueController>();
+            SetPrivateField(serveStation, "queueController", queueController);
+            var queueSlots = new Transform[5];
+            for (var i = 0; i < 5; i++)
+            {
+                queueSlots[i] = new GameObject($"Slot{i}").transform;
+                queueSlots[i].SetParent(serveStationObject.transform);
+            }
+            SetPrivateField(queueController, "queueSlots", queueSlots);
+
+            var currencyServiceObject = new GameObject("CurrencyService");
+            var currencyService = currencyServiceObject.AddComponent<CurrencyService>();
+            var walletObject = new GameObject("Wallet");
+            var wallet = walletObject.AddComponent<PlayerWallet>();
+            SetPrivateField(wallet, "money", 100);
+            currencyService.Initialize(wallet);
+            serveStation.Initialize(currencyService, manager);
+
+            serveStationObject.SetActive(true);
+            yield return null;
+
+            table.AddLeftovers(2);
+            Assert.That(table.CanAcceptLeftovers(1), Is.False,
+                "Table should be at max leftover capacity.");
+
+            var exitPoint = new GameObject("Exit").transform;
+            _toCleanup.Add(exitPoint.gameObject);
+
+            var bot = CreateBotWithDining(manager, eatingDuration: 5f, exitPoint: exitPoint);
+
+            serveStation.TryRegisterCustomer(bot);
+
+            var reserved = bot.TransitionToDining();
+            Assert.That(reserved, Is.False,
+                "Bot should not reserve because table lacks leftover capacity.");
+            Assert.That(bot.IsWaitingForTable, Is.True);
+
+            var leftoversRemoved = false;
+            manager.LeftoversRemoved += () => leftoversRemoved = true;
+
+            table.TryRemoveLeftovers(2);
+            yield return null;
+
+            Assert.That(leftoversRemoved, Is.True,
+                "LeftoversRemoved should have been raised.");
+            Assert.That(bot.IsWaitingForTable, Is.False,
+                "Bot should have been retried and moved away from the queue.");
+            Assert.That(queueController.CustomerCount, Is.EqualTo(0),
+                "Bot should be removed from the queue after successful retry.");
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.False,
+                "Seat should be occupied by the retried bot.");
         }
 
         private void EnsureNavMeshExists()

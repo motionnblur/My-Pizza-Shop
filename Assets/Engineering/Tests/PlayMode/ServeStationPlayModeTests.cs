@@ -1382,8 +1382,6 @@ namespace Engineering.Tests
             var exitPointObject = new GameObject("ExitPoint");
             _exitPoint = exitPointObject.transform;
 
-            SetPrivateField(serveStation, "tableManager", _tableManager);
-
             _serveStationObject.SetActive(true);
 
             _playerObject = new GameObject("ServePlayerTest");
@@ -1404,7 +1402,7 @@ namespace Engineering.Tests
             _currencyService = _currencyServiceObject.AddComponent<CurrencyService>();
             _currencyService.Initialize(wallet);
 
-            serveStation.Initialize(_currencyService);
+            serveStation.Initialize(_currencyService, _tableManager);
         }
 
         private CustomerBot CreateCustomerBot(int orderAmount)
