@@ -10,14 +10,14 @@ namespace Engineering.Scripts.Mono.Managers
         [SerializeField] private Transform cameraTransform;
         [SerializeField] private SCameraSettings settings;
 
-        private Vector3 _positionOffset;
         private Quaternion _initialRotation;
         private Vector3 _velocity;
 
         private void Awake()
         {
             ValidateReferences();
-            CaptureOffsets();
+            _initialRotation = cameraTransform.rotation;
+            cameraTransform.position = target.position + settings.FollowOffset;
             _velocity = Vector3.zero;
         }
 
@@ -41,18 +41,12 @@ namespace Engineering.Scripts.Mono.Managers
                     $"{nameof(CameraManager)} requires a {nameof(SCameraSettings)} reference.");
         }
 
-        private void CaptureOffsets()
-        {
-            _positionOffset = cameraTransform.position - target.position;
-            _initialRotation = cameraTransform.rotation;
-        }
-
         private void LateUpdate()
         {
             if (target == null || cameraTransform == null || settings == null)
                 return;
 
-            Vector3 targetPosition = target.position + _positionOffset;
+            Vector3 targetPosition = target.position + settings.FollowOffset;
             float dt = Time.deltaTime;
             float maxSpeed = settings.MaxFollowSpeed > 0f ? settings.MaxFollowSpeed : float.PositiveInfinity;
 

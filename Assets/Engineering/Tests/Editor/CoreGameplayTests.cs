@@ -343,8 +343,7 @@ namespace Engineering.Tests
         {
             _targetObject.transform.position = new Vector3(4f, 5f, 6f);
 
-            Vector3 snapPosition = _targetObject.transform.position +
-                GetPrivateField<Vector3>(_cameraManager, "_positionOffset");
+            Vector3 snapPosition = _targetObject.transform.position + _settings.FollowOffset;
 
             InvokePrivateMethod(_cameraManager, "LateUpdate");
 

@@ -24,7 +24,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 | Path | Responsibility |
 | --- | --- |
 | `Assets/Engineering/Scripts/Mono/Managers/InputManager.cs` | Wraps the Input System's `Player` action map and publishes input events. |
-| `Assets/Engineering/Scripts/Mono/Managers/CameraManager.cs` | Scene-local camera follow manager; follows the player in `LateUpdate` with per-axis `Mathf.SmoothDamp`, preserving the initial camera rotation and position offset. Reads tuning from `SCameraSettings`. |
+| `Assets/Engineering/Scripts/Mono/Managers/CameraManager.cs` | Scene-local camera follow manager; follows the player in `LateUpdate` with per-axis `Mathf.SmoothDamp`. On startup it positions the camera at `target.position + settings.FollowOffset` and preserves the initial camera rotation. Reads tuning from `SCameraSettings`. |
 | `Assets/Engineering/Scripts/Mono/Managers/EconomyManager.cs` | Plain scene object; transfers wallet money to a purchase area over time. |
 | `Assets/Engineering/Scripts/Mono/Bootstrap/MainSceneInstaller.cs` | Composition root for MainScene; validates and initializes all cross-scene dependencies in `Awake`. |
 | `Assets/Engineering/Scripts/Mono/Player/` | Player movement, wallet, and trigger helpers. |
@@ -47,7 +47,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 | `Assets/Engineering/ScriptableObjects/SGrillStation.cs` | Pizza production-rate and station-capacity tuning asset definition. |
 | `Assets/Engineering/ScriptableObjects/SServeStation.cs` | Pizza serving-station tuning: min/max pizzas per order, max queue customers (1–10), customer spawn interval, price-per-pizza, and max stored pizzas. `maxPizzas` was renamed to `maxPizzasPerOrder` with `[FormerlySerializedAs]` for asset data preservation. |
 | `Assets/Engineering/ScriptableObjects/STrashStation.cs` | Trash station animation tuning asset definition. |
-| `Assets/Engineering/ScriptableObjects/SCameraSettings.cs` | Camera follow tuning asset definition: X/Y/Z damping and optional maximum follow speed. |
+| `Assets/Engineering/ScriptableObjects/SCameraSettings.cs` | Camera follow tuning asset definition: X/Y/Z damping, optional maximum follow speed, and FollowOffset (default `-7, 10, -7` for isometric framing). |
 | `Assets/Engineering/ScriptableObjects/SVoidEventChannel.cs` | Decoupled, parameterless gameplay-event channel. |
 | `Assets/Engineering/ScriptableObjects/SIntEventChannel.cs` | Decoupled integer-value event channel used by the pizza inventory UI. |
 | `Assets/Engineering/Prefabs/PizzaVisual.prefab` | Placeholder pizza visual used by the oven and player stacks. |
@@ -75,7 +75,7 @@ This file is the fast entry point for AI agents and contributors. Read it before
 - `MainSceneInstaller` is the composition root for `MainScene`. Scene-object dependencies are injected through public `Initialize` methods called during `Awake`. Prefab-local and ScriptableObject references remain Inspector-assigned.
 - `EconomyManager` has a runtime `CurrencyService` reference set via `Initialize`. `BuyingArea` has a runtime `EconomyManager` reference set via `Initialize`. `ServeStation` and `MoneyToCollect` have runtime `CurrencyService` references set via `Initialize`. `ServeStation` also receives a runtime `TableManager` reference via `Initialize`. `PlayerMovement` has a runtime `InputManager` reference set via `Initialize`. `UIManager` has a runtime `PlayerWallet` reference set via `Initialize`.
 - Use physics movement in `FixedUpdate`, as `PlayerMovement` does.
-- `CameraManager` is a separate child of the scene `Managers` object. Its `target` and `cameraTransform` references remain scene-specific; damping values come from the Inspector-assigned `SCameraSettings` asset. Camera position follows in `LateUpdate`; camera rotation remains at its initial scene-authored rotation.
+- `CameraManager` is a separate child of the scene `Managers` object. Its `target` and `cameraTransform` references remain scene-specific; damping values and follow offset come from the Inspector-assigned `SCameraSettings` asset. On startup the camera snaps to `target.position + settings.FollowOffset`; camera rotation remains at its initial scene-authored rotation.
 
 ## Important Contracts
 

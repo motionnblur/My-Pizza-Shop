@@ -127,16 +127,16 @@ namespace Engineering.Tests
         }
 
         [Test]
-        public void Awake_CapturesPositionOffsetCorrectly()
+        public void Awake_PositionsCameraAtTargetPlusFollowOffset()
         {
             _targetGo.transform.position = new Vector3(1f, 2f, 3f);
-            _cameraGo.transform.position = new Vector3(5f, 10f, 15f);
+            _cameraGo.transform.position = Vector3.zero;
             SetReferences(_targetGo.transform, _cameraGo.transform);
 
             InvokeAwake();
 
-            Vector3 expectedOffset = new Vector3(4f, 8f, 12f);
-            Assert.That(GetField<Vector3>("_positionOffset"), Is.EqualTo(expectedOffset));
+            Vector3 expectedPosition = _targetGo.transform.position + _settings.FollowOffset;
+            Assert.That(_cameraGo.transform.position, Is.EqualTo(expectedPosition));
         }
 
         [Test]
@@ -237,9 +237,8 @@ namespace Engineering.Tests
             SetReferences(_targetGo.transform, _cameraGo.transform);
             InvokeAwake();
 
-            Vector3 offset = GetField<Vector3>("_positionOffset");
             _targetGo.transform.position = new Vector3(100f, 100f, 100f);
-            Vector3 expectedSnapPosition = _targetGo.transform.position + offset;
+            Vector3 expectedSnapPosition = _targetGo.transform.position + _settings.FollowOffset;
 
             InvokeLateUpdate();
 
@@ -250,16 +249,15 @@ namespace Engineering.Tests
         public void LateUpdate_ComputeDampedTargetInCorrectDirection()
         {
             _targetGo.transform.position = new Vector3(1f, 2f, 3f);
-            _cameraGo.transform.position = new Vector3(10f, 9f, 8f);
+            _cameraGo.transform.position = new Vector3(10f, 10f, 10f);
             SetReferences(_targetGo.transform, _cameraGo.transform);
             InvokeAwake();
 
-            Vector3 offset = GetField<Vector3>("_positionOffset");
             _targetGo.transform.position = new Vector3(4f, 5f, 6f);
 
             InvokeLateUpdate();
 
-            Vector3 expectedTarget = _targetGo.transform.position + offset;
+            Vector3 expectedTarget = _targetGo.transform.position + _settings.FollowOffset;
             Vector3 directionToTarget = expectedTarget - _cameraGo.transform.position;
             Assert.That(directionToTarget.x, Is.GreaterThan(0f), "Camera should move in +X toward damped target");
             Assert.That(directionToTarget.y, Is.GreaterThan(0f), "Camera should move in +Y toward damped target");
@@ -270,18 +268,38 @@ namespace Engineering.Tests
         public void LateUpdate_TargetPositionOffset_AppliedToFollowTarget()
         {
             _targetGo.transform.position = new Vector3(2f, 3f, 4f);
-            _cameraGo.transform.position = new Vector3(7f, 9f, 13f);
+            _cameraGo.transform.position = Vector3.zero;
             SetReferences(_targetGo.transform, _cameraGo.transform);
             InvokeAwake();
 
-            Vector3 capturedOffset = GetField<Vector3>("_positionOffset");
             Vector3 newTargetPos = new Vector3(50f, 60f, 70f);
             _targetGo.transform.position = newTargetPos;
 
             InvokeLateUpdate();
 
-            Vector3 expectedFollowTarget = newTargetPos + capturedOffset;
+            Vector3 expectedFollowTarget = newTargetPos + _settings.FollowOffset;
             Assert.That(_cameraGo.transform.position, Is.Not.EqualTo(expectedFollowTarget));
+        }
+
+        [Test]
+        public void SCameraSettings_HasDefaultFollowOffset()
+        {
+            var freshSettings = ScriptableObject.CreateInstance<SCameraSettings>();
+            Assert.That(freshSettings.FollowOffset, Is.Not.EqualTo(Vector3.zero));
+            UnityEngine.Object.DestroyImmediate(freshSettings);
+        }
+
+        [Test]
+        public void Awake_PositionsCameraAtTargetPlusFollowOffset_WithDifferentTargetPosition()
+        {
+            _targetGo.transform.position = new Vector3(10f, 20f, -5f);
+            _cameraGo.transform.position = Vector3.zero;
+            SetReferences(_targetGo.transform, _cameraGo.transform);
+
+            InvokeAwake();
+
+            Vector3 expectedPosition = _targetGo.transform.position + _settings.FollowOffset;
+            Assert.That(_cameraGo.transform.position, Is.EqualTo(expectedPosition));
         }
     }
 }

@@ -16,3 +16,4 @@ MonoBehaviour:
   _yDamping: 0.25
   _zDamping: 0.18
   _maxFollowSpeed: 0
+  _followOffset: {x: -7, y: 10, z: -7}
