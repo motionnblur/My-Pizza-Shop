@@ -61,5 +61,13 @@ namespace Engineering.Tests
             Assert.That(settings.ZDamping, Is.EqualTo(0.18f).Within(0.0001f));
             Object.DestroyImmediate(settings);
         }
+
+        [Test]
+        public void DefaultFollowOffset_HasExpectedDefault()
+        {
+            var settings = ScriptableObject.CreateInstance<SCameraSettings>();
+            Assert.That(settings.FollowOffset, Is.EqualTo(new Vector3(-7f, 10f, -7f)));
+            Object.DestroyImmediate(settings);
+        }
     }
 }

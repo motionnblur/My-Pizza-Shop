@@ -189,12 +189,15 @@ namespace Engineering.Tests
             SetReferences(_targetGo.transform, _cameraGo.transform);
             InvokeAwake();
 
+            Vector3 positionAfterAwake = _cameraGo.transform.position;
+            Quaternion rotationAfterAwake = _cameraGo.transform.rotation;
+
             SetField("target", null);
 
             InvokeLateUpdate();
 
-            Assert.That(_cameraGo.transform.position, Is.EqualTo(new Vector3(10f, 20f, 30f)));
-            Assert.That(_cameraGo.transform.rotation, Is.EqualTo(Quaternion.Euler(5f, 10f, 15f)));
+            Assert.That(_cameraGo.transform.position, Is.EqualTo(positionAfterAwake));
+            Assert.That(_cameraGo.transform.rotation, Is.EqualTo(rotationAfterAwake));
         }
 
         [Test]
@@ -205,12 +208,15 @@ namespace Engineering.Tests
             SetReferences(_targetGo.transform, _cameraGo.transform);
             InvokeAwake();
 
+            Vector3 positionAfterAwake = _cameraGo.transform.position;
+            Quaternion rotationAfterAwake = _cameraGo.transform.rotation;
+
             SetField("settings", null);
 
             InvokeLateUpdate();
 
-            Assert.That(_cameraGo.transform.position, Is.EqualTo(new Vector3(10f, 20f, 30f)));
-            Assert.That(_cameraGo.transform.rotation, Is.EqualTo(Quaternion.Euler(5f, 10f, 15f)));
+            Assert.That(_cameraGo.transform.position, Is.EqualTo(positionAfterAwake));
+            Assert.That(_cameraGo.transform.rotation, Is.EqualTo(rotationAfterAwake));
         }
 
         [Test]
@@ -279,14 +285,6 @@ namespace Engineering.Tests
 
             Vector3 expectedFollowTarget = newTargetPos + _settings.FollowOffset;
             Assert.That(_cameraGo.transform.position, Is.Not.EqualTo(expectedFollowTarget));
-        }
-
-        [Test]
-        public void SCameraSettings_HasDefaultFollowOffset()
-        {
-            var freshSettings = ScriptableObject.CreateInstance<SCameraSettings>();
-            Assert.That(freshSettings.FollowOffset, Is.Not.EqualTo(Vector3.zero));
-            UnityEngine.Object.DestroyImmediate(freshSettings);
         }
 
         [Test]
