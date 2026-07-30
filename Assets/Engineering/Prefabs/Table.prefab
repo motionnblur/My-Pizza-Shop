@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 8010273742096956927}
   - component: {fileID: 7568092008269863984}
   - component: {fileID: 4241624721621903767}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: mesh3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -103,7 +103,7 @@ GameObject:
   - component: {fileID: 1164463507895115579}
   - component: {fileID: 892256739208012296}
   - component: {fileID: 4362648641617505022}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -212,7 +212,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2725902333753313964}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: tableMesh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -245,7 +245,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4307386564785861047}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: chair
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -281,7 +281,7 @@ GameObject:
   - component: {fileID: 895611586735013063}
   - component: {fileID: 5353163130129122982}
   - component: {fileID: 5679048974071346090}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: mesh1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -371,7 +371,7 @@ GameObject:
   - component: {fileID: 848260988751159449}
   - component: {fileID: 2365478901234567890}
   - component: {fileID: 7365140482991000003}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Table
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -441,7 +441,7 @@ GameObject:
   - component: {fileID: 7562992456431382771}
   - component: {fileID: 5714167283700076454}
   - component: {fileID: 6738062449627746802}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: mesh3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -532,7 +532,7 @@ GameObject:
   - component: {fileID: 3447185617982821299}
   - component: {fileID: 6910668868074451287}
   - component: {fileID: 4092143448843486312}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: mesh4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -622,7 +622,7 @@ GameObject:
   - component: {fileID: 3004382478913789314}
   - component: {fileID: 6524409663972904865}
   - component: {fileID: 2486308816101478702}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: mesh1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -713,7 +713,7 @@ GameObject:
   - component: {fileID: 1568887181576153173}
   - component: {fileID: 1846122479539080761}
   - component: {fileID: 1711530976097289975}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: table
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -822,7 +822,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3070013467273833305}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: pivotToSit
   m_TagString: Untagged
   m_Icon: {fileID: 1206586993520771344, guid: 0000000000000000d000000000000000, type: 0}
@@ -853,7 +853,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7365140482991000002}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: LeftoverStackAnchor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -886,7 +886,7 @@ GameObject:
   - component: {fileID: 5773384790300363736}
   - component: {fileID: 335430088126496143}
   - component: {fileID: 8683135216053671034}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: WasteTrigger
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -953,7 +953,7 @@ GameObject:
   - component: {fileID: 576350506472585463}
   - component: {fileID: 8873038862058456664}
   - component: {fileID: 1216652255050749356}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: mesh4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1041,7 +1041,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6766150671347234}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: pivotToSit
   m_TagString: Untagged
   m_Icon: {fileID: 1206586993520771344, guid: 0000000000000000d000000000000000, type: 0}
@@ -1072,7 +1072,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8515067295889836373}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: chair (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
