@@ -19,7 +19,7 @@ namespace Engineering.Tests
         }
 
         [Test]
-        public void CustomerBot_HasAssignedOrderText()
+        public void CustomerBot_HasOrderViewWithAssignedOrderText()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
             Assert.That(prefab, Is.Not.Null);
@@ -28,10 +28,14 @@ namespace Engineering.Tests
             Assert.That(bot, Is.Not.Null,
                 "CustomerBot component must exist on the prefab root.");
 
-            var serializedBot = new SerializedObject(bot);
-            var orderTextProp = serializedBot.FindProperty("orderText");
+            var orderView = prefab.GetComponent<CustomerOrderView>();
+            Assert.That(orderView, Is.Not.Null,
+                "CustomerOrderView component must exist on the prefab root.");
+
+            var serializedView = new SerializedObject(orderView);
+            var orderTextProp = serializedView.FindProperty("orderText");
             Assert.That(orderTextProp, Is.Not.Null,
-                "CustomerBot must have a serialized 'orderText' field.");
+                "CustomerOrderView must have a serialized 'orderText' field.");
             Assert.That(orderTextProp.objectReferenceValue, Is.Not.Null,
                 "CustomerBot.prefab 'orderText' must be assigned in the Inspector.");
         }
@@ -42,13 +46,14 @@ namespace Engineering.Tests
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
             Assert.That(prefab, Is.Not.Null);
 
-            var bot = prefab.GetComponent<CustomerBot>();
-            Assert.That(bot, Is.Not.Null);
+            var orderView = prefab.GetComponent<CustomerOrderView>();
+            Assert.That(orderView, Is.Not.Null,
+                "CustomerOrderView component must exist on the prefab root.");
 
-            var serializedBot = new SerializedObject(bot);
-            var formatProp = serializedBot.FindProperty("orderTextFormat");
+            var serializedView = new SerializedObject(orderView);
+            var formatProp = serializedView.FindProperty("orderTextFormat");
             Assert.That(formatProp, Is.Not.Null,
-                "CustomerBot must have a serialized 'orderTextFormat' field.");
+                "CustomerOrderView must have a serialized 'orderTextFormat' field.");
             Assert.That(formatProp.stringValue, Is.EqualTo("{0}"),
                 "CustomerBot.prefab 'orderTextFormat' must be exactly '{0}' for clean number display.");
         }
@@ -59,16 +64,8 @@ namespace Engineering.Tests
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
             Assert.That(prefab, Is.Not.Null);
 
-            var bot = prefab.GetComponent<CustomerBot>();
-            Assert.That(bot, Is.Not.Null);
-
-            var serializedBot = new SerializedObject(bot);
-            var orderTextProp = serializedBot.FindProperty("orderText");
-            Assert.That(orderTextProp, Is.Not.Null);
-            Assert.That(orderTextProp.objectReferenceValue, Is.Not.Null,
-                "Cannot verify raycast target when 'orderText' is unassigned.");
-
-            var serializedText = new SerializedObject(orderTextProp.objectReferenceValue);
+            var orderText = GetOrderTextReference(prefab);
+            var serializedText = new SerializedObject(orderText);
             var raycastProp = serializedText.FindProperty("m_RaycastTarget");
             Assert.That(raycastProp, Is.Not.Null,
                 "TMP_Text component must expose 'm_RaycastTarget' property.");
@@ -82,16 +79,8 @@ namespace Engineering.Tests
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
             Assert.That(prefab, Is.Not.Null);
 
-            var bot = prefab.GetComponent<CustomerBot>();
-            Assert.That(bot, Is.Not.Null);
-
-            var serializedBot = new SerializedObject(bot);
-            var orderTextProp = serializedBot.FindProperty("orderText");
-            Assert.That(orderTextProp, Is.Not.Null);
-            Assert.That(orderTextProp.objectReferenceValue, Is.Not.Null,
-                "Cannot verify canvas when 'orderText' is unassigned.");
-
-            var textComponent = orderTextProp.objectReferenceValue as Component;
+            var orderText = GetOrderTextReference(prefab);
+            var textComponent = orderText as Component;
             Assert.That(textComponent, Is.Not.Null,
                 "'orderText' must reference a Component (TMP_Text).");
 
@@ -103,6 +92,21 @@ namespace Engineering.Tests
             Assert.That(raycaster, Is.Null,
                 "The world-space Canvas containing CustomerBot order text must not have a GraphicRaycaster " +
                 "to prevent unnecessary raycast processing.");
+        }
+
+        private static Object GetOrderTextReference(GameObject prefab)
+        {
+            var orderView = prefab.GetComponent<CustomerOrderView>();
+            Assert.That(orderView, Is.Not.Null,
+                "CustomerOrderView component must exist on the prefab root.");
+
+            var serializedView = new SerializedObject(orderView);
+            var orderTextProp = serializedView.FindProperty("orderText");
+            Assert.That(orderTextProp, Is.Not.Null,
+                "CustomerOrderView must have a serialized 'orderText' field.");
+            Assert.That(orderTextProp.objectReferenceValue, Is.Not.Null,
+                "Cannot verify order text when 'orderText' is unassigned.");
+            return orderTextProp.objectReferenceValue;
         }
     }
 }

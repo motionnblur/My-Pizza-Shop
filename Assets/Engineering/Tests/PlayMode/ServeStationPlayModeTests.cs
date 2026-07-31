@@ -1207,19 +1207,12 @@ namespace Engineering.Tests
 
             var serveStation = _serveStationObject.GetComponent<ServeStation>();
             var bot = CreateCustomerBot(3);
-            var canvasObject = new GameObject("OrderUICanvas");
-            canvasObject.transform.SetParent(bot.transform);
-            canvasObject.AddComponent<Canvas>();
-            var textObject = new GameObject("OrderText");
-            textObject.transform.SetParent(canvasObject.transform);
-            var tmpText = textObject.AddComponent<TextMeshProUGUI>();
-            SetPrivateField(bot, "orderText", tmpText);
-            SetPrivateField(bot, "orderTextFormat", "{0}");
+            var tmpText = AttachOrderText(bot);
 
             bot.Initialize(serveStation, new CustomerOrderModel(3), new Transform[0]);
 
             Assert.That(tmpText.text, Is.EqualTo("3"));
-            Assert.That(textObject.activeSelf, Is.True);
+            Assert.That(tmpText.gameObject.activeSelf, Is.True);
         }
 
         [UnityTest]
@@ -1230,14 +1223,7 @@ namespace Engineering.Tests
 
             var serveStation = _serveStationObject.GetComponent<ServeStation>();
             var bot = CreateCustomerBot(3);
-            var canvasObject = new GameObject("OrderUICanvas");
-            canvasObject.transform.SetParent(bot.transform);
-            canvasObject.AddComponent<Canvas>();
-            var textObject = new GameObject("OrderText");
-            textObject.transform.SetParent(canvasObject.transform);
-            var tmpText = textObject.AddComponent<TextMeshProUGUI>();
-            SetPrivateField(bot, "orderText", tmpText);
-            SetPrivateField(bot, "orderTextFormat", "{0}");
+            var tmpText = AttachOrderText(bot);
 
             bot.Initialize(serveStation, new CustomerOrderModel(3), new Transform[0]);
             serveStation.TryRegisterCustomer(bot);
@@ -1247,7 +1233,7 @@ namespace Engineering.Tests
             serveStation.ServeFrontCustomer();
 
             Assert.That(tmpText.text, Is.EqualTo("2"));
-            Assert.That(textObject.activeSelf, Is.True);
+            Assert.That(tmpText.gameObject.activeSelf, Is.True);
         }
 
         [UnityTest]
@@ -1258,14 +1244,7 @@ namespace Engineering.Tests
 
             var serveStation = _serveStationObject.GetComponent<ServeStation>();
             var bot = CreateCustomerBot(1);
-            var canvasObject = new GameObject("OrderUICanvas");
-            canvasObject.transform.SetParent(bot.transform);
-            canvasObject.AddComponent<Canvas>();
-            var textObject = new GameObject("OrderText");
-            textObject.transform.SetParent(canvasObject.transform);
-            var tmpText = textObject.AddComponent<TextMeshProUGUI>();
-            SetPrivateField(bot, "orderText", tmpText);
-            SetPrivateField(bot, "orderTextFormat", "{0}");
+            var tmpText = AttachOrderText(bot);
 
             bot.Initialize(serveStation, new CustomerOrderModel(1), new Transform[0]);
             if (_tableManager != null && _exitPoint != null)
@@ -1276,7 +1255,7 @@ namespace Engineering.Tests
             serveStation.DepositFrom(_playerInventory);
             serveStation.ServeFrontCustomer();
 
-            Assert.That(textObject.activeSelf, Is.False);
+            Assert.That(tmpText.gameObject.activeSelf, Is.False);
         }
 
         private void EnsureNavMeshExists()
@@ -1428,6 +1407,22 @@ namespace Engineering.Tests
                 bot.SetupDining(_tableManager, _exitPoint, 5f);
             station.TryRegisterCustomer(bot);
             return bot;
+        }
+
+        private static TextMeshProUGUI AttachOrderText(CustomerBot bot)
+        {
+            var canvasObject = new GameObject("OrderUICanvas");
+            canvasObject.transform.SetParent(bot.transform);
+            canvasObject.AddComponent<Canvas>();
+            var textObject = new GameObject("OrderText");
+            textObject.transform.SetParent(canvasObject.transform);
+            var tmpText = textObject.AddComponent<TextMeshProUGUI>();
+            var orderView = bot.GetComponent<CustomerOrderView>();
+            if (orderView == null)
+                orderView = bot.gameObject.AddComponent<CustomerOrderView>();
+            SetPrivateField(orderView, "orderText", tmpText);
+            SetPrivateField(orderView, "orderTextFormat", "{0}");
+            return tmpText;
         }
 
         private static void SetPrivateField(object target, string fieldName, object value)

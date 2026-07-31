@@ -208,11 +208,10 @@ namespace Engineering.Tests
         public IEnumerator CustomerQueueController_RemoveCustomer_RemovesSpecificWaitingCustomer()
         {
             var (queueController, bots) = CreateQueueWithTwoBots();
-            SetPrivateField(bots[0], "_state", (int)3);
-            SetPrivateField(bots[1], "_state", (int)4);
+            bots[0].TransitionToDining();
 
             var waiting = queueController.GetFirstWaitingCustomer();
-            Assert.That(waiting, Is.SameAs(bots[0]), "First bot is waiting (state=WaitingForTable=3).");
+            Assert.That(waiting, Is.SameAs(bots[0]), "First bot is waiting after a failed dining transition.");
 
             var removed = queueController.RemoveCustomer(waiting);
             Assert.That(removed, Is.True);
@@ -228,11 +227,10 @@ namespace Engineering.Tests
         public IEnumerator CustomerQueueController_RemoveCustomer_RemovesNonFrontWaitingCustomer()
         {
             var (queueController, bots) = CreateQueueWithTwoBots();
-            SetPrivateField(bots[0], "_state", (int)5);
-            SetPrivateField(bots[1], "_state", (int)3);
+            bots[1].TransitionToDining();
 
             var waiting = queueController.GetFirstWaitingCustomer();
-            Assert.That(waiting, Is.SameAs(bots[1]), "Second bot is waiting (state=WaitingForTable=3).");
+            Assert.That(waiting, Is.SameAs(bots[1]), "Second bot is waiting after a failed dining transition.");
 
             var removed = queueController.RemoveCustomer(waiting);
             Assert.That(removed, Is.True);
@@ -285,8 +283,7 @@ namespace Engineering.Tests
             bot.TransitionToDining();
             Assert.That(manager.TryReserveSeat(out _, out _), Is.False, "Seat should be occupied after reservation.");
 
-            SetPrivateField(bot, "_state", 5);
-            SetPrivateField(bot, "_eatingTimer", 0.05f);
+            bot.BeginEating();
 
             yield return new WaitForSeconds(0.2f);
 
@@ -339,8 +336,7 @@ namespace Engineering.Tests
             var seatReleased = false;
             manager.SeatReleased += () => seatReleased = true;
 
-            SetPrivateField(bot1, "_state", 5);
-            SetPrivateField(bot1, "_eatingTimer", 0.05f);
+            bot1.BeginEating();
 
             yield return new WaitForSeconds(0.2f);
 
@@ -359,7 +355,7 @@ namespace Engineering.Tests
             yield return null;
 
             bot.TransitionToDining();
-            SetPrivateField(bot, "_state", 6);
+            bot.BeginLeaving();
 
             yield return new WaitForSeconds(0.1f);
 
@@ -437,8 +433,7 @@ namespace Engineering.Tests
             bot.TransitionToDining();
             Assert.That(manager.TryReserveSeat(out _, out _), Is.False, "Seat should be occupied.");
 
-            SetPrivateField(bot, "_state", 5);
-            SetPrivateField(bot, "_eatingTimer", 0.05f);
+            bot.BeginEating();
 
             yield return new WaitForSeconds(0.2f);
 
@@ -643,8 +638,7 @@ namespace Engineering.Tests
             bot.TransitionToDining();
             Assert.That(manager.TryReserveSeat(out _, out _), Is.False, "Seat should be occupied.");
 
-            SetPrivateField(bot, "_state", 5);
-            SetPrivateField(bot, "_eatingTimer", 0.05f);
+            bot.BeginEating();
 
             yield return new WaitForSeconds(0.2f);
 
@@ -725,8 +719,11 @@ namespace Engineering.Tests
             var textObject = new GameObject("OrderText");
             textObject.transform.SetParent(canvasObject.transform);
             var tmpText = textObject.AddComponent<TextMeshProUGUI>();
-            SetPrivateField(bot, "orderText", tmpText);
-            SetPrivateField(bot, "orderTextFormat", "{0}");
+            var orderView = bot.GetComponent<CustomerOrderView>();
+            if (orderView == null)
+                orderView = bot.gameObject.AddComponent<CustomerOrderView>();
+            SetPrivateField(orderView, "orderText", tmpText);
+            SetPrivateField(orderView, "orderTextFormat", "{0}");
             return tmpText;
         }
 
@@ -819,8 +816,7 @@ namespace Engineering.Tests
                 "bot2 should enter WaitingForTable since the only seat is taken.");
             Assert.That(bot2.IsWaitingForTable, Is.True);
 
-            SetPrivateField(bot1, "_state", 5);
-            SetPrivateField(bot1, "_eatingTimer", 0.05f);
+            bot1.BeginEating();
 
             yield return new WaitForSeconds(0.2f);
 
@@ -963,8 +959,7 @@ namespace Engineering.Tests
             Assert.That(waitingBot.TransitionToDining(), Is.False);
             Assert.That(tmpText.gameObject.activeSelf, Is.True);
 
-            SetPrivateField(diningBot, "_state", 5);
-            SetPrivateField(diningBot, "_eatingTimer", 0.05f);
+            diningBot.BeginEating();
 
             yield return new WaitForSeconds(0.2f);
 
@@ -1106,6 +1101,49 @@ namespace Engineering.Tests
 
             Assert.That(manager.TryReserveSeat(out _, out _), Is.False,
                 "Seat should remain occupied because the bot never owned the reservation.");
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerBot_MovingToTableTimeout_ReleasesSeat()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+            var bot = CreateBotWithDining(manager, eatingDuration: 5f);
+            SetPrivateField(bot, "movingToTableTimeout", 0.1f);
+            yield return null;
+
+            Assert.That(bot.TransitionToDining(), Is.True, "Bot should reserve the only seat.");
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.False, "Seat should be occupied.");
+
+            yield return new WaitForSeconds(0.3f);
+
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.True,
+                "Seat should be released after the moving-to-table timeout expires.");
+        }
+
+        [UnityTest]
+        public IEnumerator CustomerBot_DisabledAgent_DoesNotMoveOrCrash()
+        {
+            var queueObject = new GameObject("Queue");
+            var queueSlot = new GameObject("Slot").transform;
+            queueSlot.SetParent(queueObject.transform);
+            _toCleanup.Add(queueObject);
+
+            var botObject = new GameObject("CustomerBot");
+            var agent = botObject.AddComponent<NavMeshAgent>();
+            agent.enabled = false;
+            var bot = botObject.AddComponent<CustomerBot>();
+            bot.Initialize(null, new CustomerOrderModel(1), new Transform[0]);
+            bot.AssignQueueSlot(queueSlot, 0);
+            _botsToCleanup.Add(botObject);
+            yield return null;
+
+            Assert.That(bot.HasReachedAssignedSlot, Is.False);
+
+            bot.BeginApproach();
+            yield return new WaitForSeconds(0.1f);
+
+            Assert.That(bot.HasReachedAssignedSlot, Is.False,
+                "A customer with a disabled NavMeshAgent must not move or crash.");
         }
 
         [UnityTest]

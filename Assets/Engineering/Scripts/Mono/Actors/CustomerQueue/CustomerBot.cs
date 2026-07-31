@@ -1,19 +1,21 @@
 using Engineering.Scripts.Domain.CustomerQueue;
 using Engineering.Scripts.Mono.Actors.Table;
 using ServeStationType = Engineering.Scripts.Mono.Actors.ServeStation.ServeStation;
-using TMPro;
 using UnityEngine;
-using UnityEngine.AI;
 
 namespace Engineering.Scripts.Mono.Actors.CustomerQueue
 {
-    [RequireComponent(typeof(NavMeshAgent))]
+    [RequireComponent(typeof(CustomerNavigation))]
+    [RequireComponent(typeof(CustomerDiningController))]
     public class CustomerBot : MonoBehaviour
     {
-        [Header("Order UI")]
-        [SerializeField] private TMP_Text orderText;
-        [SerializeField] private string orderTextFormat = "Pizza: {0}";
-        [SerializeField] private string noSeatMessage = "NO SEAT!";
+        [Header("Components")]
+        [SerializeField] private CustomerOrderView orderView;
+        [SerializeField] private CustomerNavigation navigation;
+        [SerializeField] private CustomerDiningController dining;
+
+        [Header("Movement")]
+        [SerializeField] private float movingToTableTimeout = 10f;
 
         private ServeStationType _station;
         private CustomerOrderModel _orderModel;
@@ -22,21 +24,12 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
         private Transform _assignedSlot;
         private int _queueIndex;
         private bool _hasReachedAssignedSlot;
-        private NavMeshAgent _agent;
 
         private bool _approachStarted;
         private enum BotState { Approaching, MovingToSlot, AtSlot, WaitingForTable, MovingToTable, Eating, Leaving }
         private BotState _state;
 
-        private TableManager _tableManager;
-        private int _tableIndex;
-        private int _seatIndex;
-        private Transform _assignedSeatTransform;
-        private Transform _exitPoint;
-        private float _eatingDuration;
-        private float _eatingTimer;
         private float _pathTimeout;
-        private const float MovingToTableTimeout = 10f;
 
         public CustomerOrderModel OrderModel => _orderModel;
         public int RemainingPizzaCount => _orderModel?.RemainingPizzaCount ?? 0;
@@ -45,57 +38,56 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
 
         private void Awake()
         {
-            _agent = GetComponent<NavMeshAgent>();
+            if (navigation == null)
+                navigation = GetComponent<CustomerNavigation>();
+            if (dining == null)
+                dining = GetComponent<CustomerDiningController>();
+            if (orderView == null)
+                orderView = GetComponent<CustomerOrderView>();
         }
 
         private void OnDestroy()
         {
-            if (_tableManager != null && _state is BotState.MovingToTable or BotState.Eating)
-            {
-                _tableManager.ReleaseSeat(_tableIndex, _seatIndex);
-            }
+            if (dining != null)
+                dining.ReleaseSeat();
         }
-
-        private bool IsAgentReady => _agent != null && _agent.isActiveAndEnabled && _agent.isOnNavMesh;
 
         private void Update()
         {
-            if (_agent == null) return;
-
             if (_state == BotState.MovingToTable)
                 ProcessPathTimeout();
 
             if (_state < BotState.WaitingForTable && !_approachStarted) return;
             var needNavMesh = _state is BotState.Approaching or BotState.MovingToSlot or BotState.MovingToTable;
-            if (needNavMesh && (!_agent.isActiveAndEnabled || !_agent.isOnNavMesh)) return;
+            if (needNavMesh && (navigation == null || !navigation.IsReady)) return;
 
             switch (_state)
             {
                 case BotState.Approaching:
-                    if (!IsAgentReady || _agent.pathPending) break;
-                    if (_agent.remainingDistance <= _agent.stoppingDistance)
+                    if (navigation.HasPendingPath) break;
+                    if (navigation.HasArrived)
                     {
                         _currentWaypointIndex++;
                         if (_currentWaypointIndex < _approachWaypoints.Length)
-                            TrySetDestination(_approachWaypoints[_currentWaypointIndex].position);
+                            navigation.MoveTo(_approachWaypoints[_currentWaypointIndex].position);
                         else
                         {
                             _state = BotState.MovingToSlot;
                             if (_assignedSlot != null)
-                                TrySetDestination(_assignedSlot.position);
+                                navigation.MoveTo(_assignedSlot.position);
                         }
                     }
                     break;
 
                 case BotState.MovingToSlot:
-                    if (!IsAgentReady || _agent.pathPending) break;
-                    if (_agent.remainingDistance <= _agent.stoppingDistance)
+                    if (navigation.HasPendingPath) break;
+                    if (navigation.HasArrived)
                     {
                         _hasReachedAssignedSlot = true;
-                        _agent.isStopped = true;
+                        navigation.Stop();
                         _state = BotState.AtSlot;
                         if (_assignedSlot != null)
-                            transform.rotation = _assignedSlot.rotation;
+                            navigation.Face(_assignedSlot.rotation);
                     }
                     break;
 
@@ -103,51 +95,34 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
                     break;
 
                 case BotState.MovingToTable:
-                    if (_assignedSeatTransform == null)
+                    if (dining == null || dining.ReservedSeatTransform == null)
                     {
                         Debug.LogWarning($"CustomerBot '{name}': no seat transform assigned. Releasing seat.", this);
-                        _tableManager?.ReleaseSeat(_tableIndex, _seatIndex);
+                        dining?.ReleaseSeat();
                         _state = BotState.Leaving;
                         break;
                     }
-                    if (!IsAgentReady || _agent.pathPending) break;
-                    if (_agent.remainingDistance <= _agent.stoppingDistance)
+                    if (navigation.HasPendingPath) break;
+                    if (navigation.HasArrived)
                     {
-                        _state = BotState.Eating;
-                        _eatingTimer = _eatingDuration;
-                        _pathTimeout = 0f;
-                        if (IsAgentReady)
-                            _agent.isStopped = true;
-                        if (_assignedSeatTransform != null)
-                            transform.rotation = _assignedSeatTransform.rotation;
+                        BeginEating();
                     }
                     break;
 
                 case BotState.Eating:
-                    _eatingTimer -= Time.deltaTime;
-                    if (_eatingTimer <= 0f)
+                    if (dining != null && dining.TickEating(Time.deltaTime))
                     {
-                        if (_tableManager != null)
-                        {
-                            _tableManager.AddLeftoversToTable(_tableIndex, _orderModel.InitialPizzaCount);
-                            _tableManager.ReleaseSeat(_tableIndex, _seatIndex);
-                        }
-                        _state = BotState.Leaving;
-                        if (IsAgentReady)
-                        {
-                            _agent.isStopped = false;
-                            TrySetDestination(_exitPoint.position);
-                        }
+                        BeginLeaving();
                     }
                     break;
 
                 case BotState.Leaving:
-                    if (_exitPoint == null || !IsAgentReady)
+                    if (dining == null || dining.ExitPoint == null || navigation == null || !navigation.IsReady)
                     {
                         Destroy(gameObject);
                         break;
                     }
-                    if (_agent.remainingDistance <= _agent.stoppingDistance)
+                    if (navigation.HasArrived)
                     {
                         Destroy(gameObject);
                     }
@@ -168,36 +143,35 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
 
         public void RefreshOrderText()
         {
-            if (orderText == null)
+            var view = ResolveOrderView();
+            if (view == null)
                 return;
 
-            var remainingPizzaCount = RemainingPizzaCount;
-            orderText.text = string.Format(orderTextFormat, remainingPizzaCount);
-            orderText.gameObject.SetActive(remainingPizzaCount > 0);
+            view.ShowRemainingPizzas(RemainingPizzaCount);
         }
 
         private void ShowNoSeatMessage()
         {
-            if (orderText == null)
+            var view = ResolveOrderView();
+            if (view == null)
                 return;
 
-            orderText.text = noSeatMessage;
-            orderText.gameObject.SetActive(true);
+            view.ShowNoSeatMessage();
         }
 
         private void HideNoSeatMessage()
         {
-            if (orderText == null)
+            var view = ResolveOrderView();
+            if (view == null)
                 return;
 
-            orderText.gameObject.SetActive(false);
+            view.Hide();
         }
 
         public void SetupDining(TableManager tableManager, Transform exitPoint, float eatingDuration)
         {
-            _tableManager = tableManager;
-            _exitPoint = exitPoint;
-            _eatingDuration = eatingDuration;
+            if (dining != null)
+                dining.Configure(tableManager, exitPoint, eatingDuration);
         }
 
         public void BeginApproach()
@@ -206,13 +180,14 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
             if (_approachWaypoints != null && _approachWaypoints.Length > 0 && _approachWaypoints[0] != null)
             {
                 _state = BotState.Approaching;
-                TrySetDestination(_approachWaypoints[0].position);
+                if (navigation != null)
+                    navigation.MoveTo(_approachWaypoints[0].position);
             }
             else
             {
                 _state = BotState.MovingToSlot;
-                if (_assignedSlot != null)
-                    TrySetDestination(_assignedSlot.position);
+                if (_assignedSlot != null && navigation != null)
+                    navigation.MoveTo(_assignedSlot.position);
             }
         }
 
@@ -221,35 +196,32 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
             _assignedSlot = queueSlot;
             _queueIndex = queueIndex;
             _hasReachedAssignedSlot = false;
-            if (IsAgentReady)
+            if (navigation != null && navigation.IsReady)
             {
-                _agent.isStopped = false;
-                _agent.avoidancePriority = queueIndex;
+                navigation.Resume();
+                navigation.SetAvoidancePriority(queueIndex);
             }
             if (_state == BotState.AtSlot || _state == BotState.MovingToSlot)
             {
                 _state = BotState.MovingToSlot;
                 if (_assignedSlot != null)
-                    TrySetDestination(_assignedSlot.position);
+                    navigation.MoveTo(_assignedSlot.position);
             }
         }
 
         public bool TransitionToDining()
         {
             var expectedLeftovers = _orderModel?.InitialPizzaCount ?? 0;
-            if (_tableManager != null && _tableManager.TryReserveSeat(expectedLeftovers, out var tableIdx, out var seatIdx))
+            if (dining != null && dining.TryReserveSeat(expectedLeftovers))
             {
-                var seatTransform = _tableManager.GetSeatTransform(tableIdx, seatIdx);
-                _tableIndex = tableIdx;
-                _seatIndex = seatIdx;
-                _assignedSeatTransform = seatTransform;
                 _state = BotState.MovingToTable;
                 _pathTimeout = 0f;
                 _hasReachedAssignedSlot = false;
-                if (_agent != null && _agent.isActiveAndEnabled && _agent.isOnNavMesh)
-                    _agent.isStopped = false;
+                if (navigation != null && navigation.IsReady)
+                    navigation.Resume();
+                var seatTransform = dining.ReservedSeatTransform;
                 if (seatTransform != null)
-                    TrySetDestination(seatTransform.position);
+                    navigation.MoveTo(seatTransform.position);
                 HideNoSeatMessage();
                 return true;
             }
@@ -265,19 +237,16 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
                 return false;
 
             var expectedLeftovers = _orderModel?.InitialPizzaCount ?? 0;
-            if (_tableManager != null && _tableManager.TryReserveSeat(expectedLeftovers, out var tableIdx, out var seatIdx))
+            if (dining != null && dining.TryReserveSeat(expectedLeftovers))
             {
-                var seatTransform = _tableManager.GetSeatTransform(tableIdx, seatIdx);
-                _tableIndex = tableIdx;
-                _seatIndex = seatIdx;
-                _assignedSeatTransform = seatTransform;
                 _state = BotState.MovingToTable;
                 _pathTimeout = 0f;
                 _hasReachedAssignedSlot = false;
-                if (_agent != null && _agent.isActiveAndEnabled && _agent.isOnNavMesh)
-                    _agent.isStopped = false;
+                if (navigation != null && navigation.IsReady)
+                    navigation.Resume();
+                var seatTransform = dining.ReservedSeatTransform;
                 if (seatTransform != null)
-                    TrySetDestination(seatTransform.position);
+                    navigation.MoveTo(seatTransform.position);
                 HideNoSeatMessage();
                 return true;
             }
@@ -285,31 +254,54 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
             return false;
         }
 
-        private void ProcessPathTimeout()
+        public void BeginEating()
         {
-            _pathTimeout += Time.deltaTime;
-            if (_pathTimeout >= MovingToTableTimeout)
+            _state = BotState.Eating;
+            _pathTimeout = 0f;
+            if (dining != null)
+                dining.StartEating();
+            if (navigation != null && navigation.IsReady)
+                navigation.Stop();
+            if (dining != null && dining.ReservedSeatTransform != null && navigation != null)
+                navigation.Face(dining.ReservedSeatTransform.rotation);
+        }
+
+        public void BeginLeaving()
+        {
+            _state = BotState.Leaving;
+            if (navigation != null && navigation.IsReady)
             {
-                Debug.LogWarning($"CustomerBot '{name}': could not reach seat within {MovingToTableTimeout}s. Releasing seat.", this);
-                if (_tableManager != null)
-                    _tableManager.ReleaseSeat(_tableIndex, _seatIndex);
-                _state = BotState.Leaving;
-                _pathTimeout = 0f;
-                if (_agent != null)
-                {
-                    _agent.isStopped = false;
-                    if (_agent.isOnNavMesh && _exitPoint != null)
-                        TrySetDestination(_exitPoint.position);
-                }
+                navigation.Resume();
+                var exitPoint = dining != null ? dining.ExitPoint : null;
+                if (exitPoint != null)
+                    navigation.MoveTo(exitPoint.position);
             }
         }
 
-        private void TrySetDestination(Vector3 destination)
+        private void ProcessPathTimeout()
         {
-            if (_agent == null) return;
-            if (!_agent.isActiveAndEnabled) return;
-            if (!_agent.isOnNavMesh) return;
-            _agent.SetDestination(destination);
+            _pathTimeout += Time.deltaTime;
+            if (_pathTimeout < movingToTableTimeout)
+                return;
+
+            Debug.LogWarning($"CustomerBot '{name}': could not reach seat within {movingToTableTimeout}s. Releasing seat.", this);
+            dining?.ReleaseSeat();
+            _state = BotState.Leaving;
+            _pathTimeout = 0f;
+            if (navigation != null && navigation.IsReady)
+            {
+                navigation.Resume();
+                var exitPoint = dining != null ? dining.ExitPoint : null;
+                if (exitPoint != null)
+                    navigation.MoveTo(exitPoint.position);
+            }
+        }
+
+        private CustomerOrderView ResolveOrderView()
+        {
+            if (orderView == null)
+                orderView = GetComponent<CustomerOrderView>();
+            return orderView;
         }
     }
 }
