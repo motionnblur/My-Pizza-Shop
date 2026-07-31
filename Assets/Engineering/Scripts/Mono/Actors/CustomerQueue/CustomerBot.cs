@@ -13,6 +13,7 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
         [Header("Order UI")]
         [SerializeField] private TMP_Text orderText;
         [SerializeField] private string orderTextFormat = "Pizza: {0}";
+        [SerializeField] private string noSeatMessage = "NO SEAT!";
 
         private ServeStationType _station;
         private CustomerOrderModel _orderModel;
@@ -175,6 +176,23 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
             orderText.gameObject.SetActive(remainingPizzaCount > 0);
         }
 
+        private void ShowNoSeatMessage()
+        {
+            if (orderText == null)
+                return;
+
+            orderText.text = noSeatMessage;
+            orderText.gameObject.SetActive(true);
+        }
+
+        private void HideNoSeatMessage()
+        {
+            if (orderText == null)
+                return;
+
+            orderText.gameObject.SetActive(false);
+        }
+
         public void SetupDining(TableManager tableManager, Transform exitPoint, float eatingDuration)
         {
             _tableManager = tableManager;
@@ -232,10 +250,12 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
                     _agent.isStopped = false;
                 if (seatTransform != null)
                     TrySetDestination(seatTransform.position);
+                HideNoSeatMessage();
                 return true;
             }
 
             _state = BotState.WaitingForTable;
+            ShowNoSeatMessage();
             return false;
         }
 
@@ -258,6 +278,7 @@ namespace Engineering.Scripts.Mono.Actors.CustomerQueue
                     _agent.isStopped = false;
                 if (seatTransform != null)
                     TrySetDestination(seatTransform.position);
+                HideNoSeatMessage();
                 return true;
             }
 

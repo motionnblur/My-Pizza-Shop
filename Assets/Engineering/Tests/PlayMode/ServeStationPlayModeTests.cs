@@ -1268,6 +1268,8 @@ namespace Engineering.Tests
             SetPrivateField(bot, "orderTextFormat", "{0}");
 
             bot.Initialize(serveStation, new CustomerOrderModel(1), new Transform[0]);
+            if (_tableManager != null && _exitPoint != null)
+                bot.SetupDining(_tableManager, _exitPoint, 5f);
             serveStation.TryRegisterCustomer(bot);
             SetPrivateField(bot, "_hasReachedAssignedSlot", true);
 

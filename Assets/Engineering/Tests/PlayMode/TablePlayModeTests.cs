@@ -10,6 +10,7 @@ using Engineering.Scripts.Mono.Actors.Table;
 using Engineering.Scripts.Mono.Managers;
 using Engineering.Scripts.Mono.Player;
 using NUnit.Framework;
+using TMPro;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.TestTools;
@@ -701,6 +702,34 @@ namespace Engineering.Tests
             return bot;
         }
 
+        private CustomerBot CreateCompletedBotWithDining(TableManager manager, int pizzaCount)
+        {
+            var botObject = new GameObject("CustomerBot");
+            var agent = botObject.AddComponent<NavMeshAgent>();
+            agent.enabled = false;
+            var bot = botObject.AddComponent<CustomerBot>();
+            bot.Initialize(null, new CustomerOrderModel(pizzaCount), new Transform[0]);
+            var exitObject = new GameObject("Exit");
+            _toCleanup.Add(exitObject);
+            bot.SetupDining(manager, exitObject.transform, 5f);
+            bot.OrderModel.ReceivePizzas(pizzaCount);
+            _botsToCleanup.Add(botObject);
+            return bot;
+        }
+
+        private static TextMeshProUGUI AttachOrderText(CustomerBot bot)
+        {
+            var canvasObject = new GameObject("OrderUICanvas");
+            canvasObject.transform.SetParent(bot.transform);
+            canvasObject.AddComponent<Canvas>();
+            var textObject = new GameObject("OrderText");
+            textObject.transform.SetParent(canvasObject.transform);
+            var tmpText = textObject.AddComponent<TextMeshProUGUI>();
+            SetPrivateField(bot, "orderText", tmpText);
+            SetPrivateField(bot, "orderTextFormat", "{0}");
+            return tmpText;
+        }
+
         private (CustomerQueueController queueController, CustomerBot[] bots) CreateQueueWithTwoBots()
         {
             var queueObject = new GameObject("QueueController");
@@ -869,6 +898,83 @@ namespace Engineering.Tests
                 "Bot should be removed from the queue after successful retry.");
             Assert.That(manager.TryReserveSeat(out _, out _), Is.False,
                 "Seat should be occupied by the retried bot.");
+        }
+
+        [UnityTest]
+        public IEnumerator WaitingCustomer_NoEligibleTable_DisplaysNoSeatMessage()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+            SetPrivateField(table, "maxLeftovers", 2);
+            yield return null;
+
+            var bot = CreateCompletedBotWithDining(manager, pizzaCount: 3);
+            var tmpText = AttachOrderText(bot);
+
+            var reserved = bot.TransitionToDining();
+
+            Assert.That(reserved, Is.False,
+                "Reservation should fail when the table lacks leftover capacity for the order.");
+            Assert.That(bot.IsWaitingForTable, Is.True);
+            Assert.That(tmpText.gameObject.activeSelf, Is.True);
+            Assert.That(tmpText.text, Is.EqualTo("NO SEAT!"));
+        }
+
+        [UnityTest]
+        public IEnumerator WaitingCustomer_NoSeatMessage_RemainsVisibleWhileWaiting()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+            yield return null;
+
+            var diningBot = CreateBotWithDining(manager, eatingDuration: 5f);
+            Assert.That(diningBot.TransitionToDining(), Is.True,
+                "First customer should reserve the only seat.");
+
+            var waitingBot = CreateCompletedBotWithDining(manager, pizzaCount: 1);
+            var tmpText = AttachOrderText(waitingBot);
+
+            Assert.That(waitingBot.TransitionToDining(), Is.False,
+                "Second customer should wait because the only seat is occupied.");
+            Assert.That(waitingBot.IsWaitingForTable, Is.True);
+            Assert.That(tmpText.gameObject.activeSelf, Is.True);
+            Assert.That(tmpText.text, Is.EqualTo("NO SEAT!"));
+
+            yield return new WaitForSeconds(0.1f);
+
+            Assert.That(waitingBot.IsWaitingForTable, Is.True,
+                "Customer should remain waiting while no seat is available.");
+            Assert.That(tmpText.gameObject.activeSelf, Is.True,
+                "NO SEAT! must remain visible while waiting.");
+            Assert.That(tmpText.text, Is.EqualTo("NO SEAT!"));
+        }
+
+        [UnityTest]
+        public IEnumerator WaitingCustomer_RetrySuccess_HidesNoSeatMessage()
+        {
+            var (table, manager) = CreateTableWithManager(1);
+            yield return null;
+
+            var diningBot = CreateBotWithDining(manager, eatingDuration: 0.1f);
+            Assert.That(diningBot.TransitionToDining(), Is.True,
+                "First customer should reserve the only seat.");
+
+            var waitingBot = CreateCompletedBotWithDining(manager, pizzaCount: 1);
+            var tmpText = AttachOrderText(waitingBot);
+
+            Assert.That(waitingBot.TransitionToDining(), Is.False);
+            Assert.That(tmpText.gameObject.activeSelf, Is.True);
+
+            SetPrivateField(diningBot, "_state", 5);
+            SetPrivateField(diningBot, "_eatingTimer", 0.05f);
+
+            yield return new WaitForSeconds(0.2f);
+
+            Assert.That(waitingBot.RetryReserveTable(), Is.True,
+                "Waiting customer should move to the freed seat.");
+            Assert.That(waitingBot.IsWaitingForTable, Is.False);
+            Assert.That(tmpText.gameObject.activeSelf, Is.False,
+                "NO SEAT! must be hidden once the customer reserves a table.");
+            Assert.That(manager.TryReserveSeat(out _, out _), Is.False,
+                "Waiting customer should occupy the freed seat.");
         }
 
         private void EnsureNavMeshExists()
